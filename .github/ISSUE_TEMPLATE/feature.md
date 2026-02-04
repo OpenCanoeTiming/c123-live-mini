@@ -20,11 +20,24 @@ assignees: ''
 
 ---
 
-**Spec workflow:**
-- [ ] Read this issue and run `/speckit.specify` with content
-- [ ] `/speckit.clarify` - refine spec
-- [ ] `/speckit.plan` - technical plan
-- [ ] `/speckit.tasks` - generate tasks
-- [ ] `/speckit.taskstoissues` - create task issues
+**Workflow:**
+
+### Setup
+- [ ] Create branch `feature/{N}-{slug}`
+- [ ] Add branch link comment to this issue
+
+### Spec Phases (update issue after each!)
+- [ ] `/speckit.specify` → comment with spec.md link
+- [ ] `/speckit.clarify` → comment with status
+- [ ] `/speckit.plan` → comment with plan.md link
+- [ ] `/speckit.tasks` → comment with phases overview
 - [ ] Change label to `spec/approved`
-- [ ] Link to spec: `specs/###-name/spec.md`
+
+### Implementation (per phase)
+- [ ] Phase 1: Setup → commit, push, comment
+- [ ] Phase 2: Foundation → commit, push, comment
+- [ ] Phase N: ... → commit, push, comment
+
+### Completion
+- [ ] Create PR with `Closes #N`
+- [ ] Link to spec: `specs/###-name/`
