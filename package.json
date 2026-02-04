@@ -1,0 +1,23 @@
+{
+  "name": "c123-live-mini",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Minimalistic live results solution for C123 timing ecosystem",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "echo 'dev script will be added after packages are created'",
+    "build": "echo 'build script will be added after packages are created'",
+    "test": "echo 'test script will be added after packages are created'"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OpenCanoeTiming/c123-live-mini.git"
+  },
+  "license": "MIT"
+}

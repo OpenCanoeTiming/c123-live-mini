@@ -24,11 +24,11 @@
 
 **Purpose**: Initialize monorepo structure and root-level configuration
 
-- [ ] T001 Create root package.json with workspaces config at /package.json
-- [ ] T002 [P] Create .nvmrc with Node.js version at /.nvmrc
-- [ ] T003 [P] Create tsconfig.base.json with shared TypeScript config at /tsconfig.base.json
-- [ ] T004 [P] Update .gitignore for monorepo (node_modules, dist) at /.gitignore
-- [ ] T005 Create packages/ directory structure (server, client, shared)
+- [x] T001 Create root package.json with workspaces config at /package.json
+- [x] T002 [P] Create .nvmrc with Node.js version at /.nvmrc
+- [x] T003 [P] Create tsconfig.base.json with shared TypeScript config at /tsconfig.base.json
+- [x] T004 [P] Update .gitignore for monorepo (node_modules, dist) at /.gitignore
+- [x] T005 Create packages/ directory structure (server, client, shared)
 
 ---
 
@@ -38,9 +38,9 @@
 
 **⚠️ CRITICAL**: Server and client packages depend on shared package being functional
 
-- [ ] T006 Create shared package.json at /packages/shared/package.json
-- [ ] T007 [P] Create shared tsconfig.json extending base at /packages/shared/tsconfig.json
-- [ ] T008 Create shared/src/index.ts with sample type export at /packages/shared/src/index.ts
+- [x] T006 Create shared package.json at /packages/shared/package.json
+- [x] T007 [P] Create shared tsconfig.json extending base at /packages/shared/tsconfig.json
+- [x] T008 Create shared/src/index.ts with sample type export at /packages/shared/src/index.ts
 
 **Checkpoint**: Shared package ready - server and client can now depend on it
 
