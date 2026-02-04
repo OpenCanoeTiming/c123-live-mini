@@ -1,0 +1,30 @@
+{
+  "name": "c123-live-mini",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Minimalistic live results solution for C123 timing ecosystem",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w @c123-live-mini/server\" \"npm run dev -w @c123-live-mini/client\"",
+    "build": "npm run build -w @c123-live-mini/shared && npm run build -w @c123-live-mini/server && npm run build -w @c123-live-mini/client",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "devDependencies": {
+    "@vitest/ui": "^4.0.18",
+    "concurrently": "^9.1.2",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OpenCanoeTiming/c123-live-mini.git"
+  },
+  "license": "MIT"
+}

@@ -4,6 +4,10 @@ node_modules/
 # Build
 dist/
 build/
+*.tsbuildinfo
+
+# Package lock files (use root only)
+packages/*/package-lock.json
 
 # Environment
 .env
