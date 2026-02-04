@@ -127,9 +127,9 @@
 
 **Purpose**: Final validation and documentation
 
-- [ ] T033 [P] Verify quickstart.md instructions work (fresh clone test)
-- [ ] T034 [P] Verify all npm scripts work from root (dev, build, test)
-- [ ] T035 Update README.md with final project structure at /README.md
+- [x] T033 [P] Verify quickstart.md instructions work (fresh clone test)
+- [x] T034 [P] Verify all npm scripts work from root (dev, build, test)
+- [x] T035 Update README.md with final project structure at /README.md
 
 ---
 
