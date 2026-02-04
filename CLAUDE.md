@@ -185,3 +185,10 @@ flowchart LR
 - **API:** Headless, JSON-based
 - **Admin:** Via c123-server UI (not in this project)
 - **Frontend:** Mobile-first, rvp-design-system only
+
+## Active Technologies
+- TypeScript 5.x (Node.js 20 LTS) + Fastify, Kysely, better-sqlite3 (002-data-model)
+- SQLite (file-based, Repository Pattern) (002-data-model)
+
+## Recent Changes
+- 002-data-model: Added TypeScript 5.x (Node.js 20 LTS) + Fastify, Kysely, better-sqlite3
