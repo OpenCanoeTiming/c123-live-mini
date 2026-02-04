@@ -5,6 +5,14 @@
 **Status**: Draft
 **Input**: User description: "Analyze C123 protocol and design SQLite data model for live results display"
 
+## Clarifications
+
+### Session 2026-02-04
+
+- Q: OnCourse data storage strategy? → A: In-memory only (loss on restart acceptable, TCP stream restores within seconds)
+- Q: Event data retention policy? → A: Complete retention (max ~10 events/season, single-digit MB each; migrate to PostgreSQL if needed)
+- Q: Expected concurrent users? → A: 100-300 (SQLite sufficient, no caching layer needed)
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Live Results Page Data Display (Priority: P1)
@@ -115,14 +123,15 @@ Users can filter results by age category (e.g., U14, U16, Junior, Senior) and se
 - **SC-004**: Age category filtering returns correctly re-ranked results within 1 second for typical race size (100 competitors).
 - **SC-005**: OnCourse data structure supports real-time updates without full result recalculation.
 - **SC-006**: Data model documentation is complete with entity relationships, field descriptions, and XML-to-model mapping.
+- **SC-007**: System supports 100-300 concurrent users viewing live results without degradation.
 
 ## Assumptions
 
 - Time values are stored in hundredths of seconds as integers (matching XML format).
 - Gate penalties are stored as an array/JSON field matching the 25-position format from XML.
-- OnCourse is transient data that may be stored differently (in-memory or separate table) from persistent Results.
+- OnCourse is transient in-memory data only; loss on server restart is acceptable as TCP stream restores state within seconds.
 - Cross discipline support is secondary to Slalom - basic structure included but detailed X4/XS/XF heat progression may be simplified.
-- The system does not need to store full historical data - only current/recent event data relevant for live display.
+- Complete event data retention; expected ~10 events/season at single-digit MB each; SQLite sufficient, PostgreSQL migration path if growth exceeds expectations.
 
 ## Out of Scope
 
