@@ -159,18 +159,18 @@
 
 ### Multi-Run Query Methods
 
-- [ ] T058 [US3] Add getResultsWithBestRun method to ResultRepository in packages/server/src/db/repositories/ResultRepository.ts
-- [ ] T059 [US3] Add getBothRunsForParticipant method to ResultRepository
-- [ ] T060 [US3] Implement BR1/BR2 linking logic by ClassId pattern
+- [x] T058 [US3] Add getResultsWithBestRun method to ResultRepository in packages/server/src/db/repositories/ResultRepository.ts
+- [x] T059 [US3] Add getBothRunsForParticipant method to ResultRepository
+- [x] T060 [US3] Implement BR1/BR2 linking logic by ClassId pattern
 
 ### API Enhancement for US3
 
-- [ ] T061 [US3] Add includeAllRuns query param to GET /results/:raceId in packages/server/src/routes/results.ts
-- [ ] T062 [US3] Return betterRunNr and totalTotal in results response
+- [x] T061 [US3] Add includeAllRuns query param to GET /results/:raceId in packages/server/src/routes/results.ts
+- [x] T062 [US3] Return betterRunNr and totalTotal in results response
 
 ### Integration
 
-- [ ] T063 [US3] Verify with sample data: BR1 85.50s, BR2 82.30s returns betterRunNr=2
+- [x] T063 [US3] Verify with sample data: BR1 85.50s, BR2 82.30s returns betterRunNr=2
 
 **Checkpoint**: US3 complete - multi-run results with best run identification working
 
