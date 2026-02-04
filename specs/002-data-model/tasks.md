@@ -77,44 +77,44 @@
 
 ### Repositories for US1
 
-- [ ] T026 [P] [US1] Create RaceRepository in packages/server/src/db/repositories/RaceRepository.ts
-- [ ] T027 [P] [US1] Create ResultRepository in packages/server/src/db/repositories/ResultRepository.ts
-- [ ] T028 [P] [US1] Create CourseRepository in packages/server/src/db/repositories/CourseRepository.ts
+- [x] T026 [P] [US1] Create RaceRepository in packages/server/src/db/repositories/RaceRepository.ts
+- [x] T027 [P] [US1] Create ResultRepository in packages/server/src/db/repositories/ResultRepository.ts
+- [x] T028 [P] [US1] Create CourseRepository in packages/server/src/db/repositories/CourseRepository.ts
 
 ### XML Parser
 
-- [ ] T029 [US1] Create XML parser types in packages/server/src/services/xml/types.ts
-- [ ] T030 [US1] Implement XML parser for Events section in packages/server/src/services/xml/parseEvents.ts
-- [ ] T031 [P] [US1] Implement XML parser for Classes section in packages/server/src/services/xml/parseClasses.ts
-- [ ] T032 [P] [US1] Implement XML parser for Participants section in packages/server/src/services/xml/parseParticipants.ts
-- [ ] T033 [P] [US1] Implement XML parser for Schedule section in packages/server/src/services/xml/parseSchedule.ts
-- [ ] T034 [P] [US1] Implement XML parser for Results section in packages/server/src/services/xml/parseResults.ts
-- [ ] T035 [P] [US1] Implement XML parser for CourseData section in packages/server/src/services/xml/parseCourseData.ts
-- [ ] T036 [US1] Create main XML parser orchestrator in packages/server/src/services/xml/index.ts
+- [x] T029 [US1] Create XML parser types in packages/server/src/services/xml/types.ts
+- [x] T030 [US1] Implement XML parser for Events section in packages/server/src/services/xml/parseEvents.ts
+- [x] T031 [P] [US1] Implement XML parser for Classes section in packages/server/src/services/xml/parseClasses.ts
+- [x] T032 [P] [US1] Implement XML parser for Participants section in packages/server/src/services/xml/parseParticipants.ts
+- [x] T033 [P] [US1] Implement XML parser for Schedule section in packages/server/src/services/xml/parseSchedule.ts
+- [x] T034 [P] [US1] Implement XML parser for Results section in packages/server/src/services/xml/parseResults.ts
+- [x] T035 [P] [US1] Implement XML parser for CourseData section in packages/server/src/services/xml/parseCourseData.ts
+- [x] T036 [US1] Create main XML parser orchestrator in packages/server/src/services/xml/index.ts
 
 ### Ingest Service
 
-- [ ] T037 [US1] Create IngestService for XML import in packages/server/src/services/IngestService.ts
-- [ ] T038 [US1] Implement upsert logic for all entities in IngestService
+- [x] T037 [US1] Create IngestService for XML import in packages/server/src/services/IngestService.ts
+- [x] T038 [US1] Implement upsert logic for all entities in IngestService
 
 ### API Routes for US1
 
-- [ ] T039 [US1] Create GET /api/v1/events route in packages/server/src/routes/events.ts
-- [ ] T040 [US1] Create GET /api/v1/events/:eventId route in packages/server/src/routes/events.ts
-- [ ] T041 [US1] Create GET /api/v1/events/:eventId/results/:raceId route in packages/server/src/routes/results.ts
-- [ ] T042 [US1] Create GET /api/v1/events/:eventId/startlist/:raceId route in packages/server/src/routes/startlist.ts
-- [ ] T043 [US1] Create POST /api/v1/ingest/xml route in packages/server/src/routes/ingest.ts
+- [x] T039 [US1] Create GET /api/v1/events route in packages/server/src/routes/events.ts
+- [x] T040 [US1] Create GET /api/v1/events/:eventId route in packages/server/src/routes/events.ts
+- [x] T041 [US1] Create GET /api/v1/events/:eventId/results/:raceId route in packages/server/src/routes/results.ts
+- [x] T042 [US1] Create GET /api/v1/events/:eventId/startlist/:raceId route in packages/server/src/routes/startlist.ts
+- [x] T043 [US1] Create POST /api/v1/ingest/xml route in packages/server/src/routes/ingest.ts
 
 ### Admin API for US1
 
-- [ ] T044 [US1] Create POST /api/v1/admin/events route (create event with API key) in packages/server/src/routes/admin.ts
-- [ ] T045 [US1] Create API key generation utility in packages/server/src/utils/apiKey.ts
-- [ ] T046 [US1] Create API key auth middleware in packages/server/src/middleware/apiKeyAuth.ts
+- [x] T044 [US1] Create POST /api/v1/admin/events route (create event with API key) in packages/server/src/routes/admin.ts
+- [x] T045 [US1] Create API key generation utility in packages/server/src/utils/apiKey.ts
+- [x] T046 [US1] Create API key auth middleware in packages/server/src/middleware/apiKeyAuth.ts
 
 ### Integration
 
-- [ ] T047 [US1] Register all routes in Fastify app in packages/server/src/app.ts
-- [ ] T048 [US1] Verify end-to-end: load sample XML, query results via REST API
+- [x] T047 [US1] Register all routes in Fastify app in packages/server/src/app.ts
+- [x] T048 [US1] Verify end-to-end: load sample XML, query results via REST API
 
 **Checkpoint**: US1 complete - full results display from XML data working
 
