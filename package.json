@@ -9,7 +9,7 @@
   ],
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm run dev -w @c123-live-mini/server\" \"npm run dev -w @c123-live-mini/client\"",
-    "build": "echo 'build script will be added after packages are created'",
+    "build": "npm run build -w @c123-live-mini/shared && npm run build -w @c123-live-mini/server && npm run build -w @c123-live-mini/client",
     "test": "echo 'test script will be added after packages are created'"
   },
   "devDependencies": {

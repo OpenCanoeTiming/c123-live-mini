@@ -90,11 +90,11 @@
 
 ### Implementation for User Story 2
 
-- [ ] T021 [P] [US2] Add build script to server package.json
-- [ ] T022 [P] [US2] Add build script to client package.json (Vite build)
-- [ ] T023 [P] [US2] Add build script to shared package.json
-- [ ] T024 [US2] Add root build script that builds all packages in order at /package.json
-- [ ] T025 [US2] Verify build output artifacts exist
+- [x] T021 [P] [US2] Add build script to server package.json
+- [x] T022 [P] [US2] Add build script to client package.json (Vite build)
+- [x] T023 [P] [US2] Add build script to shared package.json
+- [x] T024 [US2] Add root build script that builds all packages in order at /package.json
+- [x] T025 [US2] Verify build output artifacts exist
 
 **Checkpoint**: User Story 2 complete - production builds working
 
