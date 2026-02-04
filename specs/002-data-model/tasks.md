@@ -34,36 +34,36 @@
 
 ### Migrations
 
-- [ ] T005 Create migration 001_create_events.ts in packages/server/src/db/migrations/
-- [ ] T006 Create migration 002_create_classes.ts (classes + categories tables) in packages/server/src/db/migrations/
-- [ ] T007 Create migration 003_create_participants.ts in packages/server/src/db/migrations/
-- [ ] T008 Create migration 004_create_races.ts in packages/server/src/db/migrations/
-- [ ] T009 Create migration 005_create_results.ts in packages/server/src/db/migrations/
-- [ ] T010 Create migration 006_create_courses.ts in packages/server/src/db/migrations/
-- [ ] T011 Create migration 007_create_indexes.ts in packages/server/src/db/migrations/
+- [x] T005 Create migration 001_create_events.ts in packages/server/src/db/migrations/
+- [x] T006 Create migration 002_create_classes.ts (classes + categories tables) in packages/server/src/db/migrations/
+- [x] T007 Create migration 003_create_participants.ts in packages/server/src/db/migrations/
+- [x] T008 Create migration 004_create_races.ts in packages/server/src/db/migrations/
+- [x] T009 Create migration 005_create_results.ts in packages/server/src/db/migrations/
+- [x] T010 Create migration 006_create_courses.ts in packages/server/src/db/migrations/
+- [x] T011 Create migration 007_create_indexes.ts in packages/server/src/db/migrations/
 
 ### Shared Types
 
-- [ ] T012 [P] Create Event type in packages/shared/src/types/event.ts
-- [ ] T013 [P] Create Class and Category types in packages/shared/src/types/class.ts
-- [ ] T014 [P] Create Participant type in packages/shared/src/types/participant.ts
-- [ ] T015 [P] Create Race type in packages/shared/src/types/race.ts
-- [ ] T016 [P] Create Result type in packages/shared/src/types/result.ts
-- [ ] T017 [P] Create Course type in packages/shared/src/types/course.ts
-- [ ] T018 Export all types from packages/shared/src/types/index.ts
+- [x] T012 [P] Create Event type in packages/shared/src/types/event.ts
+- [x] T013 [P] Create Class and Category types in packages/shared/src/types/class.ts
+- [x] T014 [P] Create Participant type in packages/shared/src/types/participant.ts
+- [x] T015 [P] Create Race type in packages/shared/src/types/race.ts
+- [x] T016 [P] Create Result type in packages/shared/src/types/result.ts
+- [x] T017 [P] Create Course type in packages/shared/src/types/course.ts
+- [x] T018 Export all types from packages/shared/src/types/index.ts
 
 ### Base Repositories
 
-- [ ] T019 Create BaseRepository abstract class in packages/server/src/db/repositories/BaseRepository.ts
-- [ ] T020 [P] Create EventRepository in packages/server/src/db/repositories/EventRepository.ts
-- [ ] T021 [P] Create ClassRepository in packages/server/src/db/repositories/ClassRepository.ts
-- [ ] T022 [P] Create ParticipantRepository in packages/server/src/db/repositories/ParticipantRepository.ts
+- [x] T019 Create BaseRepository abstract class in packages/server/src/db/repositories/BaseRepository.ts
+- [x] T020 [P] Create EventRepository in packages/server/src/db/repositories/EventRepository.ts
+- [x] T021 [P] Create ClassRepository in packages/server/src/db/repositories/ClassRepository.ts
+- [x] T022 [P] Create ParticipantRepository in packages/server/src/db/repositories/ParticipantRepository.ts
 
 ### Migration Runner
 
-- [ ] T023 Create migration runner script in packages/server/src/db/migrate.ts
-- [ ] T024 Add "migrate" script to packages/server/package.json
-- [ ] T025 Run migrations and verify schema with sample query
+- [x] T023 Create migration runner script in packages/server/src/db/migrate.ts
+- [x] T024 Add "migrate" script to packages/server/package.json
+- [x] T025 Run migrations and verify schema with sample query
 
 **Checkpoint**: Foundation ready - database schema complete, base types and repositories available
 

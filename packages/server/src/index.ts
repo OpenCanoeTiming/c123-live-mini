@@ -10,8 +10,9 @@ fastify.get('/', async () => {
 });
 
 fastify.get('/api/events', async () => {
-  const events: Event[] = [
-    { id: '1', name: 'Sample Event', status: 'draft' },
+  // Sample response using new Event type
+  const events: Partial<Event>[] = [
+    { id: 1, eventId: 'SAMPLE.2024010100', mainTitle: 'Sample Event', status: 'draft' },
   ];
   return events;
 });
