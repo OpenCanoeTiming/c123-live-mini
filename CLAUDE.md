@@ -21,50 +21,118 @@ https://github.com/jakubbican/gh-sdd-ai-workflow
 
 | Type | Label | Purpose |
 |------|-------|---------|
-| Feature | `type/feature` | New functionality, triggers Spec-Kit |
-| Task | `type/task` | Implementation unit from spec |
+| Feature | `type/feature` | Main work unit, tracked in GitHub |
+| Task | `type/task` | Optional - tasks live in `tasks.md` |
 | Bug | `type/bug` | Bug fix, no spec needed |
-| Feedback | `type/feedback` | Feedback on existing feature |
+| Feedback | `type/feedback` | Routes to spec update or bug |
 
 ### Feature Workflow
 
-1. **Create Feature issue** on GitHub (label: `type/feature`, `spec/draft`)
-2. **Read issue and run Spec-Kit:**
-   - `/speckit.specify` with issue content
-   - `/speckit.clarify` - answer questions
-   - `/speckit.plan` - technical plan
-   - `/speckit.tasks` - generate tasks
-3. **Create task issues:** `/speckit.taskstoissues`
-4. **Change label** to `spec/approved`
-5. **Implement tasks**, commit with `Closes #N`
+1. **Create Feature issue** (label: `type/feature`, `spec/draft`)
+2. **Create branch** and **link to issue**
+3. **Run Spec-Kit phases** - update issue after each:
+   - `/speckit.specify` → update issue
+   - `/speckit.clarify` → update issue
+   - `/speckit.plan` → update issue
+   - `/speckit.tasks` → update issue
+4. **Implement per phase** - commit + push + update issue after each
+5. **Create PR** with `Closes #N`
 
 ### Branching Strategy
 
 | Issue Type | Branch Pattern | Example |
 |------------|----------------|---------|
-| Feature | `feature/{N}-{slug}` | `feature/42-ingest-api` |
+| Feature | `feature/{N}-{slug}` | `feature/2-data-model` |
 | Bug | `fix/{N}-{slug}` | `fix/99-ws-reconnect` |
-| Task | (no branch) | Commits on feature branch |
 
-### Daily Work
+---
 
-```bash
-gh issue list -l "status/wip"              # What's in progress
-gh issue edit N --add-label "status/wip"   # Claim task
-# ... work ...
-git commit -m "feat: X\n\nImplements #N"   # Task commit
-gh pr create --body "Closes #Feature"      # Feature PR
+## Recommended Prompts
+
+### Starting a Feature
+
+```
+Read Feature issue #N and create branch feature/N-{slug}.
+Add comment to issue with branch link.
 ```
 
-### Spec-Kit Commands
+### Spec Phases
 
-| Command | Function |
-|---------|----------|
-| `/speckit.specify` | Create spec from description |
-| `/speckit.clarify` | Refine spec (max 5 questions) |
-| `/speckit.plan` | Technical implementation plan |
-| `/speckit.tasks` | Generate task list |
-| `/speckit.taskstoissues` | Create GitHub issues from tasks |
+```
+Read Feature issue #N and run /speckit.specify with its content.
+After completion, update the issue with link to spec.md and status.
+```
+
+```
+/speckit.clarify
+After completion, update Feature issue #N with status.
+```
+
+```
+/speckit.plan
+After completion, update Feature issue #N with links to plan.md and status.
+```
+
+```
+/speckit.tasks
+After completion, update Feature issue #N with phase breakdown from tasks.md.
+```
+
+### Implementation (ITERATIVE - per phase)
+
+```
+/speckit.implement next incomplete phase from Feature #N.
+After completion: commit all changes, push, update Feature issue with progress.
+```
+
+### Feature Completion
+
+```
+Create PR for Feature #N. Include summary of all phases and 'Closes #N' in body.
+```
+
+---
+
+## Feature Issue Updates (REQUIRED)
+
+**After EVERY Spec-Kit command or implementation phase, update the Feature issue.**
+
+### After Spec Phase
+
+```markdown
+## Spec Phase Complete ✓
+
+**Branch:** [feature/N-name](../../tree/feature/N-name)
+
+### Created
+- [spec.md](../../blob/feature/N-name/specs/00N-name/spec.md)
+
+### Status
+- [x] /speckit.specify
+- [ ] /speckit.clarify
+- [ ] /speckit.plan
+- [ ] /speckit.tasks
+- [ ] Implementation
+
+### Next
+Run `/speckit.clarify` to refine the spec.
+```
+
+### After Implementation Phase
+
+```markdown
+## Phase X Complete ✓
+
+### Tasks Implemented
+- [x] T001-T005 (Setup)
+- [x] T006-T008 (Foundation)
+
+### Commits
+- `abc123` feat: add monorepo structure
+
+### Next
+Phase 3: User Story 1 (T009-T020)
+```
 
 ---
 
@@ -108,7 +176,7 @@ flowchart LR
 | **rvp-design-system** | Public-facing CSK apps | live-mini-page (this project) |
 | **timing-design-system** | Admin/internal tools | c123-server Admin UI |
 
-**Important:** Frontend must strictly use rvp-design-system. No inline styles or local overrides. If a component is missing, use unstyled and report the requirement.
+**Important:** Frontend must strictly use rvp-design-system. No inline styles or local overrides.
 
 ### Conventions
 
@@ -117,10 +185,3 @@ flowchart LR
 - **API:** Headless, JSON-based
 - **Admin:** Via c123-server UI (not in this project)
 - **Frontend:** Mobile-first, rvp-design-system only
-
-## Active Technologies
-- TypeScript 5.x, Node.js 20.x LTS + npm workspaces (built-in), TypeScript, tsx (dev runner) (001-monorepo-setup)
-- N/A (no database in this feature) (001-monorepo-setup)
-
-## Recent Changes
-- 001-monorepo-setup: Added TypeScript 5.x, Node.js 20.x LTS + npm workspaces (built-in), TypeScript, tsx (dev runner)
