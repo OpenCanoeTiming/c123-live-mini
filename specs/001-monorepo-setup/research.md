@@ -90,10 +90,10 @@ Use `tsconfig.base.json` at root with package-specific `tsconfig.json` extending
 ## 3. Cross-Package Import Strategy
 
 ### Decision
-Use npm workspace protocol (`workspace:*`) for internal dependencies. Shared package exports from `src/index.ts`, consumers import via package name.
+Use standard version specifier (`*`) for internal workspace dependencies. Shared package exports from `src/index.ts`, consumers import via package name.
 
 ### Rationale
-- npm resolves `workspace:*` to local packages automatically
+- npm workspaces resolves `*` version to local packages automatically (note: `workspace:*` protocol is pnpm-specific)
 - No path aliases needed in tsconfig for runtime
 - TypeScript resolves types through package.json `types` field
 - Clean import syntax: `import { Type } from '@c123-live-mini/shared'`
@@ -121,7 +121,7 @@ Use npm workspace protocol (`workspace:*`) for internal dependencies. Shared pac
 ```json
 {
   "dependencies": {
-    "@c123-live-mini/shared": "workspace:*"
+    "@c123-live-mini/shared": "*"
   }
 }
 ```
@@ -217,7 +217,7 @@ Use `.nvmrc` file with `20` (latest LTS major) and `engines` field in root packa
 |------|----------|
 | Monorepo Tool | npm workspaces |
 | TypeScript Strategy | Base config + extends, no project references |
-| Cross-Package Imports | workspace:* protocol |
+| Cross-Package Imports | * version (npm workspaces) |
 | Package Naming | @c123-live-mini/{server,client,shared} |
 | Dev Runner | concurrently |
 | Test Runner | Vitest |

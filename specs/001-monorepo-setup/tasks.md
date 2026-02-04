@@ -58,22 +58,22 @@
 ### Implementation for User Story 1
 
 #### Server Package
-- [ ] T009 [P] [US1] Create server package.json with dependencies at /packages/server/package.json
-- [ ] T010 [P] [US1] Create server tsconfig.json extending base at /packages/server/tsconfig.json
-- [ ] T011 [US1] Create server entry point with Fastify placeholder at /packages/server/src/index.ts
-- [ ] T012 [US1] Add shared package dependency and verify import at /packages/server/src/index.ts
+- [x] T009 [P] [US1] Create server package.json with dependencies at /packages/server/package.json
+- [x] T010 [P] [US1] Create server tsconfig.json extending base at /packages/server/tsconfig.json
+- [x] T011 [US1] Create server entry point with Fastify placeholder at /packages/server/src/index.ts
+- [x] T012 [US1] Add shared package dependency and verify import at /packages/server/src/index.ts
 
 #### Client Package
-- [ ] T013 [P] [US1] Create client package.json with Vite/React deps at /packages/client/package.json
-- [ ] T014 [P] [US1] Create client tsconfig.json extending base at /packages/client/tsconfig.json
-- [ ] T015 [P] [US1] Create vite.config.ts at /packages/client/vite.config.ts
-- [ ] T016 [P] [US1] Create index.html at /packages/client/index.html
-- [ ] T017 [US1] Create client entry point (main.tsx) at /packages/client/src/main.tsx
-- [ ] T018 [US1] Add shared package dependency and verify import at /packages/client/src/main.tsx
+- [x] T013 [P] [US1] Create client package.json with Vite/React deps at /packages/client/package.json
+- [x] T014 [P] [US1] Create client tsconfig.json extending base at /packages/client/tsconfig.json
+- [x] T015 [P] [US1] Create vite.config.ts at /packages/client/vite.config.ts
+- [x] T016 [P] [US1] Create index.html at /packages/client/index.html
+- [x] T017 [US1] Create client entry point (main.tsx) at /packages/client/src/main.tsx
+- [x] T018 [US1] Add shared package dependency and verify import at /packages/client/src/main.tsx
 
 #### Root Dev Script
-- [ ] T019 [US1] Install concurrently and add dev script to root package.json
-- [ ] T020 [US1] Verify `npm run dev` starts both server and client concurrently
+- [x] T019 [US1] Install concurrently and add dev script to root package.json
+- [x] T020 [US1] Verify `npm run dev` starts both server and client concurrently
 
 **Checkpoint**: User Story 1 complete - developer can install deps and run dev servers
 
