@@ -15,7 +15,7 @@ flowchart LR
 |-----------|----------|------|
 | **Canoe123.exe** | Timing booth | Original timing software (unchanged) |
 | **c123-server** | Local network | Data bridge + Admin UI for live-mini |
-| **c123-live-mini-server** | Cloud (Railway/Fly.io) | Headless API, data persistence |
+| **c123-live-mini-server** | Cloud (Railway) | Headless API, data persistence |
 | **c123-live-mini-page** | User's browser | Public SPA for live results |
 
 ### Key Design Decisions

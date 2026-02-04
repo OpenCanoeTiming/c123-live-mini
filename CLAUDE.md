@@ -88,7 +88,7 @@ flowchart LR
 | Database | SQLite + Kysely (Repository Pattern) |
 | Frontend | React + Vite |
 | Design System | rvp-design-system (public) |
-| Deployment | Docker (Railway/Fly.io) |
+| Deployment | Railway (planned) |
 
 ### Related Projects
 

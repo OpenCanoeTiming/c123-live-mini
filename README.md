@@ -22,7 +22,7 @@ flowchart LR
 | Database | SQLite + Kysely |
 | Frontend | React + Vite |
 | Design System | [rvp-design-system](https://github.com/CzechCanoe/rvp-design-system/) |
-| Deployment | Docker (Railway/Fly.io) |
+| Deployment | Railway (planned) |
 
 ## Project Structure
 

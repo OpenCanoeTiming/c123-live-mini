@@ -30,7 +30,7 @@ Projekt je koncipován jako moderní, ale **štíhlá** webová aplikace s důra
   - *Nástroj:* **Kysely** (Type-safe SQL Query Builder). Poskytuje kontrolu nad SQL bez váhy velkých ORM.
   - *Úložiště:* **SQLite**. Jednoduchá správa, uloženo v souboru, ideální pro "mini" scénáře a snadný deployment.
 - **Frontend:** React + Vite. Implementace RVP Design Systemu.
-- **Deployment:** Docker kontejner. Optimalizováno pro PaaS platformy (např. Railway nebo Fly.io).
+- **Deployment:** Railway (planned).
 
 ## Architektura a Realizace
 
