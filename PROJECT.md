@@ -111,8 +111,11 @@ Projekt je koncipován jako moderní, ale **štíhlá** webová aplikace s důra
 - **Infrastruktura pro ladění:** Strategie merge bude konfigurovatelná pro pozdější optimalizaci na základě testování
 
 ### Přenosy do klienta
-- WS: push pouze změn (diff)
-- REST: možnost dotáhnout kompletní stav na request
+- **REST:** kompletní stav (initial load, fallback, SEO)
+- **WebSocket (hybrid):** server rozhoduje co poslat
+  - `diff` - inkrementální změny (běžné live updates)
+  - `full` - kompletní stav (reconnect, velké změny, restart)
+  - `refresh` - signál klientovi k fetch přes REST
 
 ## Širší kontext
 V budoucnu bude tato služba součástí většího řešení registračního portálu. Hlavní API by mělo být navrženo s ohledem na tuto integraci.

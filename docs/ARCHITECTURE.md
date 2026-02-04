@@ -51,7 +51,7 @@ flowchart TB
     end
 
     MERGE --> DB[(SQLite DB)]
-    DB --> WS[WebSocket push<br/>diff only]
+    DB --> WS[WebSocket<br/>diff or full]
     DB --> REST[REST API<br/>full state]
     WS --> CLIENTS[Clients]
     REST --> CLIENTS
@@ -63,6 +63,43 @@ flowchart TB
 3. OnCourse data comes exclusively from TCP
 4. XML should be sent frequently (after each state change, not just category switches)
 5. Strategy is configurable for optimization based on real-world testing
+
+### Client Data Distribution
+
+**REST API:**
+- Initial page load (full state)
+- Fallback when WebSocket unavailable
+- SEO/sharing (static snapshot)
+
+**WebSocket (hybrid approach):**
+
+Server decides what to send based on situation:
+
+| Message Type | When Used | Payload |
+|--------------|-----------|---------|
+| `diff` | Incremental updates (single result, OnCourse change) | Changed data only |
+| `full` | After reconnect, large changes (new XML import), server restart | Complete state |
+| `refresh` | Signal to client to discard cache and fetch via REST | Empty |
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Server
+
+    C->>S: WS connect
+    S-->>C: { type: "full", data: {...} }
+
+    loop Live Updates
+        S-->>C: { type: "diff", data: {...} }
+    end
+
+    Note over C,S: Large change (XML import)
+    S-->>C: { type: "full", data: {...} }
+
+    Note over C,S: Connection lost & restored
+    C->>S: WS reconnect
+    S-->>C: { type: "full", data: {...} }
+```
 
 ---
 
