@@ -6,6 +6,7 @@ import { registerResultsRoutes } from './routes/results.js';
 import { registerStartlistRoutes } from './routes/startlist.js';
 import { registerIngestRoutes } from './routes/ingest.js';
 import { registerAdminRoutes } from './routes/admin.js';
+import { registerOnCourseRoutes } from './routes/oncourse.js';
 
 /**
  * App configuration options
@@ -32,6 +33,7 @@ export function createApp(options: AppOptions): FastifyInstance {
   registerStartlistRoutes(app, db);
   registerIngestRoutes(app, db);
   registerAdminRoutes(app, db);
+  registerOnCourseRoutes(app, db);
 
   // Global error handler
   app.setErrorHandler((error: Error, request, reply) => {

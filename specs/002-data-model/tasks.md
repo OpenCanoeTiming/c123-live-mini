@@ -128,24 +128,24 @@
 
 ### OnCourse Types
 
-- [ ] T049 [P] [US2] Create OnCourseEntry interface in packages/shared/src/types/oncourse.ts
-- [ ] T050 [US2] Export OnCourseEntry from packages/shared/src/types/index.ts
+- [x] T049 [P] [US2] Create OnCourseEntry interface in packages/shared/src/types/oncourse.ts
+- [x] T050 [US2] Export OnCourseEntry from packages/shared/src/types/index.ts
 
 ### OnCourse Service (In-Memory)
 
-- [ ] T051 [US2] Create OnCourseStore (Map-based) in packages/server/src/services/OnCourseStore.ts
-- [ ] T052 [US2] Implement add/update/remove/getAll methods in OnCourseStore
-- [ ] T053 [US2] Implement auto-cleanup for finished competitors (based on dtFinish)
+- [x] T051 [US2] Create OnCourseStore (Map-based) in packages/server/src/services/OnCourseStore.ts
+- [x] T052 [US2] Implement add/update/remove/getAll methods in OnCourseStore
+- [x] T053 [US2] Implement auto-cleanup for finished competitors (based on dtFinish)
 
 ### API Routes for US2
 
-- [ ] T054 [US2] Create GET /api/v1/events/:eventId/oncourse route in packages/server/src/routes/oncourse.ts
-- [ ] T055 [US2] Create POST /api/v1/ingest/oncourse route in packages/server/src/routes/ingest.ts
-- [ ] T056 [US2] Register oncourse routes in app.ts
+- [x] T054 [US2] Create GET /api/v1/events/:eventId/oncourse route in packages/server/src/routes/oncourse.ts
+- [x] T055 [US2] Create POST /api/v1/ingest/oncourse route in packages/server/src/routes/ingest.ts
+- [x] T056 [US2] Register oncourse routes in app.ts
 
 ### Integration
 
-- [ ] T057 [US2] Verify end-to-end: POST oncourse data, GET returns active competitors
+- [x] T057 [US2] Verify end-to-end: POST oncourse data, GET returns active competitors
 
 **Checkpoint**: US2 complete - real-time OnCourse tracking working
 

@@ -6,6 +6,8 @@ import {
   type AuthenticatedRequest,
 } from '../middleware/apiKeyAuth.js';
 import { IngestService, type IngestResult } from '../services/IngestService.js';
+import { getOnCourseStore } from '../services/OnCourseStore.js';
+import type { OnCourseInput } from '@c123-live-mini/shared';
 
 /**
  * XML ingest request body
@@ -19,6 +21,20 @@ interface IngestXmlBody {
  */
 interface IngestXmlResponse {
   imported: IngestResult['imported'];
+}
+
+/**
+ * OnCourse ingest request body
+ */
+interface IngestOnCourseBody {
+  oncourse: OnCourseInput[];
+}
+
+/**
+ * OnCourse ingest response
+ */
+interface IngestOnCourseResponse {
+  active: number;
 }
 
 /**
@@ -75,6 +91,60 @@ export function registerIngestRoutes(
 
         throw error;
       }
+    }
+  );
+
+  /**
+   * POST /api/v1/ingest/oncourse
+   * Update OnCourse data (from TCP stream)
+   */
+  app.post<{
+    Body: IngestOnCourseBody;
+    Reply: IngestOnCourseResponse;
+  }>(
+    '/api/v1/ingest/oncourse',
+    {
+      preHandler: apiKeyAuth,
+    },
+    async (request, reply) => {
+      const { oncourse } = request.body;
+      const authRequest = request as AuthenticatedRequest;
+
+      if (!oncourse || !Array.isArray(oncourse)) {
+        reply.code(400).send({
+          error: 'Invalid request',
+          message: 'Missing required field: oncourse (array)',
+        } as unknown as IngestOnCourseResponse);
+        return;
+      }
+
+      const eventId = authRequest.event?.eventId;
+      if (!eventId) {
+        reply.code(401).send({
+          error: 'Unauthorized',
+          message: 'Event not found for API key',
+        } as unknown as IngestOnCourseResponse);
+        return;
+      }
+
+      const onCourseStore = getOnCourseStore();
+
+      // Process each OnCourse entry
+      for (const entry of oncourse) {
+        if (!entry.participantId || !entry.raceId || entry.bib === undefined) {
+          continue; // Skip invalid entries
+        }
+
+        onCourseStore.add(eventId, entry);
+      }
+
+      // Cleanup finished competitors
+      onCourseStore.cleanupFinished(eventId);
+
+      // Return count of active competitors
+      const active = onCourseStore.getActiveCount(eventId);
+
+      return { active };
     }
   );
 }

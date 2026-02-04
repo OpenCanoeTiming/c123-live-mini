@@ -35,3 +35,6 @@ export { formatTime, formatPenalty } from './result.js';
 // Course types
 export type { Course, CourseCreate } from './course.js';
 export { parseGateConfig } from './course.js';
+
+// OnCourse types (real-time tracking, in-memory only)
+export type { OnCourseEntry, OnCourseInput } from './oncourse.js';
