@@ -19,10 +19,10 @@
 
 **Purpose**: Database infrastructure and shared types foundation
 
-- [ ] T001 Install Kysely and better-sqlite3 dependencies in packages/server/package.json
-- [ ] T002 Create database connection module in packages/server/src/db/database.ts
-- [ ] T003 [P] Create Kysely Database type interface in packages/server/src/db/schema.ts
-- [ ] T004 [P] Setup migrations directory structure in packages/server/src/db/migrations/
+- [x] T001 Install Kysely and better-sqlite3 dependencies in packages/server/package.json
+- [x] T002 Create database connection module in packages/server/src/db/database.ts
+- [x] T003 [P] Create Kysely Database type interface in packages/server/src/db/schema.ts
+- [x] T004 [P] Setup migrations directory structure in packages/server/src/db/migrations/
 
 ---
 
