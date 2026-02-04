@@ -111,13 +111,13 @@
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] Add vitest as root devDependency at /package.json
-- [ ] T027 [P] [US3] Create vitest.workspace.ts at /vitest.workspace.ts
-- [ ] T028 [P] [US3] Add sample test to shared package at /packages/shared/src/index.test.ts
-- [ ] T029 [P] [US3] Add sample test to server package at /packages/server/src/index.test.ts
-- [ ] T030 [P] [US3] Add sample test to client package at /packages/client/src/App.test.tsx
-- [ ] T031 [US3] Add test scripts to each package.json
-- [ ] T032 [US3] Add root test script and verify all tests run at /package.json
+- [x] T026 [US3] Add vitest as root devDependency at /package.json
+- [x] T027 [P] [US3] Create vitest.workspace.ts at /vitest.workspace.ts
+- [x] T028 [P] [US3] Add sample test to shared package at /packages/shared/src/index.test.ts
+- [x] T029 [P] [US3] Add sample test to server package at /packages/server/src/index.test.ts
+- [x] T030 [P] [US3] Add sample test to client package at /packages/client/src/App.test.tsx
+- [x] T031 [US3] Add test scripts to each package.json
+- [x] T032 [US3] Add root test script and verify all tests run at /package.json
 
 **Checkpoint**: User Story 3 complete - test infrastructure working
 
