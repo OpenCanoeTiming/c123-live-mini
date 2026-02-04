@@ -70,6 +70,8 @@ gh pr create --body "Closes #Feature"      # Feature PR
 
 ## Project Context
 
+> **Full architecture details:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
 ### Architecture
 
 ```mermaid
