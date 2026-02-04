@@ -2,6 +2,16 @@
 
 Minimalistic live results solution for C123 timing ecosystem.
 
+## Required Context
+
+**Before running any Spec-Kit command, always read:**
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design, data flows, merge strategy, authentication
+
+This ensures specs are consistent with architectural decisions.
+
+---
+
 ## SDD Workflow
 
 This project uses Spec-Driven Development. Full methodology:
@@ -62,9 +72,11 @@ gh pr create --body "Closes #Feature"      # Feature PR
 
 ### Architecture
 
-```
-Canoe123.exe → c123-server → c123-live-mini-server → c123-live-mini-page
-   (TCP/XML)     (local)         (cloud/API)           (SPA/React)
+```mermaid
+flowchart LR
+    C123[Canoe123.exe<br/>TCP/XML] --> SERVER[c123-server<br/>local]
+    SERVER --> MINI[c123-live-mini-server<br/>cloud/API]
+    MINI --> PAGE[c123-live-mini-page<br/>SPA/React]
 ```
 
 ### Tech Stack
@@ -80,9 +92,21 @@ Canoe123.exe → c123-server → c123-live-mini-server → c123-live-mini-page
 
 ### Related Projects
 
-- `../c123-protocol-docs` - C123 protocol documentation (XML, TCP)
-- `../c123-server` - Local timing server, admin client
-- `rvp-design-system` - Design system for public apps
+| Project | Purpose | Link |
+|---------|---------|------|
+| c123-protocol-docs | C123 protocol (XML, TCP) | `../c123-protocol-docs` |
+| c123-server | Local timing server + Admin UI | `../c123-server` |
+| rvp-design-system | Public apps design system | [GitHub](https://github.com/CzechCanoe/rvp-design-system/) |
+| timing-design-system | Internal timing tools DS | [GitHub](https://github.com/OpenCanoeTiming/timing-design-system/) |
+
+### Design Systems
+
+| Design System | Purpose | Used In |
+|--------------|---------|---------|
+| **rvp-design-system** | Public-facing CSK apps | live-mini-page (this project) |
+| **timing-design-system** | Admin/internal tools | c123-server Admin UI |
+
+**Important:** Frontend must strictly use rvp-design-system. No inline styles or local overrides. If a component is missing, use unstyled and report the requirement.
 
 ### Conventions
 
@@ -90,3 +114,4 @@ Canoe123.exe → c123-server → c123-live-mini-server → c123-live-mini-page
 - **Communication:** Czech or English
 - **API:** Headless, JSON-based
 - **Admin:** Via c123-server UI (not in this project)
+- **Frontend:** Mobile-first, rvp-design-system only
