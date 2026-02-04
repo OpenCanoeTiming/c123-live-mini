@@ -117,3 +117,10 @@ flowchart LR
 - **API:** Headless, JSON-based
 - **Admin:** Via c123-server UI (not in this project)
 - **Frontend:** Mobile-first, rvp-design-system only
+
+## Active Technologies
+- TypeScript 5.x, Node.js 20.x LTS + npm workspaces (built-in), TypeScript, tsx (dev runner) (001-monorepo-setup)
+- N/A (no database in this feature) (001-monorepo-setup)
+
+## Recent Changes
+- 001-monorepo-setup: Added TypeScript 5.x, Node.js 20.x LTS + npm workspaces (built-in), TypeScript, tsx (dev runner)
