@@ -26,17 +26,27 @@ https://github.com/jakubbican/gh-sdd-ai-workflow
 | Bug | `type/bug` | Bug fix, no spec needed |
 | Feedback | `type/feedback` | Routes to spec update or bug |
 
+### Mandatory Label Transitions
+
+| Trigger | Command |
+|---------|---------|
+| After `/speckit.tasks` | `gh issue edit N --remove-label "spec/draft" --add-label "spec/approved"` |
+| Start implementation | `gh issue edit N --add-label "status/wip"` |
+| Before PR | `gh issue edit N --remove-label "status/wip"` |
+
 ### Feature Workflow
 
 1. **Create Feature issue** (label: `type/feature`, `spec/draft`)
-2. **Create branch** and **link to issue**
+2. **Create branch** `feature/{N}-{slug}` and **link to issue**
 3. **Run Spec-Kit phases** - update issue after each:
    - `/speckit.specify` → update issue
    - `/speckit.clarify` → update issue
    - `/speckit.plan` → update issue
-   - `/speckit.tasks` → update issue
-4. **Implement per phase** - commit + push + update issue after each
-5. **Create PR** with `Closes #N`
+   - `/speckit.tasks` → update issue + **change label to `spec/approved`**
+4. **Start implementation** → **add `status/wip` label**
+5. **Implement per phase** - commit + push + update issue after each
+6. **Before PR** → **remove `status/wip` label**
+7. **Create PR** with `Closes #N`
 
 ### Branching Strategy
 
