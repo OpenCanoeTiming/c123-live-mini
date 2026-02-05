@@ -23,7 +23,7 @@ npm run dev
 ```
 
 This starts:
-- **Server**: http://localhost:3001
+- **Server**: http://localhost:3000
 - **Frontend**: http://localhost:5173
 
 ### Start individually
@@ -33,7 +33,7 @@ This starts:
 npm run dev -w packages/server
 
 # Frontend only
-npm run dev -w packages/page
+npm run dev -w packages/client
 ```
 
 ## Verify Installation
@@ -41,31 +41,31 @@ npm run dev -w packages/page
 ### 1. Health Check
 
 ```bash
-curl http://localhost:3001/api/v1/health
+curl http://localhost:3000/health
 ```
 
 Expected response:
 ```json
-{
-  "status": "ok",
-  "timestamp": "2026-02-05T12:00:00.000Z"
-}
+{"status":"ok"}
 ```
 
 ### 2. Create Test Event
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/events \
+curl -X POST http://localhost:3000/api/v1/admin/events \
   -H "Content-Type: application/json" \
-  -d '{"name": "Test Event"}'
+  -d '{"eventId": "test-event", "mainTitle": "Test Event"}'
 ```
 
-### 3. Add Test Result
+Expected response:
+```json
+{"id":1,"eventId":"test-event","apiKey":"<generated-api-key>"}
+```
+
+### 3. Verify Event Created
 
 ```bash
-curl -X POST http://localhost:3001/api/v1/events/1/results \
-  -H "Content-Type: application/json" \
-  -d '{"athleteName": "Test Athlete", "timeMs": 95420, "penaltySeconds": 2}'
+curl http://localhost:3000/api/v1/events/test-event
 ```
 
 ### 4. View in Browser
@@ -80,8 +80,10 @@ c123-live-mini/
 │   ├── server/          # Fastify backend
 │   │   ├── src/
 │   │   └── package.json
-│   └── page/            # React frontend
-│       ├── src/
+│   ├── client/          # React frontend
+│   │   ├── src/
+│   │   └── package.json
+│   └── shared/          # Shared types
 │       └── package.json
 ├── package.json         # Workspace root
 └── tsconfig.base.json   # Shared TS config
@@ -99,7 +101,8 @@ c123-live-mini/
 
 ## Database
 
-SQLite database is auto-created at `packages/server/data/poc.db` on first run.
+SQLite database is auto-created at `packages/server/data/live-mini.db` on first run.
+Migrations are automatically applied when the server starts.
 
 To reset database, delete the file and restart the server.
 
@@ -108,8 +111,8 @@ To reset database, delete the file and restart the server.
 ### Port already in use
 
 ```bash
-# Find process on port 3001
-lsof -i :3001
+# Find process on port 3000
+lsof -i :3000
 # Kill it
 kill -9 <PID>
 ```

@@ -143,9 +143,9 @@
 
 - [X] T041 [P] README.md exists with setup instructions
 - [X] T042 [P] .nvmrc exists with Node 20 version
-- [ ] T043 Verify all success criteria from spec.md (SC-001 through SC-005)
-- [ ] T044 Test database auto-creation on fresh start
-- [ ] T045 Run full E2E validation per quickstart.md
+- [X] T043 Verify all success criteria from spec.md (SC-001 through SC-005)
+- [X] T044 Test database auto-creation on fresh start
+- [X] T045 Run full E2E validation per quickstart.md
 
 ---
 

@@ -1,7 +1,9 @@
 import { mkdirSync } from 'node:fs';
+import { promises as fs } from 'node:fs';
 import { dirname } from 'node:path';
+import path from 'node:path';
 import SQLite from 'better-sqlite3';
-import { Kysely, SqliteDialect } from 'kysely';
+import { Kysely, SqliteDialect, Migrator, FileMigrationProvider } from 'kysely';
 import type { Database } from './schema.js';
 
 const DEFAULT_DATABASE_PATH = './data/live-mini.db';
@@ -38,4 +40,49 @@ export function getDb(): Kysely<Database> {
 
 export async function closeDb(): Promise<void> {
   await db.destroy();
+}
+
+/**
+ * Run database migrations
+ *
+ * @param db - Kysely database instance
+ * @returns Promise that resolves when migrations complete
+ */
+export async function runMigrations(db: Kysely<Database>): Promise<void> {
+  const migrator = new Migrator({
+    db,
+    provider: new FileMigrationProvider({
+      fs,
+      path,
+      migrationFolder: path.join(
+        path.dirname(new URL(import.meta.url).pathname),
+        'migrations'
+      ),
+    }),
+  });
+
+  console.log('Running migrations...');
+
+  const { error, results } = await migrator.migrateToLatest();
+
+  if (results) {
+    for (const result of results) {
+      if (result.status === 'Success') {
+        console.log(`  ✓ ${result.migrationName}`);
+      } else if (result.status === 'Error') {
+        console.error(`  ✗ ${result.migrationName} - ${result.status}`);
+      }
+    }
+  }
+
+  if (error) {
+    console.error('Migration failed:', error);
+    throw error;
+  }
+
+  if (!results || results.length === 0) {
+    console.log('  No pending migrations');
+  } else {
+    console.log(`Applied ${results.length} migration(s)`);
+  }
 }
