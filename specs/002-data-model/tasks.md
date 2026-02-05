@@ -184,19 +184,19 @@
 
 ### Category Query Methods
 
-- [ ] T064 [US4] Add getCategoriesForEvent method to ClassRepository in packages/server/src/db/repositories/ClassRepository.ts
-- [ ] T065 [US4] Add filterByCatId method to ResultRepository in packages/server/src/db/repositories/ResultRepository.ts
-- [ ] T066 [US4] Ensure CatRnk is properly returned when filtering
+- [x] T064 [US4] Add getCategoriesForEvent method to ClassRepository in packages/server/src/db/repositories/ClassRepository.ts
+- [x] T065 [US4] Add filterByCatId method to ResultRepository in packages/server/src/db/repositories/ResultRepository.ts
+- [x] T066 [US4] Ensure CatRnk is properly returned when filtering
 
 ### API Enhancement for US4
 
-- [ ] T067 [US4] Add catId query param handling to GET /results/:raceId in packages/server/src/routes/results.ts
-- [ ] T068 [US4] Add GET /api/v1/events/:eventId/categories endpoint in packages/server/src/routes/categories.ts
-- [ ] T069 [US4] Register categories route in app.ts
+- [x] T067 [US4] Add catId query param handling to GET /results/:raceId in packages/server/src/routes/results.ts
+- [x] T068 [US4] Add GET /api/v1/events/:eventId/categories endpoint in packages/server/src/routes/categories.ts
+- [x] T069 [US4] Register categories route in app.ts
 
 ### Integration
 
-- [ ] T070 [US4] Verify filtering: request catId=ZS returns only seniors with correct CatRnk
+- [x] T070 [US4] Verify filtering: request catId=ZS returns only seniors with correct CatRnk
 
 **Checkpoint**: US4 complete - age category filtering working
 

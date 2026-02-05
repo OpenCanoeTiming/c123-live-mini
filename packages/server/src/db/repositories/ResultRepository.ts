@@ -555,4 +555,70 @@ export class ResultRepository extends BaseRepository {
 
     return grouped;
   }
+
+  /**
+   * Find results for a race filtered by category ID
+   * Returns only participants matching the specified category with their category rank
+   */
+  async filterByCatId(
+    raceId: number,
+    catId: string
+  ): Promise<
+    Array<
+      Selectable<ResultsTable> & {
+        family_name: string;
+        given_name: string | null;
+        club: string | null;
+        noc: string | null;
+        cat_id: string | null;
+        participant_id_str: string;
+      }
+    >
+  > {
+    return this.db
+      .selectFrom('results')
+      .innerJoin('participants', 'participants.id', 'results.participant_id')
+      .select([
+        'results.id',
+        'results.event_id',
+        'results.race_id',
+        'results.participant_id',
+        'results.start_order',
+        'results.bib',
+        'results.start_time',
+        'results.status',
+        'results.dt_start',
+        'results.dt_finish',
+        'results.time',
+        'results.gates',
+        'results.pen',
+        'results.total',
+        'results.rnk',
+        'results.rnk_order',
+        'results.cat_rnk',
+        'results.cat_rnk_order',
+        'results.total_behind',
+        'results.cat_total_behind',
+        'results.prev_time',
+        'results.prev_pen',
+        'results.prev_total',
+        'results.prev_rnk',
+        'results.total_total',
+        'results.better_run_nr',
+        'results.heat_nr',
+        'results.round_nr',
+        'results.qualified',
+        'participants.family_name',
+        'participants.given_name',
+        'participants.club',
+        'participants.noc',
+        'participants.cat_id',
+        'participants.participant_id as participant_id_str',
+      ])
+      .where('results.race_id', '=', raceId)
+      .where('participants.cat_id', '=', catId)
+      .orderBy('results.cat_rnk', 'asc')
+      .orderBy('results.cat_rnk_order', 'asc')
+      .execute();
+  }
 }

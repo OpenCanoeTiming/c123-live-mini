@@ -189,4 +189,63 @@ export class ClassRepository extends BaseRepository {
       .executeTakeFirst();
     return Number(result.numDeletedRows);
   }
+
+  /**
+   * Get all unique categories for an event with class information
+   * Aggregates categories across all classes in the event
+   */
+  async getCategoriesForEvent(
+    eventId: number
+  ): Promise<
+    Array<{
+      catId: string;
+      name: string;
+      firstYear: number | null;
+      lastYear: number | null;
+      classIds: string[];
+    }>
+  > {
+    const categories = await this.db
+      .selectFrom('categories')
+      .innerJoin('classes', 'classes.id', 'categories.class_id')
+      .select([
+        'categories.cat_id',
+        'categories.name',
+        'categories.first_year',
+        'categories.last_year',
+        'classes.class_id',
+      ])
+      .where('classes.event_id', '=', eventId)
+      .orderBy('categories.cat_id', 'asc')
+      .execute();
+
+    // Aggregate by cat_id (same category may appear in multiple classes)
+    const aggregated = new Map<
+      string,
+      {
+        catId: string;
+        name: string;
+        firstYear: number | null;
+        lastYear: number | null;
+        classIds: string[];
+      }
+    >();
+
+    for (const cat of categories) {
+      const existing = aggregated.get(cat.cat_id);
+      if (existing) {
+        existing.classIds.push(cat.class_id);
+      } else {
+        aggregated.set(cat.cat_id, {
+          catId: cat.cat_id,
+          name: cat.name,
+          firstYear: cat.first_year,
+          lastYear: cat.last_year,
+          classIds: [cat.class_id],
+        });
+      }
+    }
+
+    return Array.from(aggregated.values());
+  }
 }

@@ -265,12 +265,11 @@ export function registerResultsRoutes(
     }
 
     // Standard mode: get results for single race
-    let results = await resultRepo.getResultsWithBestRun(race.id);
-
-    // Filter by category if requested
-    if (catId) {
-      results = results.filter((r) => r.cat_id === catId);
-    }
+    // Use filterByCatId for category filtering (sorted by catRnk)
+    // or getResultsWithBestRun for all results (sorted by rnk)
+    const results = catId
+      ? await resultRepo.filterByCatId(race.id, catId)
+      : await resultRepo.getResultsWithBestRun(race.id);
 
     return {
       race: {
