@@ -5,6 +5,7 @@ import { EventRepository } from '../db/repositories/EventRepository.js';
 import { RaceRepository } from '../db/repositories/RaceRepository.js';
 import { ResultRepository } from '../db/repositories/ResultRepository.js';
 import { ClassRepository } from '../db/repositories/ClassRepository.js';
+import { startlistSchema } from '../schemas/index.js';
 
 /**
  * Startlist entry
@@ -66,7 +67,10 @@ export function registerStartlistRoutes(
   app.get<{
     Params: StartlistParams;
     Reply: StartlistResponse;
-  }>('/api/v1/events/:eventId/startlist/:raceId', async (request, reply) => {
+  }>(
+    '/api/v1/events/:eventId/startlist/:raceId',
+    { schema: startlistSchema },
+    async (request, reply) => {
     const { eventId, raceId } = request.params;
 
     // Find event

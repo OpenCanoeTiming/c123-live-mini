@@ -8,6 +8,7 @@ import {
 import { IngestService, type IngestResult } from '../services/IngestService.js';
 import { getOnCourseStore } from '../services/OnCourseStore.js';
 import type { OnCourseInput } from '@c123-live-mini/shared';
+import { ingestXmlSchema, ingestOncourseSchema } from '../schemas/index.js';
 
 /**
  * XML ingest request body
@@ -57,6 +58,7 @@ export function registerIngestRoutes(
   }>(
     '/api/v1/ingest/xml',
     {
+      schema: ingestXmlSchema,
       preHandler: apiKeyAuth,
     },
     async (request, reply) => {
@@ -104,6 +106,7 @@ export function registerIngestRoutes(
   }>(
     '/api/v1/ingest/oncourse',
     {
+      schema: ingestOncourseSchema,
       preHandler: apiKeyAuth,
     },
     async (request, reply) => {

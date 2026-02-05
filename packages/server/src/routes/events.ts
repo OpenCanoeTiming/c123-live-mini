@@ -4,6 +4,7 @@ import type { Database } from '../db/schema.js';
 import { EventRepository } from '../db/repositories/EventRepository.js';
 import { ClassRepository } from '../db/repositories/ClassRepository.js';
 import { RaceRepository } from '../db/repositories/RaceRepository.js';
+import { eventsListSchema, eventDetailSchema } from '../schemas/index.js';
 
 /**
  * Event list response
@@ -81,6 +82,7 @@ export function registerEventsRoutes(
    */
   app.get<{ Reply: EventListResponse }>(
     '/api/v1/events',
+    { schema: eventsListSchema },
     async (_request, _reply) => {
       const events = await eventRepo.findPublic();
 
@@ -105,6 +107,7 @@ export function registerEventsRoutes(
    */
   app.get<{ Params: EventParams; Reply: EventDetailResponse }>(
     '/api/v1/events/:eventId',
+    { schema: eventDetailSchema },
     async (request, reply) => {
       const { eventId } = request.params;
 

@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
 import { EventRepository } from '../db/repositories/EventRepository.js';
 import { generateApiKey } from '../utils/apiKey.js';
+import { createEventSchema } from '../schemas/index.js';
 
 /**
  * Create event request body
@@ -43,7 +44,10 @@ export function registerAdminRoutes(
   app.post<{
     Body: CreateEventBody;
     Reply: CreateEventResponse;
-  }>('/api/v1/admin/events', async (request, reply) => {
+  }>(
+    '/api/v1/admin/events',
+    { schema: createEventSchema },
+    async (request, reply) => {
     const {
       eventId,
       mainTitle,

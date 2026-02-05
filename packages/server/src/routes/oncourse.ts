@@ -4,6 +4,7 @@ import type { Database } from '../db/schema.js';
 import { EventRepository } from '../db/repositories/EventRepository.js';
 import { getOnCourseStore } from '../services/OnCourseStore.js';
 import type { OnCourseEntry } from '@c123-live-mini/shared';
+import { oncourseSchema } from '../schemas/index.js';
 
 /**
  * OnCourse route parameters
@@ -44,7 +45,10 @@ export function registerOnCourseRoutes(
   app.get<{
     Params: OnCourseParams;
     Reply: OnCourseResponse | ErrorResponse;
-  }>('/api/v1/events/:eventId/oncourse', async (request, reply) => {
+  }>(
+    '/api/v1/events/:eventId/oncourse',
+    { schema: oncourseSchema },
+    async (request, reply) => {
     const { eventId } = request.params;
 
     // Verify event exists

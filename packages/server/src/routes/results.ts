@@ -5,6 +5,7 @@ import { EventRepository } from '../db/repositories/EventRepository.js';
 import { RaceRepository } from '../db/repositories/RaceRepository.js';
 import { ResultRepository } from '../db/repositories/ResultRepository.js';
 import { ClassRepository } from '../db/repositories/ClassRepository.js';
+import { resultsSchema } from '../schemas/index.js';
 
 /**
  * Result entry in response
@@ -111,7 +112,10 @@ export function registerResultsRoutes(
     Params: ResultsParams;
     Querystring: ResultsQuery;
     Reply: ResultsResponse;
-  }>('/api/v1/events/:eventId/results/:raceId', async (request, reply) => {
+  }>(
+    '/api/v1/events/:eventId/results/:raceId',
+    { schema: resultsSchema },
+    async (request, reply) => {
     const { eventId, raceId } = request.params;
     const { catId, detailed, includeAllRuns } = request.query;
     const includeGates = detailed === 'true' || detailed === '1';

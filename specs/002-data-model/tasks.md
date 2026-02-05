@@ -206,12 +206,12 @@
 
 **Purpose**: Documentation, validation, error handling improvements
 
-- [ ] T071 [P] Add request validation schemas using Fastify JSON Schema in packages/server/src/schemas/
-- [ ] T072 [P] Add comprehensive error responses per contracts/api.md error format
-- [ ] T073 [P] Add logging for all repository operations
-- [ ] T074 Update packages/server/README.md with API documentation
-- [ ] T075 Verify all endpoints match contracts/api.md specification
-- [ ] T076 Run quickstart.md validation steps
+- [x] T071 [P] Add request validation schemas using Fastify JSON Schema in packages/server/src/schemas/
+- [x] T072 [P] Add comprehensive error responses per contracts/api.md error format
+- [x] T073 [P] Add logging for all repository operations
+- [x] T074 Update packages/server/README.md with API documentation
+- [x] T075 Verify all endpoints match contracts/api.md specification
+- [x] T076 Run quickstart.md validation steps
 
 ---
 

@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
 import { EventRepository } from '../db/repositories/EventRepository.js';
 import { ClassRepository } from '../db/repositories/ClassRepository.js';
+import { categoriesSchema } from '../schemas/index.js';
 
 /**
  * Category entry in response
@@ -46,7 +47,10 @@ export function registerCategoriesRoutes(
   app.get<{
     Params: CategoriesParams;
     Reply: CategoriesResponse;
-  }>('/api/v1/events/:eventId/categories', async (request, reply) => {
+  }>(
+    '/api/v1/events/:eventId/categories',
+    { schema: categoriesSchema },
+    async (request, reply) => {
     const { eventId } = request.params;
 
     // Find event
