@@ -119,19 +119,21 @@
 
 **Goal**: Data flows from API through database to frontend display
 
+**Note**: Implemented in packages/client (not packages/page as originally planned).
+
 **Independent Test**: Create event via API, see it in browser
 
 ### Implementation for User Story 4
 
-- [ ] T034 [US4] Create packages/page/src/services/api.ts with fetch wrapper for /api/v1
-- [ ] T035 [US4] Add getEvents() and getEventResults() functions to api.ts
-- [ ] T036 [US4] Create packages/page/src/components/EventList.tsx to display events
-- [ ] T037 [US4] Create packages/page/src/components/ResultList.tsx to display results
-- [ ] T038 [US4] Integrate EventList and ResultList in App.tsx
-- [ ] T039 [US4] Add loading state while fetching data
-- [ ] T040 [US4] Add error state when API unavailable
+- [X] T034 [US4] Create packages/client/src/services/api.ts with fetch wrapper for /api/v1
+- [X] T035 [US4] Add getEvents(), getEventDetails(), getEventResults() functions to api.ts
+- [X] T036 [US4] Create packages/client/src/components/EventList.tsx to display events
+- [X] T037 [US4] Create packages/client/src/components/ResultList.tsx to display results
+- [X] T038 [US4] Integrate EventList and ResultList in App.tsx
+- [X] T039 [US4] Add loading state while fetching data
+- [X] T040 [US4] Add error state when API unavailable
 
-**Checkpoint**: End-to-end flow works - US4 complete
+**Checkpoint**: End-to-end flow works - US4 complete ✓
 
 ---
 
