@@ -13,6 +13,7 @@ packages/*/package-lock.json
 .env
 .env.local
 .env.*.local
+.npmrc
 
 # IDE
 .vscode/

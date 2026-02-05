@@ -37,9 +37,9 @@ https://github.com/jakubbican/gh-sdd-ai-workflow
 ### Feature Workflow
 
 1. **Create Feature issue** (label: `type/feature`, `spec/draft`)
-2. **Create branch** `feature/{N}-{slug}` and **link to issue**
+2. **Run `/speckit.specify`** - creates branch `###-feature-name` and **link to issue**
 3. **Run Spec-Kit phases** - update issue after each:
-   - `/speckit.specify` → update issue
+   - `/speckit.specify` → creates branch + update issue
    - `/speckit.clarify` → update issue
    - `/speckit.plan` → update issue
    - `/speckit.tasks` → update issue + **change label to `spec/approved`**
@@ -50,10 +50,12 @@ https://github.com/jakubbican/gh-sdd-ai-workflow
 
 ### Branching Strategy
 
+> Branch names use spec-kit format `###-feature-name` which matches `specs/` directory.
+
 | Issue Type | Branch Pattern | Example |
 |------------|----------------|---------|
-| Feature | `feature/{N}-{slug}` | `feature/2-data-model` |
-| Bug | `fix/{N}-{slug}` | `fix/99-ws-reconnect` |
+| Feature | `###-feature-name` (created by spec-kit) | `002-data-model` |
+| Bug | `fix-{N}-{slug}` | `fix-99-ws-reconnect` |
 
 ---
 
@@ -62,7 +64,8 @@ https://github.com/jakubbican/gh-sdd-ai-workflow
 ### Starting a Feature
 
 ```
-Read Feature issue #N and create branch feature/N-{slug}.
+Read Feature issue #N and run /speckit.specify with its content.
+Spec-kit will create branch ###-feature-name automatically.
 Add comment to issue with branch link.
 ```
 
@@ -122,10 +125,10 @@ After completion: commit all changes, push, update Feature issue with progress.
 ```markdown
 ## Spec Phase Complete ✓
 
-**Branch:** [feature/N-name](../../tree/feature/N-name)
+**Branch:** [00N-feature-name](../../tree/00N-feature-name)
 
 ### Created
-- [spec.md](../../blob/feature/N-name/specs/00N-name/spec.md)
+- [spec.md](../../blob/00N-feature-name/specs/00N-feature-name/spec.md)
 
 ### Status
 - [x] /speckit.specify
@@ -211,4 +214,5 @@ flowchart LR
 - SQLite (file-based, Repository Pattern) (002-data-model)
 
 ## Recent Changes
+- 003-technical-poc: Monorepo structure (packages/server, packages/page), React + Vite frontend
 - 002-data-model: Added TypeScript 5.x (Node.js 20 LTS) + Fastify, Kysely, better-sqlite3
