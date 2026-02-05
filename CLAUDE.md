@@ -85,7 +85,16 @@ After completion, update Feature issue #N with links to plan.md and status.
 
 ```
 /speckit.tasks
-After completion, update Feature issue #N with phase breakdown from tasks.md.
+After completion:
+1. Update Feature issue #N with phase breakdown from tasks.md
+2. Change label: gh issue edit N --remove-label "spec/draft" --add-label "spec/approved"
+```
+
+### Start Implementation
+
+```
+Before starting first phase, add WIP label:
+gh issue edit N --add-label "status/wip"
 ```
 
 ### Implementation (ITERATIVE - per phase)
@@ -98,7 +107,8 @@ After completion: commit all changes, push, update Feature issue with progress.
 ### Feature Completion
 
 ```
-Create PR for Feature #N. Include summary of all phases and 'Closes #N' in body.
+1. Remove WIP label: gh issue edit N --remove-label "status/wip"
+2. Create PR for Feature #N. Include summary of all phases and 'Closes #N' in body.
 ```
 
 ---
