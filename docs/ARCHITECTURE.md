@@ -164,6 +164,17 @@ stateDiagram-v2
 | [rvp-design-system](https://github.com/CzechCanoe/rvp-design-system/) | Public-facing CSK apps | live-mini-page |
 | [timing-design-system](https://github.com/OpenCanoeTiming/timing-design-system/) | Internal timing tools | c123-server Admin UI |
 
+### Satellite Mode
+
+This application uses **rvp-design-system in "satellite" variant**:
+
+- **Standalone operation**: Can run independently outside kanoe.cz domain
+- **Independent branding**: Uses CSK visual identity but doesn't require portal integration
+- **Custom domains**: Enables deployment on event-specific or timing-specific URLs
+- **No portal dependencies**: Works without kanoe.cz authentication or navigation
+
+This follows the Live Page Prototype from rvp-design-system as the reference implementation.
+
 ### Display Modes
 
 - **Simple:** Times + penalties, ranking, age category - for general public
