@@ -1,3 +1,9 @@
+import {
+  Card,
+  Table,
+  EmptyState,
+  type ColumnDef,
+} from '@czechcanoe/rvp-design-system';
 import type { ResultEntry, ResultsResponse } from '../services/api';
 
 /**
@@ -17,103 +23,120 @@ function formatPenalty(hundredths: number | null): string {
   return String(hundredths / 100);
 }
 
-interface ResultRowProps {
-  result: ResultEntry;
-}
-
-/**
- * Single result row
- */
-function ResultRow({ result }: ResultRowProps) {
-  const hasStatus = result.status !== null;
-
-  return (
-    <tr className={hasStatus ? 'result-row--status' : ''}>
-      <td className="result-cell result-cell--rnk">
-        {result.rnk ?? '-'}
-      </td>
-      <td className="result-cell result-cell--bib">
-        {result.bib ?? '-'}
-      </td>
-      <td className="result-cell result-cell--name">
-        <div className="result-name">
-          <span className="result-name-main">{result.name}</span>
-          {result.club && (
-            <span className="result-name-club">{result.club}</span>
-          )}
-        </div>
-      </td>
-      <td className="result-cell result-cell--time">
-        {hasStatus ? result.status : formatTime(result.time)}
-      </td>
-      <td className="result-cell result-cell--pen">
-        {!hasStatus && formatPenalty(result.pen)}
-      </td>
-      <td className="result-cell result-cell--total">
-        {!hasStatus && formatTime(result.total)}
-      </td>
-      <td className="result-cell result-cell--behind">
-        {result.totalBehind ?? ''}
-      </td>
-    </tr>
-  );
-}
+// Column definitions for results table
+const columns: ColumnDef<ResultEntry>[] = [
+  {
+    key: 'rnk',
+    header: 'Rnk',
+    width: '60px',
+    align: 'center',
+    cell: (row) => row.rnk ?? '-',
+  },
+  {
+    key: 'bib',
+    header: 'Bib',
+    width: '60px',
+    align: 'center',
+    cell: (row) => row.bib ?? '-',
+  },
+  {
+    key: 'name',
+    header: 'Name',
+    cell: (row) => (
+      <div>
+        <div style={{ fontWeight: 500 }}>{row.name}</div>
+        {row.club && (
+          <div style={{ fontSize: '0.75rem', color: 'var(--csk-color-text-tertiary)' }}>
+            {row.club}
+          </div>
+        )}
+      </div>
+    ),
+  },
+  {
+    key: 'time',
+    header: 'Time',
+    align: 'right',
+    cell: (row) => {
+      const hasStatus = row.status !== null;
+      return (
+        <span style={{
+          fontFamily: 'var(--csk-font-mono)',
+          color: hasStatus ? 'var(--csk-color-error)' : undefined,
+          fontWeight: hasStatus ? 600 : undefined
+        }}>
+          {hasStatus ? row.status : formatTime(row.time)}
+        </span>
+      );
+    },
+  },
+  {
+    key: 'pen',
+    header: 'Pen',
+    align: 'right',
+    cell: (row) => (
+      <span style={{ fontFamily: 'var(--csk-font-mono)' }}>
+        {row.status === null ? formatPenalty(row.pen) : ''}
+      </span>
+    ),
+  },
+  {
+    key: 'total',
+    header: 'Total',
+    align: 'right',
+    cell: (row) => (
+      <span style={{ fontFamily: 'var(--csk-font-mono)' }}>
+        {row.status === null ? formatTime(row.total) : ''}
+      </span>
+    ),
+  },
+  {
+    key: 'behind',
+    header: 'Behind',
+    align: 'right',
+    cell: (row) => (
+      <span style={{ color: 'var(--csk-color-text-secondary)' }}>
+        {row.totalBehind ?? ''}
+      </span>
+    ),
+  },
+];
 
 interface ResultListProps {
   data: ResultsResponse;
 }
 
 /**
- * Display race results in a table
+ * Display race results in a table using DS components
  */
 export function ResultList({ data }: ResultListProps) {
   const { race, results } = data;
 
   if (results.length === 0) {
     return (
-      <div className="card">
-        <div className="empty-state">
-          <div className="empty-state-icon">📊</div>
-          <h3 className="empty-state-title">No results yet</h3>
-          <p className="empty-state-description">
-            Results will appear here when the race starts.
-          </p>
-        </div>
-      </div>
+      <Card>
+        <EmptyState
+          title="No results yet"
+          description="Results will appear here when the race starts."
+        />
+      </Card>
     );
   }
 
   return (
-    <div className="card">
-      <div className="card-header">
-        <div className="result-header">
-          <span className="result-header-race">Race: {race.raceId}</span>
-          <span className="result-header-class">
-            {race.classId ?? 'All classes'}
-          </span>
-          <span className="result-header-dis">{race.disId}</span>
-        </div>
+    <Card>
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: '1rem', fontSize: '0.875rem', color: 'var(--csk-color-text-secondary)' }}>
+        <span style={{ fontWeight: 600 }}>Race: {race.raceId}</span>
+        <span>{race.classId ?? 'All classes'}</span>
+        <span>{race.disId}</span>
       </div>
-      <div className="results-table-wrapper">
-        <table className="results-table">
-          <thead>
-            <tr>
-              <th className="result-header-cell">Rnk</th>
-              <th className="result-header-cell">Bib</th>
-              <th className="result-header-cell result-header-cell--name">Name</th>
-              <th className="result-header-cell">Time</th>
-              <th className="result-header-cell">Pen</th>
-              <th className="result-header-cell">Total</th>
-              <th className="result-header-cell">Behind</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((result) => (
-              <ResultRow key={result.participantId} result={result} />
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+      <Table
+        columns={columns}
+        data={results}
+        rowKey="participantId"
+        size="sm"
+        hoverable
+      />
+    </Card>
   );
 }

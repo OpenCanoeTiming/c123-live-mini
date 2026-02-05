@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import './styles.css';
+import '@czechcanoe/rvp-design-system/styles';
 import App from './App';
 
 const rootElement = document.getElementById('root');

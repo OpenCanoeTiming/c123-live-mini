@@ -123,9 +123,9 @@ describe('App', () => {
     // Click on the event to select it
     await user.click(screen.getByText('Demo Event'));
 
-    // Wait for Live indicator to appear
+    // Wait for Live indicator to appear (DS LiveIndicator renders as dot with class)
     await waitFor(() => {
-      expect(screen.getByText('Live')).toBeTruthy();
+      expect(document.querySelector('.csk-live-indicator')).toBeTruthy();
     });
   });
 
@@ -148,7 +148,8 @@ describe('App', () => {
   });
 
   it('shows loading state initially', () => {
-    render(<App />);
-    expect(screen.getByText('Loading events...')).toBeTruthy();
+    const { container } = render(<App />);
+    // SkeletonCard renders with csk-skeleton-card class
+    expect(container.querySelector('.csk-skeleton-card')).toBeTruthy();
   });
 });

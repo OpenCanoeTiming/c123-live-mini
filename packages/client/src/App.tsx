@@ -1,6 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { SHARED_VERSION } from '@c123-live-mini/shared';
 import {
+  PageLayout,
+  Header,
+  Card,
+  SectionHeader,
+  LiveIndicator,
+  EmptyState,
+  Button,
+  SkeletonCard,
+  Tabs,
+  type TabItem,
+} from '@czechcanoe/rvp-design-system';
+import {
   getEvents,
   getEventDetails,
   getEventResults,
@@ -160,151 +172,123 @@ function App() {
 
   const isLive = state.eventDetail?.status === 'running';
 
+  // Convert races to Tabs format
+  const raceTabs: TabItem[] = state.races.map((race) => ({
+    id: race.raceId,
+    label: race.classId ?? race.raceId,
+    content: null, // Content is rendered separately
+  }));
+
+  const headerContent = (
+    <Header
+      variant="satellite"
+      appName="c123-live-mini"
+    />
+  );
+
+  const footerContent = (
+    <div style={{ padding: '1rem', textAlign: 'center', fontSize: '0.875rem', color: 'var(--csk-color-text-tertiary)' }}>
+      Powered by c123-live-mini (shared v{SHARED_VERSION})
+    </div>
+  );
+
   return (
-    <div className="page-layout">
-      <header className="header">
-        <div className="header-content">
-          <span className="header-title">c123-live-mini</span>
-          {isLive && (
-            <div className="live-indicator">
-              <span className="live-indicator-dot" />
-              <span>Live</span>
-            </div>
-          )}
-        </div>
-      </header>
+    <PageLayout
+      variant="satellite"
+      header={headerContent}
+      footer={footerContent}
+    >
+      {/* Events Section */}
+      <section>
+        <SectionHeader title="Events" />
 
-      <main className="main-content">
-        {/* Events Section */}
-        <section className="section">
-          <h2 className="section-header">Events</h2>
+        {state.eventsState === 'loading' && <SkeletonCard />}
 
-          {state.eventsState === 'loading' && (
-            <div className="card">
-              <div className="loading-state">
-                <div className="loading-spinner" />
-                <span>Loading events...</span>
-              </div>
-            </div>
-          )}
-
-          {state.eventsState === 'error' && (
-            <div className="card">
-              <div className="error-state">
-                <div className="error-state-icon">⚠️</div>
-                <h3 className="error-state-title">Connection Error</h3>
-                <p className="error-state-description">{state.eventsError}</p>
-                <button
-                  className="btn btn--primary"
-                  onClick={() => window.location.reload()}
-                  type="button"
-                >
+        {state.eventsState === 'error' && (
+          <Card>
+            <EmptyState
+              title="Connection Error"
+              description={state.eventsError ?? 'Failed to connect to server'}
+              action={
+                <Button onClick={() => window.location.reload()}>
                   Retry
-                </button>
-              </div>
-            </div>
+                </Button>
+              }
+            />
+          </Card>
+        )}
+
+        {state.eventsState === 'success' && (
+          <EventList
+            events={state.events}
+            selectedEventId={state.selectedEventId}
+            onSelectEvent={handleSelectEvent}
+          />
+        )}
+      </section>
+
+      {/* Event Detail & Results Section */}
+      {state.selectedEventId && (
+        <section style={{ marginTop: '2rem' }}>
+          <SectionHeader
+            title={state.eventDetail?.mainTitle ?? 'Loading...'}
+            action={isLive ? <LiveIndicator>Live</LiveIndicator> : undefined}
+          />
+
+          {state.eventState === 'loading' && <SkeletonCard />}
+
+          {state.eventState === 'error' && (
+            <Card>
+              <EmptyState
+                title="Failed to load event"
+                description={state.eventError ?? 'Unknown error'}
+              />
+            </Card>
           )}
 
-          {state.eventsState === 'success' && (
-            <EventList
-              events={state.events}
-              selectedEventId={state.selectedEventId}
-              onSelectEvent={handleSelectEvent}
-            />
+          {state.eventState === 'success' && (
+            <>
+              {/* Race selector */}
+              {state.races.length > 1 && (
+                <Tabs
+                  tabs={raceTabs}
+                  activeTab={state.selectedRaceId ?? undefined}
+                  onChange={handleSelectRace}
+                  variant="pills"
+                  size="sm"
+                  style={{ marginBottom: '1rem' }}
+                />
+              )}
+
+              {/* Results */}
+              {state.resultsState === 'loading' && <SkeletonCard />}
+
+              {state.resultsState === 'error' && (
+                <Card>
+                  <EmptyState
+                    title="Failed to load results"
+                    description={state.resultsError ?? 'Unknown error'}
+                  />
+                </Card>
+              )}
+
+              {state.resultsState === 'success' && state.results && (
+                <ResultList data={state.results} />
+              )}
+
+              {state.races.length === 0 && (
+                <Card>
+                  <EmptyState
+                    title="No races available"
+                    description="No races have been scheduled for this event."
+                  />
+                </Card>
+              )}
+            </>
           )}
         </section>
-
-        {/* Event Detail & Results Section */}
-        {state.selectedEventId && (
-          <section className="section">
-            <h2 className="section-header">
-              {state.eventDetail?.mainTitle ?? 'Loading...'}
-            </h2>
-
-            {state.eventState === 'loading' && (
-              <div className="card">
-                <div className="loading-state">
-                  <div className="loading-spinner" />
-                  <span>Loading event details...</span>
-                </div>
-              </div>
-            )}
-
-            {state.eventState === 'error' && (
-              <div className="card">
-                <div className="error-state">
-                  <div className="error-state-icon">⚠️</div>
-                  <h3 className="error-state-title">Failed to load event</h3>
-                  <p className="error-state-description">{state.eventError}</p>
-                </div>
-              </div>
-            )}
-
-            {state.eventState === 'success' && (
-              <>
-                {/* Race selector */}
-                {state.races.length > 1 && (
-                  <div className="race-selector">
-                    {state.races.map((race) => (
-                      <button
-                        key={race.raceId}
-                        className={`race-btn${state.selectedRaceId === race.raceId ? ' race-btn--selected' : ''}`}
-                        onClick={() => handleSelectRace(race.raceId)}
-                        type="button"
-                      >
-                        {race.classId ?? race.raceId}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Results */}
-                {state.resultsState === 'loading' && (
-                  <div className="card">
-                    <div className="loading-state">
-                      <div className="loading-spinner" />
-                      <span>Loading results...</span>
-                    </div>
-                  </div>
-                )}
-
-                {state.resultsState === 'error' && (
-                  <div className="card">
-                    <div className="error-state">
-                      <div className="error-state-icon">⚠️</div>
-                      <h3 className="error-state-title">Failed to load results</h3>
-                      <p className="error-state-description">
-                        {state.resultsError}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {state.resultsState === 'success' && state.results && (
-                  <ResultList data={state.results} />
-                )}
-
-                {state.races.length === 0 && (
-                  <div className="card">
-                    <div className="empty-state">
-                      <div className="empty-state-icon">📊</div>
-                      <h3 className="empty-state-title">No races available</h3>
-                      <p className="empty-state-description">
-                        No races have been scheduled for this event.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
-          </section>
-        )}
-      </main>
-
-      <footer className="footer">
-        Powered by c123-live-mini (shared v{SHARED_VERSION})
-      </footer>
-    </div>
+      )}
+    </PageLayout>
   );
 }
 
