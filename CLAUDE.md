@@ -212,6 +212,8 @@ flowchart LR
 ## Active Technologies
 - TypeScript 5.x (Node.js 20 LTS) + Fastify, Kysely, better-sqlite3 (002-data-model)
 - SQLite (file-based, Repository Pattern) (002-data-model)
+- TypeScript 5.x on Node.js 20 LTS + Kysely, better-sqlite3 (already installed) (004-database-layer)
+- SQLite file-based (`packages/server/data/live-mini.db`) (004-database-layer)
 
 ## Recent Changes
 - 003-technical-poc: Monorepo structure (packages/server, packages/page), React + Vite frontend
