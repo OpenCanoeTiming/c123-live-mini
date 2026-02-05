@@ -211,4 +211,5 @@ flowchart LR
 - SQLite (file-based, Repository Pattern) (002-data-model)
 
 ## Recent Changes
+- 003-technical-poc: Monorepo structure (packages/server, packages/page), React + Vite frontend
 - 002-data-model: Added TypeScript 5.x (Node.js 20 LTS) + Fastify, Kysely, better-sqlite3

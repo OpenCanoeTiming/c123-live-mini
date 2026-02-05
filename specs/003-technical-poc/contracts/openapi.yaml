@@ -1,0 +1,292 @@
+openapi: 3.1.0
+info:
+  title: c123-live-mini API
+  version: 0.1.0
+  description: Technical PoC API for live results
+
+servers:
+  - url: http://localhost:3001/api/v1
+    description: Development server
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      operationId: getHealth
+      tags:
+        - System
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /events:
+    get:
+      summary: List all events
+      operationId: listEvents
+      tags:
+        - Events
+      responses:
+        '200':
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+                required:
+                  - data
+
+    post:
+      summary: Create a new event
+      operationId: createEvent
+      tags:
+        - Events
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '201':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Event'
+                required:
+                  - data
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /events/{eventId}:
+    get:
+      summary: Get event by ID
+      operationId: getEvent
+      tags:
+        - Events
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Event'
+                required:
+                  - data
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /events/{eventId}/results:
+    get:
+      summary: List results for an event
+      operationId: listEventResults
+      tags:
+        - Results
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MockResult'
+                required:
+                  - data
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    post:
+      summary: Add a result to an event
+      operationId: createEventResult
+      tags:
+        - Results
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMockResultRequest'
+      responses:
+        '201':
+          description: Result created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/MockResult'
+                required:
+                  - data
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+      required:
+        - status
+        - timestamp
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        status:
+          type: string
+          enum: [draft, active, finished]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - status
+        - createdAt
+        - updatedAt
+
+    CreateEventRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          type: string
+          enum: [draft, active, finished]
+          default: draft
+      required:
+        - name
+
+    MockResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        eventId:
+          type: integer
+        athleteName:
+          type: string
+        timeMs:
+          type: integer
+          nullable: true
+        penaltySeconds:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - eventId
+        - athleteName
+        - penaltySeconds
+        - createdAt
+
+    CreateMockResultRequest:
+      type: object
+      properties:
+        athleteName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        timeMs:
+          type: integer
+          minimum: 0
+          nullable: true
+        penaltySeconds:
+          type: integer
+          minimum: 0
+          default: 0
+      required:
+        - athleteName
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            code:
+              type: string
+          required:
+            - message
+      required:
+        - error
