@@ -52,9 +52,9 @@
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Update admin routes to return validity info in response in `packages/server/src/routes/admin.ts`
-- [ ] T012 [US1] Add ingest record logging for event creation in `packages/server/src/routes/admin.ts`
-- [ ] T013 [US1] Verify API key rejection with clear expiration message (401 with reason)
+- [x] T011 [US1] Update admin routes to return validity info in response in `packages/server/src/routes/admin.ts`
+- [x] T012 [US1] Add ingest record logging for event creation in `packages/server/src/routes/admin.ts`
+- [x] T013 [US1] Verify API key rejection with clear expiration message (401 with reason)
 
 **Checkpoint**: Event creation with API key validity is functional
 
@@ -68,9 +68,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T014 [US2] Update IngestService to set has_xml_data flag after successful XML ingestion in `packages/server/src/services/IngestService.ts`
-- [ ] T015 [US2] Add ingest record logging to XML endpoint in `packages/server/src/routes/ingest.ts`
-- [ ] T016 [US2] Log payload size and items processed for XML ingestion
+- [x] T014 [US2] Update IngestService to set has_xml_data flag after successful XML ingestion in `packages/server/src/services/IngestService.ts`
+- [x] T015 [US2] Add ingest record logging to XML endpoint in `packages/server/src/routes/ingest.ts`
+- [x] T016 [US2] Log payload size and items processed for XML ingestion
 
 **Checkpoint**: XML ingestion sets has_xml_data flag and logs to ingest_records
 
@@ -84,12 +84,12 @@
 
 ### Implementation for User Story 3
 
-- [ ] T017 [P] [US3] Create ResultIngestService in `packages/server/src/services/ResultIngestService.ts`
-- [ ] T018 [US3] Add POST /ingest/results endpoint in `packages/server/src/routes/ingest.ts`
-- [ ] T019 [US3] Add has_xml_data check to OnCourse endpoint - return { ignored: true } if no XML in `packages/server/src/routes/ingest.ts`
-- [ ] T020 [US3] Add has_xml_data check to Results endpoint - return { ignored: true } if no XML
-- [ ] T021 [US3] Add ingest record logging to OnCourse and Results endpoints
-- [ ] T022 [US3] Add request validation schema for /ingest/results in `packages/server/src/schemas/index.ts`
+- [x] T017 [P] [US3] Create ResultIngestService in `packages/server/src/services/ResultIngestService.ts`
+- [x] T018 [US3] Add POST /ingest/results endpoint in `packages/server/src/routes/ingest.ts`
+- [x] T019 [US3] Add has_xml_data check to OnCourse endpoint - return { ignored: true } if no XML in `packages/server/src/routes/ingest.ts`
+- [x] T020 [US3] Add has_xml_data check to Results endpoint - return { ignored: true } if no XML
+- [x] T021 [US3] Add ingest record logging to OnCourse and Results endpoints
+- [x] T022 [US3] Add request validation schema for /ingest/results in `packages/server/src/schemas/index.ts`
 
 **Checkpoint**: Real-time data ingestion works with XML-first requirement enforced
 
@@ -103,11 +103,11 @@
 
 ### Implementation for User Story 4
 
-- [ ] T023 [P] [US4] Create config routes file in `packages/server/src/routes/config.ts`
-- [ ] T024 [US4] Implement GET /admin/events/:eventId/config endpoint
-- [ ] T025 [US4] Implement PATCH /admin/events/:eventId/config endpoint
-- [ ] T026 [US4] Register config routes in app.ts in `packages/server/src/app.ts`
-- [ ] T027 [US4] Add ingest record logging for config updates
+- [x] T023 [P] [US4] Create config routes file in `packages/server/src/routes/config.ts`
+- [x] T024 [US4] Implement GET /admin/events/:eventId/config endpoint
+- [x] T025 [US4] Implement PATCH /admin/events/:eventId/config endpoint
+- [x] T026 [US4] Register config routes in app.ts in `packages/server/src/app.ts`
+- [x] T027 [US4] Add ingest record logging for config updates
 
 **Checkpoint**: Event configuration is fully functional
 

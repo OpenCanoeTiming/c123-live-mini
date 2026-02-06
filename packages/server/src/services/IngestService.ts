@@ -6,6 +6,7 @@ import { ParticipantRepository } from '../db/repositories/ParticipantRepository.
 import { RaceRepository } from '../db/repositories/RaceRepository.js';
 import { ResultRepository } from '../db/repositories/ResultRepository.js';
 import { CourseRepository } from '../db/repositories/CourseRepository.js';
+import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
 import {
   parseC123Xml,
   validateParsedData,
@@ -37,6 +38,7 @@ export class IngestService {
   private readonly raceRepo: RaceRepository;
   private readonly resultRepo: ResultRepository;
   private readonly courseRepo: CourseRepository;
+  private readonly ingestRecordRepo: IngestRecordRepository;
 
   constructor(db: Kysely<Database>) {
     this.db = db;
@@ -46,6 +48,7 @@ export class IngestService {
     this.raceRepo = new RaceRepository(db);
     this.resultRepo = new ResultRepository(db);
     this.courseRepo = new CourseRepository(db);
+    this.ingestRecordRepo = new IngestRecordRepository(db);
   }
 
   /**
@@ -57,6 +60,8 @@ export class IngestService {
    * @throws Error if XML is invalid or event not found
    */
   async ingestXml(xmlString: string, apiKey: string): Promise<IngestResult> {
+    const payloadSize = xmlString.length;
+
     // Parse XML
     const parsed = parseC123Xml(xmlString);
 
@@ -127,6 +132,25 @@ export class IngestService {
     // 5. Import courses
     await this.importCourses(event.id, parsed);
     result.imported.courses = parsed.courses.length;
+
+    // 6. Set has_xml_data flag (enables JSON/TCP ingestion)
+    await this.eventRepo.setHasXmlData(event.id);
+
+    // 7. Log successful ingestion
+    const totalItems =
+      result.imported.classes +
+      result.imported.participants +
+      result.imported.races +
+      result.imported.results +
+      result.imported.courses;
+
+    await this.ingestRecordRepo.insert({
+      eventId: event.id,
+      sourceType: 'xml',
+      status: 'success',
+      payloadSize,
+      itemsProcessed: totalItems,
+    });
 
     return result;
   }

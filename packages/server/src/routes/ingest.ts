@@ -6,9 +6,16 @@ import {
   type AuthenticatedRequest,
 } from '../middleware/apiKeyAuth.js';
 import { IngestService, type IngestResult } from '../services/IngestService.js';
+import { ResultIngestService } from '../services/ResultIngestService.js';
+import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
 import { getOnCourseStore } from '../services/OnCourseStore.js';
 import type { OnCourseInput } from '@c123-live-mini/shared';
-import { ingestXmlSchema, ingestOncourseSchema } from '../schemas/index.js';
+import type { LiveResultInput } from '../types/ingest.js';
+import {
+  ingestXmlSchema,
+  ingestOncourseSchema,
+  ingestResultsSchema,
+} from '../schemas/index.js';
 
 /**
  * XML ingest request body
@@ -36,6 +43,22 @@ interface IngestOnCourseBody {
  */
 interface IngestOnCourseResponse {
   active: number;
+  ignored?: boolean;
+}
+
+/**
+ * Results ingest request body
+ */
+interface IngestResultsBody {
+  results: LiveResultInput[];
+}
+
+/**
+ * Results ingest response
+ */
+interface IngestResultsResponse {
+  updated: number;
+  ignored?: boolean;
 }
 
 /**
@@ -47,6 +70,8 @@ export function registerIngestRoutes(
 ): void {
   const apiKeyAuth = createApiKeyAuth(db);
   const ingestService = new IngestService(db);
+  const resultIngestService = new ResultIngestService(db);
+  const ingestRecordRepo = new IngestRecordRepository(db);
 
   /**
    * POST /api/v1/ingest/xml
@@ -99,6 +124,7 @@ export function registerIngestRoutes(
   /**
    * POST /api/v1/ingest/oncourse
    * Update OnCourse data (from TCP stream)
+   * Note: Data is silently ignored if no XML has been ingested yet
    */
   app.post<{
     Body: IngestOnCourseBody;
@@ -122,12 +148,29 @@ export function registerIngestRoutes(
       }
 
       const eventId = authRequest.event?.eventId;
-      if (!eventId) {
+      const eventDbId = authRequest.event?.id;
+      const hasXmlData = authRequest.event?.hasXmlData;
+
+      if (!eventId || !eventDbId) {
         reply.code(401).send({
           error: 'Unauthorized',
           message: 'Event not found for API key',
         } as unknown as IngestOnCourseResponse);
         return;
+      }
+
+      // Check if XML has been ingested - silently ignore if not
+      if (!hasXmlData) {
+        // Log the ignored ingestion
+        await ingestRecordRepo.insert({
+          eventId: eventDbId,
+          sourceType: 'json_oncourse',
+          status: 'success',
+          payloadSize: JSON.stringify(request.body).length,
+          itemsProcessed: 0,
+        });
+
+        return { active: 0, ignored: true };
       }
 
       const onCourseStore = getOnCourseStore();
@@ -147,7 +190,78 @@ export function registerIngestRoutes(
       // Return count of active competitors
       const active = onCourseStore.getActiveCount(eventId);
 
+      // Log successful ingestion
+      await ingestRecordRepo.insert({
+        eventId: eventDbId,
+        sourceType: 'json_oncourse',
+        status: 'success',
+        payloadSize: JSON.stringify(request.body).length,
+        itemsProcessed: oncourse.length,
+      });
+
       return { active };
+    }
+  );
+
+  /**
+   * POST /api/v1/ingest/results
+   * Ingest live result updates (from TCP stream)
+   * Note: Data is silently ignored if no XML has been ingested yet
+   */
+  app.post<{
+    Body: IngestResultsBody;
+    Reply: IngestResultsResponse;
+  }>(
+    '/api/v1/ingest/results',
+    {
+      schema: ingestResultsSchema,
+      preHandler: apiKeyAuth,
+    },
+    async (request, reply) => {
+      const { results } = request.body;
+      const authRequest = request as AuthenticatedRequest;
+
+      if (!results || !Array.isArray(results)) {
+        reply.code(400).send({
+          error: 'Invalid request',
+          message: 'Missing required field: results (array)',
+        } as unknown as IngestResultsResponse);
+        return;
+      }
+
+      const eventDbId = authRequest.event?.id;
+      const hasXmlData = authRequest.event?.hasXmlData;
+
+      if (!eventDbId) {
+        reply.code(401).send({
+          error: 'Unauthorized',
+          message: 'Event not found for API key',
+        } as unknown as IngestResultsResponse);
+        return;
+      }
+
+      // Check if XML has been ingested - silently ignore if not
+      if (!hasXmlData) {
+        // Log the ignored ingestion
+        await ingestRecordRepo.insert({
+          eventId: eventDbId,
+          sourceType: 'json_results',
+          status: 'success',
+          payloadSize: JSON.stringify(request.body).length,
+          itemsProcessed: 0,
+        });
+
+        return { updated: 0, ignored: true };
+      }
+
+      const payloadSize = JSON.stringify(request.body).length;
+      const result = await resultIngestService.ingestResults(
+        eventDbId,
+        results,
+        payloadSize
+      );
+
+      return { updated: result.updated };
     }
   );
 }
