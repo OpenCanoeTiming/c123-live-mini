@@ -54,6 +54,7 @@ A spectator wants to see results for a completed or in-progress race. They see a
 3. **Given** a best-of-two-runs race (BR1/BR2), **When** a spectator requests results with all runs included, **Then** both run details are returned along with the best run indicator
 4. **Given** a race with athletes having special statuses (DNS, DNF, DSQ), **When** a spectator requests results, **Then** those athletes appear at the end with their status clearly indicated
 5. **Given** a spectator wants detailed gate penalties, **When** they request results in detailed mode, **Then** gate-by-gate penalty data is included in the response
+6. **Given** a spectator wants full run details for a specific athlete, **When** they request results in detailed mode, **Then** each result includes start/finish timestamps, gate penalties with gate numbers, and course context (gate count, gate types)
 
 ---
 
@@ -126,9 +127,30 @@ A developer (including the c123-live-mini-page frontend team) needs to understan
 - How does the system handle concurrent requests during heavy live updates? Read endpoints serve the current database state; consistency is guaranteed by SQLite's serialized writes.
 - What happens when filtering by a category that doesn't exist in the event? An empty results array is returned (not an error).
 - How are times formatted? Times are returned as integers in hundredths of seconds. Formatting is the frontend's responsibility.
-- What about gate penalties format? Gates are returned as a JSON array of integers (0 = clean, 2 = touch, 50 = miss) matching the gate order on the course.
+- What about gate penalties format? Each gate is returned as a self-describing object with gate number, gate type (normal/reverse), and penalty value. No positional encoding – the frontend does not need course configuration to interpret the data.
+
+## Clarifications
+
+### Session 2026-02-06
+
+- Q: Má být detail jízdy závodníka samostatný endpoint, nebo rozšíření dat v results listu? → A: Rozšíření FR-006 (detailed mode) v rámci results listu o start/finish timestampy, gate čísla a course kontext. FR-006 se týká výhradně race results, ne oncourse dat.
+- Q: Má oncourse endpoint vracet gate penalties v detailním formátu? → A: Ano. Celé Client API musí být transparentní a abstrahované od technických specifik Canoe123. Všechna data (results i oncourse) musí být self-describing – gate penalties s explicitními čísly bran a typy, žádné poziční pole závislé na znalosti interního formátu. API má sloužit nezávisle na timing technologii.
+- Q: Jak identifikovat eventy v public API URL? → A: Pomocí event_id – je to veřejný identifikátor zadaný timekeeperem při zakládání akce (může být číslo závodu ČSK, testovací ID, apod.). Není to interní C123 formát, ale uživatelská volba. Interní DB id se v public API nepoužívá.
+- Q: Mají se skrýt citlivé údaje závodníků (ICF ID, rok narození)? → A: Ne, ICF ID a rok narození jsou běžná součást publikovaných výsledků. ICF ID se v public API zobecní na athlete_id (nemusí jít vždy o ICF registraci). Rok narození se vrací jako součást dat závodníka.
+- Q: Má Client API vracet typ závodu (BR, kvalifikace, finále, cross) ve srozumitelné formě? → A: Ano, abstrahovaný human-readable typ závodu (např. "qualification", "semifinal", "final", "best-run-1", "best-run-2", "cross-heat"). Žádné raw C123 kódy (BR1, QUA, FIN) v public API.
 
 ## Requirements *(mandatory)*
+
+### Design Principle: Technology-Transparent API
+
+The Client API MUST be fully abstracted from the underlying timing system (Canoe123). All response data must be self-describing and human-readable without knowledge of C123 internals:
+
+- **Gate penalties** include explicit gate numbers and gate types (normal/reverse) – no positional arrays requiring external course configuration to interpret
+- **Identifiers** are clean and meaningful to consumers – no raw C123 composite IDs
+- **Times** are clearly structured with units specified
+- **Data format** is consistent across all endpoints (results, oncourse, startlist) – same entity always looks the same regardless of endpoint
+
+This ensures the API can serve any frontend or third-party consumer regardless of the timing technology behind it.
 
 ### Functional Requirements
 
@@ -137,7 +159,7 @@ A developer (including the c123-live-mini-page frontend team) needs to understan
 - **FR-003**: System MUST provide an endpoint to retrieve the startlist for a specific race, returning participants in start order
 - **FR-004**: System MUST provide an endpoint to retrieve results for a specific race, ranked by total time
 - **FR-005**: System MUST support filtering results by age category, returning category-specific rankings
-- **FR-006**: System MUST support a detailed mode for results that includes gate-by-gate penalty data
+- **FR-006**: System MUST support a detailed mode for **race results** that includes gate-by-gate penalty data, start/finish timestamps, and gate numbers for each penalty (enabling full run detail view from the results list)
 - **FR-007**: System MUST support returning both runs for best-of-two-runs races (BR1/BR2) when requested
 - **FR-008**: System MUST provide an endpoint to retrieve athletes currently on course with intermediate timing data
 - **FR-009**: System MUST return 404 for non-existent or draft events/races when accessed via public endpoints
@@ -146,15 +168,18 @@ A developer (including the c123-live-mini-page frontend team) needs to understan
 - **FR-012**: System MUST use a versioned API path prefix (e.g., `/api/v1/`) for all client endpoints
 - **FR-013**: System MUST provide an endpoint to retrieve aggregated age categories for an event (for category filter)
 - **FR-014**: System MUST NOT expose any data from draft events through public endpoints
-- **FR-015**: System MUST include course information (gate count, gate types) when detailed results are requested, so the frontend can correctly interpret gate penalty arrays
+- **FR-015**: System MUST return gate penalties as self-describing data (with gate number and gate type per gate) in both results and oncourse endpoints, so the frontend never needs separate course configuration to interpret penalties
+- **FR-016**: System MUST use event_id (timekeeper-assigned public identifier) in all public API URLs and responses. Internal database IDs MUST NOT appear in public API responses
+- **FR-017**: System MUST expose race type as a human-readable abstracted value (e.g., "qualification", "semifinal", "final", "best-run-1", "best-run-2", "cross-heat") instead of internal timing system codes
+- **FR-018**: System MUST expose athlete registration ID as generic athlete_id (not tied to any specific federation system) along with birth year as standard public participant data
 
 ### Key Entities
 
 - **Event**: A competition identified by event_id, containing classes, races, and participants. Has a lifecycle status (draft → startlist → running → finished → official). Only non-draft events are publicly visible.
 - **Class**: A boat class (e.g., K1M, C1W) within an event, containing categories and linked to races and participants.
 - **Category**: An age category (e.g., Senior, U23, Junior) within a class, defined by birth year range. Used for filtering results.
-- **Race**: A single run (e.g., BR1, BR2, Final) within a class, with a schedule and status. Contains results for participants.
-- **Participant**: An athlete or team registered in the event, linked to a class and category.
+- **Race**: A single run within a class, with a schedule and status. Contains results for participants. Public API exposes an abstracted race type (e.g., "qualification", "semifinal", "final", "best-run-1", "best-run-2", "cross-heat") instead of internal timing system codes.
+- **Participant**: An athlete or team registered in the event, linked to a class and category. Public API exposes: name, club, NOC, bib, category, athlete_id (generalized from ICF ID), and birth year.
 - **Result**: A timing record for a participant in a specific race, including time, penalties, ranking, and optional gate details.
 - **OnCourse**: Ephemeral real-time data about athletes currently racing, including intermediate gate times and time-to-beat comparison. Not persisted in database.
 - **Course**: Physical course configuration (gate count, gate types) used for interpreting gate penalty arrays.
