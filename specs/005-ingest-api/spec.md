@@ -5,6 +5,14 @@
 **Status**: Draft
 **Input**: Feature #5 - Admin and data ingestion API endpoints
 
+## Clarifications
+
+### Session 2026-02-06
+
+- Q: What is the API key validity period? → A: 10 days before event date + 5 days after event date
+- Q: What happens when TCP data arrives before XML? → A: c123-server ensures XML is sent first; live-mini ignores TCP data if no XML exists
+- Q: What happens when API key expires during active event? → A: Reject with 401 and message explaining key expired
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Create Event and Obtain API Key (Priority: P1)
@@ -17,7 +25,7 @@ A timekeeper needs to create a new event in the live-mini system before they can
 
 **Acceptance Scenarios**:
 
-1. **Given** c123-server is connected to live-mini-server, **When** timekeeper creates a new event with name and configuration, **Then** system returns a unique API key valid for several days
+1. **Given** c123-server is connected to live-mini-server, **When** timekeeper creates a new event with name and configuration, **Then** system returns a unique API key valid from 10 days before until 5 days after event dates
 2. **Given** an event is being created, **When** required event data is missing, **Then** system returns a validation error with specific field requirements
 3. **Given** an event already exists with the same identifier, **When** timekeeper attempts to create a duplicate, **Then** system returns an error indicating the event already exists
 
@@ -74,9 +82,9 @@ The timekeeper needs to configure event-specific settings such as active race se
 
 ### Edge Cases
 
-- What happens when API key expires during an active event?
+- API key expiration during active event: System returns 401 with clear expiration message; timekeeper must regenerate key
 - How does system handle very large XML exports (e.g., multi-day events with thousands of athletes)?
-- What happens when TCP data arrives before any XML has been ingested?
+- TCP data arriving before XML: System silently ignores it (c123-server ensures XML is sent first)
 - How does system handle concurrent ingestion requests from the same event?
 - What happens when c123-server connection is interrupted and data arrives out of order?
 
@@ -90,11 +98,12 @@ The timekeeper needs to configure event-specific settings such as active race se
 - **FR-004**: System MUST accept JSON data representing TCP stream updates (OnCourse, live results)
 - **FR-005**: System MUST implement merge strategy: XML authoritative for structure, TCP updates for real-time data
 - **FR-006**: System MUST provide an endpoint to update event configuration (race selection, settings)
-- **FR-007**: API keys MUST have configurable validity period (default: several days, matching event duration)
+- **FR-007**: API keys MUST be valid from 10 days before event start date until 5 days after event end date
 - **FR-008**: System MUST support only one active event per API key (prevents cross-event data leaks)
 - **FR-009**: System MUST return appropriate error responses with details for validation failures
 - **FR-010**: System MUST handle OnCourse data exclusively from TCP stream (never from XML)
 - **FR-011**: System MUST log all API requests for debugging and audit purposes
+- **FR-012**: System MUST silently ignore TCP/JSON data if no XML data has been ingested for the event yet
 
 ### Key Entities
 
@@ -116,6 +125,7 @@ The timekeeper needs to configure event-specific settings such as active race se
 ## Assumptions
 
 - c123-server handles the TCP connection to Canoe123.exe and forwards data as HTTP requests
+- c123-server ensures XML data is sent before any TCP stream data for each event
 - XML format follows c123-protocol-docs specification
 - API keys are generated using cryptographically secure random generation
 - Database layer from Feature #4 is available and provides repository pattern access
