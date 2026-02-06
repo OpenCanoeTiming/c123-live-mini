@@ -43,17 +43,17 @@
 
 ### Implementation for User Story 1
 
-- [ ] T002 [P] [US1] Extract event metadata from 2024-LODM-fin.xml and create seed data constant in packages/server/src/db/seed-data.ts
-- [ ] T003 [P] [US1] Extract K1M-ZS class definition (10 participants) from XML and add to packages/server/src/db/seed-data.ts
-- [ ] T004 [P] [US1] Extract K1W-ZS class definition (10 participants) from XML and add to packages/server/src/db/seed-data.ts
-- [ ] T005 [P] [US1] Extract race schedule for K1M-ZS_BR1 from XML and add to packages/server/src/db/seed-data.ts
-- [ ] T006 [P] [US1] Extract race schedule for K1W-ZS_BR1 from XML and add to packages/server/src/db/seed-data.ts
-- [ ] T007 [P] [US1] Extract results for K1M-ZS (including DNS/DNF examples) and add to packages/server/src/db/seed-data.ts
-- [ ] T008 [P] [US1] Extract results for K1W-ZS (including DNS/DNF examples) and add to packages/server/src/db/seed-data.ts
-- [ ] T009 [P] [US1] Extract course configuration and add to packages/server/src/db/seed-data.ts
-- [ ] T010 [US1] Create seed script entry point in packages/server/src/db/seed.ts with clear, insert, verify logic
-- [ ] T011 [US1] Add "seed" script to packages/server/package.json pointing to seed.ts
-- [ ] T012 [US1] Verify idempotency: run seed twice, confirm no errors and data is replaced
+- [x] T002 [P] [US1] Extract event metadata from 2024-LODM-fin.xml and create seed data constant in packages/server/src/db/seed-data.ts
+- [x] T003 [P] [US1] Extract K1M-ZS class definition (10 participants) from XML and add to packages/server/src/db/seed-data.ts
+- [x] T004 [P] [US1] Extract K1W-ZS class definition (10 participants) from XML and add to packages/server/src/db/seed-data.ts
+- [x] T005 [P] [US1] Extract race schedule for K1M-ZS_BR1 from XML and add to packages/server/src/db/seed-data.ts
+- [x] T006 [P] [US1] Extract race schedule for K1W-ZS_BR1 from XML and add to packages/server/src/db/seed-data.ts
+- [x] T007 [P] [US1] Extract results for K1M-ZS (including DNS/DNF examples) and add to packages/server/src/db/seed-data.ts
+- [x] T008 [P] [US1] Extract results for K1W-ZS (including DNS/DNF examples) and add to packages/server/src/db/seed-data.ts
+- [x] T009 [P] [US1] Extract course configuration and add to packages/server/src/db/seed-data.ts
+- [x] T010 [US1] Create seed script entry point in packages/server/src/db/seed.ts with clear, insert, verify logic
+- [x] T011 [US1] Add "seed" script to packages/server/package.json pointing to seed.ts
+- [x] T012 [US1] Verify idempotency: run seed twice, confirm no errors and data is replaced
 
 **Checkpoint**: `npm run seed` works, API returns demo event with all data
 
