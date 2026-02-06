@@ -475,10 +475,118 @@ export const ingestOncourseSchema = {
       type: 'object',
       properties: {
         active: { type: 'integer' },
+        ignored: { type: 'boolean' },
       },
       required: ['active'],
     },
     400: errorResponseSchema,
     401: errorResponseSchema,
+  },
+} as const;
+
+// ============================================================================
+// Results Ingest Schemas
+// ============================================================================
+
+export const ingestResultsBodySchema = {
+  type: 'object',
+  properties: {
+    results: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          raceId: { type: 'string' },
+          participantId: { type: 'string' },
+          bib: { type: 'integer' },
+          time: { type: 'integer' },
+          pen: { type: 'integer' },
+          total: { type: 'integer' },
+          status: { type: 'string' },
+          rnk: { type: 'integer' },
+          gates: {
+            type: 'array',
+            items: {
+              type: 'object',
+              properties: {
+                gate: { type: 'integer' },
+                time: { type: 'integer' },
+                pen: { type: 'integer' },
+              },
+              required: ['gate'],
+            },
+          },
+        },
+        required: ['raceId', 'participantId', 'bib'],
+      },
+    },
+  },
+  required: ['results'],
+} as const;
+
+export const ingestResultsSchema = {
+  body: ingestResultsBodySchema,
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        updated: { type: 'integer' },
+        ignored: { type: 'boolean' },
+      },
+      required: ['updated'],
+    },
+    400: errorResponseSchema,
+    401: errorResponseSchema,
+  },
+} as const;
+
+// ============================================================================
+// Event Config Schemas
+// ============================================================================
+
+export const eventConfigParamsSchema = {
+  type: 'object',
+  properties: {
+    eventId: { type: 'string' },
+  },
+  required: ['eventId'],
+} as const;
+
+export const eventConfigBodySchema = {
+  type: 'object',
+  properties: {
+    activeRaceId: { type: 'string' },
+    displayMode: { type: 'string', enum: ['simple', 'detailed'] },
+    showOnCourse: { type: 'boolean' },
+  },
+  additionalProperties: false,
+} as const;
+
+export const eventConfigResponseSchema = {
+  type: 'object',
+  properties: {
+    activeRaceId: { type: 'string' },
+    displayMode: { type: 'string', enum: ['simple', 'detailed'] },
+    showOnCourse: { type: 'boolean' },
+  },
+} as const;
+
+export const getEventConfigSchema = {
+  params: eventConfigParamsSchema,
+  response: {
+    200: eventConfigResponseSchema,
+    401: errorResponseSchema,
+    404: errorResponseSchema,
+  },
+} as const;
+
+export const updateEventConfigSchema = {
+  params: eventConfigParamsSchema,
+  body: eventConfigBodySchema,
+  response: {
+    200: eventConfigResponseSchema,
+    400: errorResponseSchema,
+    401: errorResponseSchema,
+    404: errorResponseSchema,
   },
 } as const;

@@ -136,4 +136,38 @@ export class EventRepository extends BaseRepository {
     }
     return this.insert(data);
   }
+
+  /**
+   * Get event config as JSON string
+   */
+  async getConfig(id: number): Promise<string | null> {
+    this.logOperation('getConfig', { id });
+    const event = await this.findById(id);
+    return event?.config ?? null;
+  }
+
+  /**
+   * Update event config JSON
+   */
+  async updateConfig(id: number, configJson: string): Promise<boolean> {
+    this.logOperation('updateConfig', { id });
+    return this.update(id, { config: configJson });
+  }
+
+  /**
+   * Check if event has XML data ingested
+   */
+  async hasXmlData(id: number): Promise<boolean> {
+    this.logOperation('hasXmlData', { id });
+    const event = await this.findById(id);
+    return event?.has_xml_data === 1;
+  }
+
+  /**
+   * Set has_xml_data flag to true
+   */
+  async setHasXmlData(id: number): Promise<boolean> {
+    this.logOperation('setHasXmlData', { id });
+    return this.update(id, { has_xml_data: 1 });
+  }
 }

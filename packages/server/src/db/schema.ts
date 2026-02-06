@@ -12,6 +12,8 @@ export interface EventsTable {
   discipline: string | null;
   status: string;
   api_key: string | null;
+  config: string | null;
+  has_xml_data: number;
   created_at: ColumnType<string, string | undefined, string | undefined>;
 }
 
@@ -103,6 +105,17 @@ export interface CoursesTable {
   gate_config: string | null;
 }
 
+export interface IngestRecordsTable {
+  id: Generated<number>;
+  event_id: number;
+  source_type: 'xml' | 'json_oncourse' | 'json_results' | 'config';
+  status: 'success' | 'error';
+  error_message: string | null;
+  payload_size: number;
+  items_processed: number;
+  created_at: ColumnType<string, string | undefined, string | undefined>;
+}
+
 export interface Database {
   events: EventsTable;
   classes: ClassesTable;
@@ -111,4 +124,5 @@ export interface Database {
   races: RacesTable;
   results: ResultsTable;
   courses: CoursesTable;
+  ingest_records: IngestRecordsTable;
 }

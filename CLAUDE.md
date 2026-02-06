@@ -210,7 +210,7 @@ flowchart LR
 - **Frontend:** Mobile-first, rvp-design-system only
 
 ## Active Technologies
-- TypeScript 5.x (Node.js 20 LTS) + Fastify, Kysely, better-sqlite3
+- TypeScript 5.x (Node.js 20 LTS, strict mode) + Fastify, Kysely, better-sqlite3
 - SQLite file-based (`packages/server/data/live-mini.db`, Repository Pattern)
 
 ## Recent Changes

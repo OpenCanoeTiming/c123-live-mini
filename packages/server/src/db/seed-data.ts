@@ -174,6 +174,7 @@ export const seedEvent: Insertable<EventsTable> = {
   discipline: 'Slalom',
   status: 'finished',
   api_key: 'seed-demo-key-not-for-production',
+  has_xml_data: 1,
 };
 
 // =============================================================================

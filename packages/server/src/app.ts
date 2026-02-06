@@ -8,6 +8,7 @@ import { registerIngestRoutes } from './routes/ingest.js';
 import { registerAdminRoutes } from './routes/admin.js';
 import { registerOnCourseRoutes } from './routes/oncourse.js';
 import { registerCategoriesRoutes } from './routes/categories.js';
+import { registerConfigRoutes } from './routes/config.js';
 import { AppError } from './utils/errors.js';
 
 /**
@@ -37,6 +38,7 @@ export function createApp(options: AppOptions): FastifyInstance {
   registerAdminRoutes(app, db);
   registerOnCourseRoutes(app, db);
   registerCategoriesRoutes(app, db);
+  registerConfigRoutes(app, db);
 
   // Global error handler following contracts/api.md error format
   app.setErrorHandler(
