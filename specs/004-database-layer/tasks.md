@@ -67,9 +67,9 @@
 
 ### Implementation for User Story 2
 
-- [ ] T013 [US2] Document known test values (eventId, participant count, specific times) in packages/server/src/db/seed-data.ts as exported constants
-- [ ] T014 [US2] Add TypeScript types for seed data structures in packages/server/src/db/seed-data.ts
-- [ ] T015 [US2] Verify seed data includes at least one result of each status type (OK, DNS, DNF)
+- [x] T013 [US2] Document known test values (eventId, participant count, specific times) in packages/server/src/db/seed-data.ts as exported constants
+- [x] T014 [US2] Add TypeScript types for seed data structures in packages/server/src/db/seed-data.ts
+- [x] T015 [US2] Verify seed data includes at least one result of each status type (OK, DNS, DNF)
 
 **Checkpoint**: Seed data has documented, predictable values for test assertions
 

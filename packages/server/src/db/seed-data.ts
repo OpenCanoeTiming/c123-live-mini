@@ -19,30 +19,140 @@ import type {
 } from './schema.js';
 
 // =============================================================================
+// SEED DATA TYPES - TypeScript types for seed data structures
+// =============================================================================
+
+/**
+ * Seed class data without event_id (added during insertion)
+ */
+export type SeedClass = Omit<Insertable<ClassesTable>, 'event_id'>;
+
+/**
+ * Seed course data without event_id (added during insertion)
+ */
+export type SeedCourse = Omit<Insertable<CoursesTable>, 'event_id'>;
+
+/**
+ * Seed race data with class_ref for lookup during insertion
+ * event_id and class_id are resolved during insertion
+ */
+export type SeedRace = Omit<Insertable<RacesTable>, 'event_id' | 'class_id'> & {
+  /** Reference to class_id string for lookup */
+  class_ref: string;
+};
+
+/**
+ * Seed participant data with class_ref for lookup during insertion
+ * event_id and class_id are resolved during insertion
+ */
+export type SeedParticipant = Omit<Insertable<ParticipantsTable>, 'event_id' | 'class_id'> & {
+  /** Reference to class_id string for lookup */
+  class_ref: string;
+};
+
+/**
+ * Seed result data with refs for lookup during insertion
+ * All IDs are resolved during insertion from reference strings
+ */
+export type SeedResult = {
+  /** Reference to participant_id string for lookup */
+  participant_ref: string;
+  /** Reference to race_id string for lookup */
+  race_ref: string;
+  start_order: number;
+  bib: number;
+  start_time: string;
+  /** Result status: null = OK, 'DNS', 'DNF', 'DSQ', 'CAP' */
+  status: string | null;
+  dt_start: string | null;
+  dt_finish: string | null;
+  /** Time in hundredths of seconds */
+  time: number | null;
+  /** Gate penalties as string (25-char) */
+  gates: string | null;
+  /** Penalty time in hundredths */
+  pen: number | null;
+  /** Total time (time + pen) in hundredths */
+  total: number | null;
+  /** Overall rank */
+  rnk: number | null;
+  /** Rank order for display */
+  rnk_order: number | null;
+  /** Time behind leader (e.g., "+0.85") */
+  total_behind: string | null;
+};
+
+/**
+ * Result status type - valid values for result status field
+ */
+export type ResultStatus = 'DNS' | 'DNF' | 'DSQ' | 'CAP' | null;
+
+// =============================================================================
 // TEST CONSTANTS - Deterministic values for test assertions
 // =============================================================================
 
+/**
+ * Seed Data Test Constants
+ *
+ * These constants provide deterministic values that tests can rely on
+ * for assertions. All values correspond to real data from LODM 2024.
+ */
+
+// --- Event Constants ---
 /** Known seed event ID for test assertions */
 export const SEED_EVENT_ID = 'CZE2.2024062500';
+export const SEED_EVENT_TITLE = 'Hry XI. letní olympiády dětí a mládeže 2024';
+export const SEED_EVENT_LOCATION = 'České Budějovice';
+export const SEED_EVENT_STATUS = 'finished';
 
-/** Expected participant counts */
+// --- Count Constants ---
+/** Expected entity counts */
+export const SEED_CLASS_COUNT = 2;
 export const SEED_PARTICIPANT_COUNT = 20;
 export const SEED_K1M_PARTICIPANT_COUNT = 10;
 export const SEED_K1W_PARTICIPANT_COUNT = 10;
-
-/** Expected race count */
 export const SEED_RACE_COUNT = 2;
-
-/** Expected result count (all results have OK status in this seed) */
 export const SEED_RESULT_COUNT = 20;
+export const SEED_COURSE_COUNT = 1;
 
-/** Known participant IDs for specific status testing */
-export const SEED_WINNER_K1M_ID = '23128.K1M.ZS'; // Rank 1, time 74630
-export const SEED_WINNER_K1W_ID = '108047.K1W.ZS'; // Rank 1, time 76050
+// --- Class Constants ---
+export const SEED_CLASS_K1M_ID = 'K1M-ZS';
+export const SEED_CLASS_K1W_ID = 'K1W-ZS';
 
-/** Known DNS/DNF examples (modified from original for testing) */
-export const SEED_DNS_PARTICIPANT_ID = '60090.K1M.ZS'; // Modified to DNS
-export const SEED_DNF_PARTICIPANT_ID = '61003.K1W.ZS'; // Modified to DNF
+// --- Race Constants ---
+export const SEED_RACE_K1M_ID = 'K1M-ZS_BR1_25';
+export const SEED_RACE_K1W_ID = 'K1W-ZS_BR1_25';
+
+// --- Winner Constants (for result verification) ---
+/** K1M-ZS winner: Adam REZEK - Rank 1, total time 74630 (74.63s) */
+export const SEED_WINNER_K1M_ID = '23128.K1M.ZS';
+export const SEED_WINNER_K1M_TIME = 74630;
+export const SEED_WINNER_K1M_NAME = 'REZEK Adam';
+
+/** K1W-ZS winner: Terezie FUCHSOVÁ - Rank 1, total time 76050 (76.05s) */
+export const SEED_WINNER_K1W_ID = '108047.K1W.ZS';
+export const SEED_WINNER_K1W_TIME = 76050;
+export const SEED_WINNER_K1W_NAME = 'FUCHSOVÁ Terezie';
+
+// --- Status Test Constants (for result status verification) ---
+/** DNS example: Jan KUDĚJ - Did Not Start */
+export const SEED_DNS_PARTICIPANT_ID = '60090.K1M.ZS';
+export const SEED_DNS_PARTICIPANT_NAME = 'KUDĚJ Jan';
+
+/** DNF example: Valerie SAMKOVÁ - Did Not Finish */
+export const SEED_DNF_PARTICIPANT_ID = '61003.K1W.ZS';
+export const SEED_DNF_PARTICIPANT_NAME = 'SAMKOVÁ Valerie';
+
+// --- Result Status Type Counts (for coverage verification) ---
+/** Expected result counts by status */
+export const SEED_STATUS_OK_COUNT = 18; // null status = OK
+export const SEED_STATUS_DNS_COUNT = 1;
+export const SEED_STATUS_DNF_COUNT = 1;
+
+// --- Course Constants ---
+export const SEED_COURSE_NR = 1;
+export const SEED_COURSE_GATES = 24;
+export const SEED_COURSE_CONFIG = 'NNRNSNNRNSRNNNSRNNNSRRNS';
 
 // =============================================================================
 // EVENT DATA
@@ -65,7 +175,7 @@ export const seedEvent: Insertable<EventsTable> = {
 // CLASS DATA
 // =============================================================================
 
-export const seedClasses: Array<Omit<Insertable<ClassesTable>, 'event_id'>> = [
+export const seedClasses: SeedClass[] = [
   {
     class_id: 'K1M-ZS',
     name: 'K1M ZS',
@@ -82,7 +192,7 @@ export const seedClasses: Array<Omit<Insertable<ClassesTable>, 'event_id'>> = [
 // COURSE DATA
 // =============================================================================
 
-export const seedCourse: Omit<Insertable<CoursesTable>, 'event_id'> = {
+export const seedCourse: SeedCourse = {
   course_nr: 1,
   nr_gates: 24,
   gate_config: 'NNRNSNNRNSRNNNSRNNNSRRNS',
@@ -92,7 +202,7 @@ export const seedCourse: Omit<Insertable<CoursesTable>, 'event_id'> = {
 // RACE DATA
 // =============================================================================
 
-export const seedRaces: Array<Omit<Insertable<RacesTable>, 'event_id' | 'class_id'> & { class_ref: string }> = [
+export const seedRaces: SeedRace[] = [
   {
     race_id: 'K1M-ZS_BR1_25',
     class_ref: 'K1M-ZS',
@@ -119,7 +229,7 @@ export const seedRaces: Array<Omit<Insertable<RacesTable>, 'event_id' | 'class_i
 // PARTICIPANT DATA - K1M-ZS (10 participants)
 // =============================================================================
 
-export const seedParticipantsK1M: Array<Omit<Insertable<ParticipantsTable>, 'event_id' | 'class_id'> & { class_ref: string }> = [
+export const seedParticipantsK1M: SeedParticipant[] = [
   {
     participant_id: '23128.K1M.ZS',
     class_ref: 'K1M-ZS',
@@ -277,7 +387,7 @@ export const seedParticipantsK1M: Array<Omit<Insertable<ParticipantsTable>, 'eve
 // PARTICIPANT DATA - K1W-ZS (10 participants)
 // =============================================================================
 
-export const seedParticipantsK1W: Array<Omit<Insertable<ParticipantsTable>, 'event_id' | 'class_id'> & { class_ref: string }> = [
+export const seedParticipantsK1W: SeedParticipant[] = [
   {
     participant_id: '108047.K1W.ZS',
     class_ref: 'K1W-ZS',
@@ -435,23 +545,7 @@ export const seedParticipantsK1W: Array<Omit<Insertable<ParticipantsTable>, 'eve
 // RESULT DATA - K1M-ZS BR1 (10 results)
 // =============================================================================
 
-export const seedResultsK1M: Array<{
-  participant_ref: string;
-  race_ref: string;
-  start_order: number;
-  bib: number;
-  start_time: string;
-  status: string | null;
-  dt_start: string | null;
-  dt_finish: string | null;
-  time: number | null;
-  gates: string | null;
-  pen: number | null;
-  total: number | null;
-  rnk: number | null;
-  rnk_order: number | null;
-  total_behind: string | null;
-}> = [
+export const seedResultsK1M: SeedResult[] = [
   {
     participant_ref: '23128.K1M.ZS',
     race_ref: 'K1M-ZS_BR1_25',
@@ -629,23 +723,7 @@ export const seedResultsK1M: Array<{
 // RESULT DATA - K1W-ZS BR1 (10 results)
 // =============================================================================
 
-export const seedResultsK1W: Array<{
-  participant_ref: string;
-  race_ref: string;
-  start_order: number;
-  bib: number;
-  start_time: string;
-  status: string | null;
-  dt_start: string | null;
-  dt_finish: string | null;
-  time: number | null;
-  gates: string | null;
-  pen: number | null;
-  total: number | null;
-  rnk: number | null;
-  rnk_order: number | null;
-  total_behind: string | null;
-}> = [
+export const seedResultsK1W: SeedResult[] = [
   {
     participant_ref: '108047.K1W.ZS',
     race_ref: 'K1W-ZS_BR1_25',
