@@ -1,0 +1,429 @@
+openapi: 3.0.3
+info:
+  title: c123-live-mini Ingest API
+  description: |
+    API endpoints for data ingestion into the live results system.
+
+    ## Authentication
+    All ingest endpoints require `X-API-Key` header with valid event API key.
+    Keys are valid from 10 days before event start until 5 days after event end.
+
+    ## Data Flow
+    1. Create event via POST /admin/events (returns API key)
+    2. Ingest XML data first (provides structure)
+    3. Ingest real-time updates (OnCourse, Results)
+    4. Configure event settings as needed
+  version: 1.0.0
+  contact:
+    name: OpenCanoeTiming
+    url: https://github.com/OpenCanoeTiming
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+tags:
+  - name: Admin
+    description: Event administration (no API key required for creation)
+  - name: Ingest
+    description: Data ingestion (requires API key)
+  - name: Config
+    description: Event configuration (requires API key)
+
+paths:
+  /admin/events:
+    post:
+      tags: [Admin]
+      operationId: createEvent
+      summary: Create new event
+      description: Creates a new event and returns an API key for data ingestion.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateEventResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          description: Event already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/events/{eventId}/config:
+    patch:
+      tags: [Config]
+      operationId: updateEventConfig
+      summary: Update event configuration
+      description: Updates event settings like active race, display mode.
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventConfig'
+      responses:
+        '200':
+          description: Configuration updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventConfig'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Event not found
+
+    get:
+      tags: [Config]
+      operationId: getEventConfig
+      summary: Get event configuration
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Current configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventConfig'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: Event not found
+
+  /ingest/xml:
+    post:
+      tags: [Ingest]
+      operationId: ingestXml
+      summary: Ingest XML export data
+      description: |
+        Ingests full C123 XML export. This is the authoritative source for
+        event structure (classes, participants, schedule, results).
+
+        Should be sent frequently during the event.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestXmlRequest'
+      responses:
+        '200':
+          description: XML ingested successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestXmlResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /ingest/oncourse:
+    post:
+      tags: [Ingest]
+      operationId: ingestOnCourse
+      summary: Ingest OnCourse data
+      description: |
+        Updates athletes currently on course (from TCP stream).
+
+        **Note**: This data is silently ignored if no XML has been ingested yet.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestOnCourseRequest'
+      responses:
+        '200':
+          description: OnCourse data processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestOnCourseResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /ingest/results:
+    post:
+      tags: [Ingest]
+      operationId: ingestResults
+      summary: Ingest live results
+      description: |
+        Ingests real-time result updates from TCP stream as JSON.
+        Incrementally updates results while preserving XML-sourced structure.
+
+        **Note**: This data is silently ignored if no XML has been ingested yet.
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestResultsRequest'
+      responses:
+        '200':
+          description: Results processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestResultsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        Event-specific API key. Valid from 10 days before event start
+        until 5 days after event end.
+
+  schemas:
+    CreateEventRequest:
+      type: object
+      required:
+        - eventId
+        - mainTitle
+      properties:
+        eventId:
+          type: string
+          description: Unique event identifier (from C123)
+          example: "CZE-2026-001"
+        mainTitle:
+          type: string
+          description: Event main title
+          example: "Czech Canoe Slalom Championships 2026"
+        subTitle:
+          type: string
+          description: Event subtitle
+        location:
+          type: string
+          description: Event location
+          example: "Prague"
+        facility:
+          type: string
+          description: Facility name
+          example: "Troja Water Sports Centre"
+        startDate:
+          type: string
+          format: date
+          description: Event start date (ISO 8601)
+          example: "2026-06-15"
+        endDate:
+          type: string
+          format: date
+          description: Event end date (ISO 8601)
+          example: "2026-06-17"
+        discipline:
+          type: string
+          description: Sport discipline
+          example: "CSL"
+
+    CreateEventResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Internal event ID
+        eventId:
+          type: string
+          description: Event identifier
+        apiKey:
+          type: string
+          description: API key for data ingestion (64 hex characters)
+          example: "a1b2c3d4..."
+
+    EventConfig:
+      type: object
+      properties:
+        activeRaceId:
+          type: string
+          description: Currently active race for display
+        displayMode:
+          type: string
+          enum: [simple, detailed]
+          description: Result display mode
+        showOnCourse:
+          type: boolean
+          description: Whether to show OnCourse athletes
+
+    IngestXmlRequest:
+      type: object
+      required:
+        - xml
+      properties:
+        xml:
+          type: string
+          description: C123 XML export content
+
+    IngestXmlResponse:
+      type: object
+      properties:
+        imported:
+          type: object
+          properties:
+            participants:
+              type: integer
+            classes:
+              type: integer
+            races:
+              type: integer
+            results:
+              type: integer
+            courses:
+              type: integer
+
+    IngestOnCourseRequest:
+      type: object
+      required:
+        - oncourse
+      properties:
+        oncourse:
+          type: array
+          items:
+            $ref: '#/components/schemas/OnCourseEntry'
+
+    OnCourseEntry:
+      type: object
+      required:
+        - participantId
+        - raceId
+        - bib
+      properties:
+        participantId:
+          type: string
+        raceId:
+          type: string
+        bib:
+          type: integer
+        startTime:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [on_course, finished, dns, dnf]
+
+    IngestOnCourseResponse:
+      type: object
+      properties:
+        active:
+          type: integer
+          description: Number of athletes currently on course
+        ignored:
+          type: boolean
+          description: True if data was ignored (no XML yet)
+
+    IngestResultsRequest:
+      type: object
+      required:
+        - results
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LiveResultEntry'
+
+    LiveResultEntry:
+      type: object
+      required:
+        - raceId
+        - participantId
+        - bib
+      properties:
+        raceId:
+          type: string
+        participantId:
+          type: string
+        bib:
+          type: integer
+        time:
+          type: number
+          description: Run time in milliseconds
+        pen:
+          type: integer
+          description: Penalty seconds
+        total:
+          type: number
+          description: Total time in milliseconds
+        status:
+          type: string
+        rnk:
+          type: integer
+          description: Current rank
+        gates:
+          type: array
+          items:
+            type: object
+            properties:
+              gate:
+                type: integer
+              time:
+                type: number
+              pen:
+                type: integer
+
+    IngestResultsResponse:
+      type: object
+      properties:
+        updated:
+          type: integer
+          description: Number of results updated
+        ignored:
+          type: boolean
+          description: True if data was ignored (no XML yet)
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Invalid or expired API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
