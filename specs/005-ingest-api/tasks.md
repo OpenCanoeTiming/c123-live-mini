@@ -117,9 +117,9 @@
 
 **Purpose**: Final cleanup and validation
 
-- [ ] T028 [P] Update OpenAPI documentation if needed in `specs/005-ingest-api/contracts/openapi.yaml`
-- [ ] T029 Validate all endpoints per quickstart.md scenarios
-- [ ] T030 Run full test suite and verify no regressions
+- [x] T028 [P] Update OpenAPI documentation if needed in `specs/005-ingest-api/contracts/openapi.yaml`
+- [x] T029 Validate all endpoints per quickstart.md scenarios
+- [x] T030 Run full test suite and verify no regressions
 
 ---
 
