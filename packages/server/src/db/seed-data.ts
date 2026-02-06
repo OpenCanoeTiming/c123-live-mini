@@ -143,11 +143,16 @@ export const SEED_DNS_PARTICIPANT_NAME = 'KUDĚJ Jan';
 export const SEED_DNF_PARTICIPANT_ID = '61003.K1W.ZS';
 export const SEED_DNF_PARTICIPANT_NAME = 'SAMKOVÁ Valerie';
 
+/** DSQ example: Tobiáš KOVÁČ - Disqualified (missed gate) */
+export const SEED_DSQ_PARTICIPANT_ID = '48024.K1M.ZS';
+export const SEED_DSQ_PARTICIPANT_NAME = 'KOVÁČ Tobiáš';
+
 // --- Result Status Type Counts (for coverage verification) ---
 /** Expected result counts by status */
-export const SEED_STATUS_OK_COUNT = 18; // null status = OK
+export const SEED_STATUS_OK_COUNT = 17; // null status = OK
 export const SEED_STATUS_DNS_COUNT = 1;
 export const SEED_STATUS_DNF_COUNT = 1;
+export const SEED_STATUS_DSQ_COUNT = 1;
 
 // --- Course Constants ---
 export const SEED_COURSE_NR = 1;
@@ -683,21 +688,22 @@ export const seedResultsK1M: SeedResult[] = [
     total_behind: '+14.16',
   },
   {
+    // DSQ example for testing (gate missed intentionally)
     participant_ref: '48024.K1M.ZS',
     race_ref: 'K1M-ZS_BR1_25',
     start_order: 11,
     bib: 11,
     start_time: '13:40:00',
-    status: null, // OK
+    status: 'DSQ',
     dt_start: '13:40:01.380',
     dt_finish: '13:41:33.800',
     time: 92420, // 92.42s
-    gates: '0000000020000000000',
-    pen: 200, // 2s penalty
-    total: 94420,
-    rnk: 9,
+    gates: '0000000020000005000', // gate 15 missed
+    pen: 5200, // 50s + 2s penalty
+    total: 97620,
+    rnk: null, // DSQ = no rank
     rnk_order: 9,
-    total_behind: '+19.79',
+    total_behind: null,
   },
   {
     // DNS example for testing

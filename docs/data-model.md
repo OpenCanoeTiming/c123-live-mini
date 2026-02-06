@@ -1,7 +1,7 @@
 # Data Model: c123-live-mini
 
 **Version**: 1.0 | **Updated**: 2026-02-05
-**Source**: [c123-protocol-docs/c123-xml-format.md](../../../c123-protocol-docs/c123-xml-format.md)
+**Source**: [c123-protocol-docs/c123-xml-format.md](../../c123-protocol-docs/c123-xml-format.md)
 
 ## Entity-Relationship Diagram
 
