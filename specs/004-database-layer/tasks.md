@@ -83,10 +83,10 @@
 
 ### Implementation for User Story 3
 
-- [ ] T016 [P] [US3] Copy data-model.md from specs/004-database-layer/ to docs/data-model.md
-- [ ] T017 [US3] Verify ERD diagram in docs/data-model.md matches packages/server/src/db/schema.ts
-- [ ] T018 [US3] Verify XML mapping tables are accurate by comparing with packages/server/src/services/xml/ parsers
-- [ ] T019 [US3] Add link to docs/data-model.md from main README.md or docs index
+- [x] T016 [P] [US3] Copy data-model.md from specs/004-database-layer/ to docs/data-model.md
+- [x] T017 [US3] Verify ERD diagram in docs/data-model.md matches packages/server/src/db/schema.ts
+- [x] T018 [US3] Verify XML mapping tables are accurate by comparing with packages/server/src/services/xml/ parsers
+- [x] T019 [US3] Add link to docs/data-model.md from main README.md or docs index
 
 **Checkpoint**: Documentation accurately describes all 7 tables and XML mappings
 

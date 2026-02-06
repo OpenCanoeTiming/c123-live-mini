@@ -87,6 +87,7 @@ npm test
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md) - System design, data flows, authentication
+- [Data Model](docs/data-model.md) - Database schema, tables, XML mappings
 - [CLAUDE.md](CLAUDE.md) - AI assistant context and SDD workflow
 
 ## Related Projects
