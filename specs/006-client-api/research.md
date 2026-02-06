@@ -32,37 +32,38 @@
 
 ## R2: Gate Penalty Self-Describing Format
 
-**Decision**: Transform positional gate arrays (`[0, 2, 50, 0, ...]`) into array of objects with gate metadata.
+**Decision**: Transform positional gate arrays into self-describing objects **at ingest time**. Store the transformed format in DB.
 
-**Format**:
+**Format** (stored in `results.gates` as JSON):
 ```json
-{
-  "gates": [
-    { "number": 1, "type": "normal", "penalty": 0 },
-    { "number": 2, "type": "normal", "penalty": 2 },
-    { "number": 3, "type": "reverse", "penalty": 50 },
-    { "number": 4, "type": "normal", "penalty": 0 }
-  ]
-}
+[
+  { "number": 1, "type": "normal", "penalty": 0 },
+  { "number": 2, "type": "normal", "penalty": 2 },
+  { "number": 3, "type": "reverse", "penalty": 50 },
+  { "number": 4, "type": "normal", "penalty": 0 }
+]
 ```
 
-**Source data**:
-- Gate penalties: `results.gates` (JSON array of integers: 0, 2, 50, null)
-- Gate types: `courses.gate_config` (string like `"NNRNNNRNNNN"`, N=normal, R=reverse)
-- Gate count: `courses.nr_gates`
+**Source data at ingest**:
+- Gate penalties from XML: whitespace-separated string `"0 0 2 50"` → parsed to int array
+- Gate penalties from TCP/JSON: already structured `[{gate, time, pen}]`
+- Gate types: `courses.gate_config` (string like `"NNRN..."`, N=normal, R=reverse)
 
-**Transformation logic**:
-1. Parse `gates` JSON array from result
-2. Load course for the race's `course_nr`
-3. Zip gate penalties with gate_config characters
-4. Map: index → `number` (1-based), config char → `type`, value → `penalty`
+**Transformation logic (in IngestService)**:
+1. Parse gate penalties from XML or JSON source
+2. Look up course config for the race's `course_nr` (already in DB from same XML)
+3. Zip penalties with gate_config characters
+4. Map: index → `number` (1-based), config char → `type`, penalty value → `penalty`
 5. If course data unavailable, fall back to `type: "unknown"`
+6. Store as JSON string in `results.gates`
 
-**Rationale**: Frontend never needs to separately fetch course configuration. Each gate object is self-contained.
+**Key**: Course data (gate_config) is ingested before results in XML flow (courses are parsed first). For TCP live results, course config is already in DB from prior XML ingest.
+
+**Rationale**: Data is transformed once at write time, not on every read. Client API serves pre-transformed data directly.
 
 **Alternatives considered**:
-- Keep positional array + separate course endpoint: Requires two API calls, error-prone client-side join
-- Embed full course config in every result: Redundant, bloats response
+- Transform at read time in client API mappers: Violates "abstraction at ingest" principle, every consumer must re-implement
+- Store both raw + transformed: Unnecessary duplication
 
 ## R3: Public Identifier Strategy
 
@@ -130,3 +131,28 @@
 ```
 
 **Rationale**: Consistent patterns simplify frontend parsing. No wrapping in `{ data: ... }` — keeps responses flat and predictable.
+
+## R7: Abstraction at Ingest vs. Read Time
+
+**Decision**: All C123-to-agnostic data transformations happen at **ingest time**. The database stores already-abstracted data. Client API is a thin read layer.
+
+**DB Schema Changes Required** (migration 007):
+
+| Change | Type | Details |
+|--------|------|---------|
+| Add `races.race_type` | New column (TEXT) | Human-readable label from R1 mapping |
+| Rename `participants.icf_id` → `athlete_id` | Column rename | SQLite: add new column, copy data, drop old |
+| Change `results.gates` format | Data format change | From `[0,2,50]` to `[{number,type,penalty}]` |
+
+**Migration strategy**:
+- `races.race_type`: Add column, backfill from existing `dis_id` using R1 mapping. Keep `dis_id` for internal BR1/BR2 pairing logic.
+- `participants.athlete_id`: Add column, copy from `icf_id`, keep `icf_id` temporarily for backward compat.
+- `results.gates`: Backfill existing data by reading course config and transforming. New ingest writes self-describing format directly.
+
+**Why keep `dis_id`**: The `findPairedBrRace` and `getLinkedBrResults` repository methods use pattern matching on `race_id` strings (BR1↔BR2 pairing). This internal logic needs the raw code. `race_type` is the public-facing field.
+
+**Rationale**: Single point of transformation prevents duplication across consumers. DB becomes vendor-neutral. Read path is simple and fast.
+
+**Alternatives considered**:
+- Transform only in client API (original plan): DB stays C123-specific, every future consumer must re-transform
+- Full schema rewrite: Too invasive for this feature, dis_id still needed internally

@@ -5,13 +5,30 @@
 
 ## Summary
 
-Refactor existing client-facing routes to implement a technology-transparent public API. The routes already exist (`events`, `results`, `startlist`, `oncourse`, `categories`) but currently expose raw C123 internal data formats (positional gate arrays, raw dis_id codes, internal DB IDs, C123 participant IDs). This feature introduces a **response transformation layer** that maps internal DB representations to self-describing, technology-agnostic JSON responses, plus adds API documentation.
+Implement a technology-transparent public API for reading event data. The client-facing routes already exist (`events`, `results`, `startlist`, `oncourse`, `categories`) but currently expose raw C123 internal data formats. This feature has two parts:
 
-**Key insight**: This is primarily a **response transformation** task, not a new route creation task. The existing routes and repository methods already cover most functional requirements. The main work is:
-1. Building mappers that transform DB/internal types → public API types
-2. Enriching responses with self-describing data (gate objects, race type labels, etc.)
-3. Extending the detailed mode with timestamps and course context
-4. Adding API documentation
+1. **Data layer abstraction** (extends #005): DB schema migration + ingest transformation updates so the database stores already-abstracted, technology-agnostic data
+2. **Client API refinement**: Update route handlers to serve clean public responses, add API documentation
+
+**Key architectural decision**: Abstraction happens at **ingest time**, not at read time. The database becomes vendor-neutral. Client API is a thin read layer with minimal transformation (only filtering internal IDs and formatting).
+
+### What changes from #005
+
+| Data Item | Current (raw C123) | Target (abstracted) | Where |
+|-----------|-------------------|---------------------|-------|
+| `races.dis_id` (BR1, QUA) | Raw C123 code | + new `race_type` column (human-readable) | DB migration + ingest |
+| `participants.icf_id` | C123-specific name | Rename to `athlete_id` | DB migration + ingest |
+| `results.gates` ([0,2,50]) | Positional array | Self-describing objects [{number, type, penalty}] | Ingest transformation |
+| `courses.gate_config` (NNRN...) | Kept for internal use | Merged into gate objects at ingest | Ingest transformation |
+| OnCourse gates | Positional array | Self-describing objects | OnCourse store transformation |
+
+### What stays in #006 only
+
+- Draft event filtering on all public endpoints
+- Stripping internal DB `id` fields from responses
+- Response envelope patterns and error format consistency
+- Query params: `catId`, `detailed`, `includeAllRuns`
+- API documentation (Markdown + OpenAPI)
 
 ## Technical Context
 
@@ -35,8 +52,8 @@ Refactor existing client-facing routes to implement a technology-transparent pub
 | II. GitHub Issue Sync | PASS | Issue #6 updated after each phase |
 | III. Headless API | PASS | All endpoints are JSON API, no UI |
 | IV. Design System | N/A | No frontend changes in this feature |
-| V. Repository Pattern | PASS | Using existing repositories, no direct DB access |
-| VI. Minimal Viable Scope | PASS | Only specified endpoints, no extras |
+| V. Repository Pattern | PASS | Using existing repositories, schema migration via Kysely |
+| VI. Minimal Viable Scope | PASS | DB changes are prerequisite for client API, not scope creep |
 
 No violations. Complexity Tracking not needed.
 
@@ -48,7 +65,7 @@ No violations. Complexity Tracking not needed.
 specs/006-client-api/
 ├── plan.md              # This file
 ├── research.md          # Phase 0: decisions and rationale
-├── data-model.md        # Phase 1: public API data shapes
+├── data-model.md        # Phase 1: DB schema changes + public API data shapes
 ├── quickstart.md        # Phase 1: testing guide
 ├── contracts/           # Phase 1: OpenAPI spec
 │   └── openapi.yaml
@@ -59,43 +76,51 @@ specs/006-client-api/
 
 ```text
 packages/server/src/
-├── routes/              # MODIFY existing route handlers
-│   ├── events.ts        # Update response mapping
-│   ├── results.ts       # Add transformation layer, extend detailed mode
-│   ├── startlist.ts     # Update response mapping
-│   ├── oncourse.ts      # Update response mapping with self-describing gates
-│   └── categories.ts    # Update response mapping
-├── mappers/             # NEW: response transformation layer
-│   ├── index.ts         # Re-exports
-│   ├── eventMapper.ts   # DB Event → Public Event
-│   ├── raceMapper.ts    # DB Race → Public Race (dis_id → race type label)
-│   ├── participantMapper.ts  # DB Participant → Public Participant (icf_id → athlete_id)
-│   ├── resultMapper.ts  # DB Result → Public Result (gates array → gate objects)
-│   └── oncourseMapper.ts    # OnCourseEntry → Public OnCourse (self-describing gates)
-├── schemas/             # MODIFY: add response schemas for validation
-│   └── clientApi.ts     # NEW: Fastify JSON schemas for client endpoints
-└── utils/
-    └── raceTypes.ts     # NEW: dis_id → human-readable race type mapping
+├── db/
+│   └── migrations/
+│       └── 007-*.ts         # NEW: schema migration (race_type, athlete_id, gates format)
+├── services/
+│   ├── IngestService.ts     # MODIFY: add race_type mapping, gates transformation
+│   ├── ResultIngestService.ts  # MODIFY: gates → self-describing objects
+│   └── OnCourseStore.ts     # MODIFY: transform gates on store
+├── routes/                  # MODIFY: existing route handlers
+│   ├── events.ts            # Strip internal IDs, ensure draft filtering
+│   ├── results.ts           # Serve pre-transformed data, extend detailed mode
+│   ├── startlist.ts         # Strip internal IDs, add athleteId
+│   ├── oncourse.ts          # Serve pre-transformed gate data
+│   └── categories.ts        # Minor: strip internal IDs
+├── utils/
+│   └── raceTypes.ts         # NEW: dis_id → race_type mapping (used by ingest)
+└── schemas/
+    └── clientApi.ts         # NEW: Fastify JSON schemas for response validation
 
 packages/shared/src/types/
-└── publicApi.ts         # NEW: public API response type definitions
+├── race.ts                  # MODIFY: add raceType field
+├── participant.ts           # MODIFY: icfId → athleteId
+├── result.ts                # MODIFY: gates type change
+└── publicApi.ts             # NEW: public API response type definitions
+
+packages/server/src/db/
+├── schema.ts                # MODIFY: add race_type, rename icf_id
+├── repositories/
+│   ├── RaceRepository.ts    # MODIFY: include race_type in queries
+│   └── ParticipantRepository.ts  # MODIFY: athlete_id field
+└── seed-data.ts             # MODIFY: use new field names and formats
 
 packages/server/tests/
-├── routes/              # MODIFY: update existing route tests
-│   ├── events.test.ts
-│   ├── results.test.ts
-│   ├── startlist.test.ts
-│   ├── oncourse.test.ts
-│   └── categories.test.ts
-└── mappers/             # NEW: unit tests for mappers
-    ├── eventMapper.test.ts
-    ├── raceMapper.test.ts
-    ├── resultMapper.test.ts
-    └── oncourseMapper.test.ts
+├── services/
+│   ├── ingest.test.ts       # MODIFY: verify transformations
+│   └── raceTypes.test.ts    # NEW: race type mapping tests
+├── routes/
+│   ├── events.test.ts       # MODIFY: verify clean responses
+│   ├── results.test.ts      # MODIFY: verify self-describing gates
+│   └── ...
+└── migrations/
+    └── 007.test.ts          # NEW: migration test
 
 docs/
 └── api/
-    └── client-api.md    # API documentation (Markdown)
+    └── client-api.md        # API documentation (Markdown)
 ```
 
-**Structure Decision**: Extends existing monorepo structure. New `mappers/` directory in server package provides clean separation between DB data shapes and public API shapes. Shared types in `packages/shared` ensure frontend can import the same type definitions.
+**Structure Decision**: No new `mappers/` directory needed. Transformation logic lives in ingest services (where data enters the system). Route handlers become simpler — they read already-clean data from DB and only strip internal IDs.

@@ -2,7 +2,66 @@
 
 **Feature**: 006-client-api | **Date**: 2026-02-06
 
-This document defines the **public API data shapes** — what consumers receive. These are transformations of internal DB types, not new database tables.
+This document defines **DB schema changes** and **public API data shapes**. Abstraction happens at ingest time — the database stores technology-agnostic data.
+
+## DB Schema Changes (Migration 007)
+
+### races table — add `race_type` column
+
+```sql
+ALTER TABLE races ADD COLUMN race_type TEXT;
+-- Backfill from dis_id using R1 mapping
+UPDATE races SET race_type = CASE dis_id
+  WHEN 'BR1' THEN 'best-run-1'
+  WHEN 'BR2' THEN 'best-run-2'
+  WHEN 'TSR' THEN 'training'
+  WHEN 'SR'  THEN 'seeding'
+  WHEN 'QUA' THEN 'qualification'
+  WHEN 'SEM' THEN 'semifinal'
+  WHEN 'FIN' THEN 'final'
+  WHEN 'XT'  THEN 'cross-trial'
+  WHEN 'X4'  THEN 'cross-heat'
+  WHEN 'XS'  THEN 'cross-semifinal'
+  WHEN 'XF'  THEN 'cross-final'
+  WHEN 'XER' THEN 'cross-extra'
+  ELSE 'unknown'
+END;
+```
+
+**Note**: `dis_id` is kept — it's used internally for BR1↔BR2 pairing logic in `findPairedBrRace()`.
+
+### participants table — add `athlete_id` column
+
+```sql
+ALTER TABLE participants ADD COLUMN athlete_id TEXT;
+-- Backfill from icf_id
+UPDATE participants SET athlete_id = icf_id;
+```
+
+**Note**: `icf_id` is kept temporarily for backward compatibility. New ingest writes to `athlete_id`.
+
+### results.gates — format change (data migration)
+
+The `gates` column changes from positional integer array to self-describing object array:
+
+**Before**: `"[0, 2, 50, 0]"` (positional, requires course config to interpret)
+**After**: `"[{\"number\":1,\"type\":\"normal\",\"penalty\":0},{\"number\":2,\"type\":\"normal\",\"penalty\":2},{\"number\":3,\"type\":\"reverse\",\"penalty\":50}]"`
+
+Backfill script:
+1. For each result with gates data
+2. Look up race → course_nr → course.gate_config
+3. Zip gate values with gate_config characters
+4. Write transformed JSON back
+
+### Ingest Changes
+
+| Service | Change |
+|---------|--------|
+| `IngestService.ts` (XML) | Map `dis_id` → `race_type` when inserting/upserting races |
+| `IngestService.ts` (XML) | Write `athlete_id` instead of `icf_id` for participants |
+| `IngestService.ts` (XML) | Transform gates + gate_config → self-describing format before storing results |
+| `ResultIngestService.ts` (TCP) | Transform incoming gate data to self-describing format using stored course config |
+| `OnCourseStore.ts` | Transform incoming gate data to self-describing format on store |
 
 ## Public API Types
 
@@ -73,7 +132,7 @@ Used in `GET /api/v1/events/:eventId/categories` response.
 |-------|------|--------|-------------|
 | raceId | string | races.race_id | Race identifier |
 | classId | string | resolved from classes.class_id | Parent class |
-| raceType | string | **mapped from** races.dis_id | Human-readable (see research.md R1) |
+| raceType | string | races.race_type | Human-readable (stored in DB, see research.md R1) |
 | raceOrder | number \| null | races.race_order | Schedule position |
 | startTime | string \| null | races.start_time | Scheduled start (ISO 8601) |
 | raceStatus | number | races.race_status | Status code (1-12) |
@@ -87,7 +146,7 @@ Used in startlist and result responses (embedded).
 | Field | Type | Source | Description |
 |-------|------|--------|-------------|
 | bib | number \| null | participants.event_bib | Bib number |
-| athleteId | string \| null | **renamed from** participants.icf_id | Registration ID |
+| athleteId | string \| null | participants.athlete_id | Registration ID (stored in DB) |
 | name | string | **formatted** familyName + givenName | Full name |
 | club | string \| null | participants.club | Club name |
 | noc | string \| null | participants.noc | Country code |
@@ -102,7 +161,7 @@ Used in startlist and result responses (embedded).
 |-------|------|--------|-------------|
 | rnk | number \| null | results.rnk | Overall rank |
 | bib | number \| null | results.bib | Bib number |
-| athleteId | string \| null | participants.icf_id | Registration ID |
+| athleteId | string \| null | participants.athlete_id | Registration ID (stored in DB) |
 | name | string | formatted | Full name |
 | club | string \| null | participants.club | Club |
 | noc | string \| null | participants.noc | Country |
@@ -121,7 +180,7 @@ Used in startlist and result responses (embedded).
 |-------|------|--------|-------------|
 | dtStart | string \| null | results.dt_start | Actual start timestamp |
 | dtFinish | string \| null | results.dt_finish | Actual finish timestamp |
-| gates | PublicGate[] \| null | **transformed** | Self-describing gate penalties |
+| gates | PublicGate[] \| null | results.gates (pre-transformed in DB) | Self-describing gate penalties |
 | courseGateCount | number \| null | courses.nr_gates | Total gates on course |
 
 ### PublicResult (multi-run — additional fields for BR races)
@@ -154,7 +213,7 @@ Self-describing gate penalty object.
 | name | string | OnCourseEntry.name | Full name |
 | club | string | OnCourseEntry.club | Club |
 | position | number | OnCourseEntry.position | Position on course |
-| gates | PublicGate[] | **transformed** | Self-describing gate progress |
+| gates | PublicGate[] | OnCourseStore (pre-transformed) | Self-describing gate progress |
 | completed | boolean | OnCourseEntry.completed | Finished flag |
 | dtStart | string \| null | OnCourseEntry.dtStart | Start timestamp |
 | dtFinish | string \| null | OnCourseEntry.dtFinish | Finish timestamp |
@@ -169,14 +228,23 @@ Self-describing gate penalty object.
 
 ## Transformation Summary
 
-| Internal → Public | Transformation |
-|-------------------|----------------|
-| `events.id` | Omitted |
-| `events.event_id` | → `eventId` |
-| `participants.icf_id` | → `athleteId` |
-| `participants.participant_id` | Omitted (C123 internal) |
-| `races.dis_id` | → `raceType` (mapped label) |
-| `results.gates` (JSON int[]) | → `gates` (PublicGate[]) with course context |
-| `courses.gate_config` | Merged into PublicGate objects |
-| `*_name` (family+given) | → `name` (formatted string) |
-| All `.id` fields | Omitted from public responses |
+### At Ingest Time (DB stores abstracted data)
+
+| C123 Input | DB Column | Transformation |
+|------------|-----------|----------------|
+| `dis_id` (BR1, QUA) | `races.race_type` | Mapped to human-readable label |
+| `ICFId` | `participants.athlete_id` | Renamed (value preserved) |
+| gates positional array + gate_config | `results.gates` | Merged into self-describing objects |
+| OnCourse gates | OnCourseStore | Transformed on store with course config |
+
+### At Read Time (Client API — minimal)
+
+| DB Field | API Response | Transformation |
+|----------|-------------|----------------|
+| `events.id`, `*.id` | Omitted | Strip internal IDs |
+| `events.event_id` | `eventId` | camelCase rename |
+| `participants.participant_id` | Omitted | C123 internal, not exposed |
+| `races.dis_id` | Omitted | Internal, `raceType` used instead |
+| `participants.icf_id` | Omitted | Legacy, `athleteId` used instead |
+| `family_name` + `given_name` | `name` | Formatted string |
+| `courses.gate_config` | Omitted | Already merged into gate objects |

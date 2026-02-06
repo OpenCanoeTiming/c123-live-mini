@@ -138,19 +138,27 @@ A developer (including the c123-live-mini-page frontend team) needs to understan
 - Q: Jak identifikovat eventy v public API URL? → A: Pomocí event_id – je to veřejný identifikátor zadaný timekeeperem při zakládání akce (může být číslo závodu ČSK, testovací ID, apod.). Není to interní C123 formát, ale uživatelská volba. Interní DB id se v public API nepoužívá.
 - Q: Mají se skrýt citlivé údaje závodníků (ICF ID, rok narození)? → A: Ne, ICF ID a rok narození jsou běžná součást publikovaných výsledků. ICF ID se v public API zobecní na athlete_id (nemusí jít vždy o ICF registraci). Rok narození se vrací jako součást dat závodníka.
 - Q: Má Client API vracet typ závodu (BR, kvalifikace, finále, cross) ve srozumitelné formě? → A: Ano, abstrahovaný human-readable typ závodu (např. "qualification", "semifinal", "final", "best-run-1", "best-run-2", "cross-heat"). Žádné raw C123 kódy (BR1, QUA, FIN) v public API.
+- Q: Kde se má dělat abstrakce C123 dat – při ingestu, nebo v client API? → A: Při ingestu. Databáze má ukládat již abstrahovaná, technology-agnostic data. Client API pak jen čte a vrací data jak jsou. Toto rozšiřuje scope #006 o DB schema migration a úpravu ingest transformací (korekce z #005). Spec #005 se zpětně nekoriguje.
 
 ## Requirements *(mandatory)*
 
-### Design Principle: Technology-Transparent API
+### Design Principle: Technology-Transparent Data Layer
 
-The Client API MUST be fully abstracted from the underlying timing system (Canoe123). All response data must be self-describing and human-readable without knowledge of C123 internals:
+The entire data layer (database + API) MUST be abstracted from the underlying timing system (Canoe123). **Abstraction happens at ingest time**, not at read time. The database stores already-transformed, technology-agnostic data:
 
-- **Gate penalties** include explicit gate numbers and gate types (normal/reverse) – no positional arrays requiring external course configuration to interpret
-- **Identifiers** are clean and meaningful to consumers – no raw C123 composite IDs
+- **Gate penalties** are stored as self-describing objects (with gate number, gate type, penalty value) – merged from positional arrays and course config during ingest
+- **Race types** are stored as human-readable labels (e.g., "best-run-1", "qualification") – mapped from C123 codes during ingest
+- **Athlete IDs** are stored under generic name `athlete_id` – renamed from C123-specific `icf_id` during ingest
+- **Identifiers** are clean and meaningful to consumers – no raw C123 composite IDs in public-facing data
 - **Times** are clearly structured with units specified
-- **Data format** is consistent across all endpoints (results, oncourse, startlist) – same entity always looks the same regardless of endpoint
+- **Data format** is consistent across all endpoints (results, oncourse, startlist)
 
-This ensures the API can serve any frontend or third-party consumer regardless of the timing technology behind it.
+This ensures:
+1. The database is vendor-neutral (not a 1:1 copy of C123 data)
+2. Client API is a simple read layer with minimal transformation
+3. Any future consumer (WebSocket, export) gets clean data without re-implementing transformations
+
+**Scope note**: This feature includes DB schema migration and ingest transformation updates as a prerequisite for the client API. This extends the original ingest implementation (#005) with data abstraction that was not part of the initial scope.
 
 ### Functional Requirements
 
