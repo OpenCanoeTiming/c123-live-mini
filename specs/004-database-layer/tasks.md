@@ -96,9 +96,9 @@
 
 **Purpose**: Final verification and cleanup
 
-- [ ] T020 Run quickstart.md validation steps from specs/004-database-layer/quickstart.md
-- [ ] T021 Verify frontend displays seeded data correctly (manual check)
-- [ ] T022 Update CLAUDE.md if any new patterns or conventions were established
+- [x] T020 Run quickstart.md validation steps from specs/004-database-layer/quickstart.md
+- [x] T021 Verify frontend displays seeded data correctly (manual check)
+- [x] T022 Update CLAUDE.md if any new patterns or conventions were established
 
 ---
 
