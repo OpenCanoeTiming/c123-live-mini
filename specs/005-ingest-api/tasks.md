@@ -20,10 +20,10 @@
 
 **Purpose**: Database migrations and shared infrastructure for all user stories
 
-- [ ] T001 Create migration 008_add_event_config.ts in `packages/server/src/db/migrations/008_add_event_config.ts`
-- [ ] T002 Create migration 009_create_ingest_records.ts in `packages/server/src/db/migrations/009_create_ingest_records.ts`
-- [ ] T003 Update Database interface in `packages/server/src/db/schema.ts` with IngestRecordsTable and EventsTable extensions
-- [ ] T004 Run migrations and verify schema changes with `npm run migrate`
+- [x] T001 Create migration 008_add_event_config.ts in `packages/server/src/db/migrations/008_add_event_config.ts`
+- [x] T002 Create migration 009_create_ingest_records.ts in `packages/server/src/db/migrations/009_create_ingest_records.ts`
+- [x] T003 Update Database interface in `packages/server/src/db/schema.ts` with IngestRecordsTable and EventsTable extensions
+- [x] T004 Run migrations and verify schema changes with `npm run migrate`
 
 ---
 
@@ -33,12 +33,12 @@
 
 **⚠️ CRITICAL**: User story phases depend on these tasks
 
-- [ ] T005 Create IngestRecordRepository in `packages/server/src/db/repositories/IngestRecordRepository.ts`
-- [ ] T006 Add isApiKeyValid() function to `packages/server/src/utils/apiKey.ts`
-- [ ] T007 Update apiKeyAuth middleware to check validity window in `packages/server/src/middleware/apiKeyAuth.ts`
-- [ ] T008 [P] Create EventConfig type and validation schema in `packages/server/src/schemas/eventConfig.ts`
-- [ ] T009 [P] Create LiveResultInput type in `packages/server/src/types/ingest.ts`
-- [ ] T010 Add config and has_xml_data methods to EventRepository in `packages/server/src/db/repositories/EventRepository.ts`
+- [x] T005 Create IngestRecordRepository in `packages/server/src/db/repositories/IngestRecordRepository.ts`
+- [x] T006 Add isApiKeyValid() function to `packages/server/src/utils/apiKey.ts`
+- [x] T007 Update apiKeyAuth middleware to check validity window in `packages/server/src/middleware/apiKeyAuth.ts`
+- [x] T008 [P] Create EventConfig type and validation schema in `packages/server/src/schemas/eventConfig.ts`
+- [x] T009 [P] Create LiveResultInput type in `packages/server/src/types/ingest.ts`
+- [x] T010 Add config and has_xml_data methods to EventRepository in `packages/server/src/db/repositories/EventRepository.ts`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin
 

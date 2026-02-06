@@ -101,6 +101,7 @@ export function registerAdminRoutes(
       discipline: discipline ?? null,
       status: 'draft',
       api_key: apiKey,
+      has_xml_data: 0,
     });
 
     reply.code(201);
