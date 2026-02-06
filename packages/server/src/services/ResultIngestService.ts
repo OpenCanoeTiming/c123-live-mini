@@ -5,6 +5,9 @@ import { ParticipantRepository } from '../db/repositories/ParticipantRepository.
 import { ResultRepository } from '../db/repositories/ResultRepository.js';
 import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
 import type { LiveResultInput, ResultsIngestResult } from '../types/ingest.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('ResultIngestService');
 
 /**
  * Service for ingesting live results from TCP stream via JSON
@@ -44,7 +47,11 @@ export class ResultIngestService {
         input.raceId
       );
       if (!race) {
-        // Skip unknown races
+        log.debug('Skipping result for unknown race', {
+          eventId,
+          raceId: input.raceId,
+          bib: input.bib,
+        });
         continue;
       }
 
@@ -54,7 +61,11 @@ export class ResultIngestService {
         input.participantId
       );
       if (!participant) {
-        // Skip unknown participants
+        log.debug('Skipping result for unknown participant', {
+          eventId,
+          participantId: input.participantId,
+          bib: input.bib,
+        });
         continue;
       }
 

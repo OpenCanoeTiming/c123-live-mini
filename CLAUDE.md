@@ -210,10 +210,8 @@ flowchart LR
 - **Frontend:** Mobile-first, rvp-design-system only
 
 ## Active Technologies
-- TypeScript 5.x (Node.js 20 LTS) + Fastify, Kysely, better-sqlite3
+- TypeScript 5.x (Node.js 20 LTS, strict mode) + Fastify, Kysely, better-sqlite3
 - SQLite file-based (`packages/server/data/live-mini.db`, Repository Pattern)
-- TypeScript 5.x, Node.js 20 LTS (strict mode) + Fastify, Kysely, better-sqlite3 (005-ingest-api)
-- SQLite file-based (`packages/server/data/live-mini.db`), Repository Pattern (005-ingest-api)
 
 ## Recent Changes
 - 003-technical-poc: Monorepo structure (packages/server, packages/page), React + Vite frontend

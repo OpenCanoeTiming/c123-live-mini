@@ -24,6 +24,14 @@ interface EventConfigParams {
 }
 
 /**
+ * Error response
+ */
+interface ErrorResponse {
+  error: string;
+  message: string;
+}
+
+/**
  * Event config response
  */
 interface EventConfigResponse extends EventConfig {}
@@ -45,7 +53,7 @@ export function registerConfigRoutes(
    */
   app.get<{
     Params: EventConfigParams;
-    Reply: EventConfigResponse;
+    Reply: EventConfigResponse | ErrorResponse;
   }>(
     '/api/v1/admin/events/:eventId/config',
     {
@@ -57,25 +65,18 @@ export function registerConfigRoutes(
       const authRequest = request as AuthenticatedRequest;
 
       // Verify the event ID matches the authenticated event
+      // The API key auth already validated the event exists
       if (authRequest.event?.eventId !== eventId) {
         reply.code(404).send({
           error: 'Not found',
           message: `Event not found: ${eventId}`,
-        } as unknown as EventConfigResponse);
+        });
         return;
       }
 
-      const event = await eventRepo.findByEventId(eventId);
-      if (!event) {
-        reply.code(404).send({
-          error: 'Not found',
-          message: `Event not found: ${eventId}`,
-        } as unknown as EventConfigResponse);
-        return;
-      }
-
-      // Parse and return config
-      const config = parseEventConfig(event.config);
+      // Get config from the authenticated event's database record
+      const configJson = await eventRepo.getConfig(authRequest.event.id);
+      const config = parseEventConfig(configJson);
       return config;
     }
   );
@@ -87,7 +88,7 @@ export function registerConfigRoutes(
   app.patch<{
     Params: EventConfigParams;
     Body: Partial<EventConfig>;
-    Reply: EventConfigResponse;
+    Reply: EventConfigResponse | ErrorResponse;
   }>(
     '/api/v1/admin/events/:eventId/config',
     {
@@ -99,22 +100,16 @@ export function registerConfigRoutes(
       const authRequest = request as AuthenticatedRequest;
 
       // Verify the event ID matches the authenticated event
-      if (authRequest.event?.eventId !== eventId) {
+      // The API key auth already validated the event exists
+      if (!authRequest.event || authRequest.event.eventId !== eventId) {
         reply.code(404).send({
           error: 'Not found',
           message: `Event not found: ${eventId}`,
-        } as unknown as EventConfigResponse);
+        });
         return;
       }
 
-      const event = await eventRepo.findByEventId(eventId);
-      if (!event) {
-        reply.code(404).send({
-          error: 'Not found',
-          message: `Event not found: ${eventId}`,
-        } as unknown as EventConfigResponse);
-        return;
-      }
+      const eventDbId = authRequest.event.id;
 
       // Validate the incoming config update
       const validationResult = eventConfigSchema.safeParse(request.body);
@@ -122,21 +117,22 @@ export function registerConfigRoutes(
         reply.code(400).send({
           error: 'Invalid request',
           message: validationResult.error.issues[0]?.message ?? 'Invalid config',
-        } as unknown as EventConfigResponse);
+        });
         return;
       }
 
       // Merge with existing config
-      const existingConfig = parseEventConfig(event.config);
+      const existingConfigJson = await eventRepo.getConfig(eventDbId);
+      const existingConfig = parseEventConfig(existingConfigJson);
       const newConfig = mergeEventConfig(existingConfig, validationResult.data);
 
       // Save the updated config
       const configJson = serializeEventConfig(newConfig);
-      await eventRepo.updateConfig(event.id, configJson);
+      await eventRepo.updateConfig(eventDbId, configJson);
 
       // Log the config update
       await ingestRecordRepo.insert({
-        eventId: event.id,
+        eventId: eventDbId,
         sourceType: 'config',
         status: 'success',
         payloadSize: JSON.stringify(request.body).length,
