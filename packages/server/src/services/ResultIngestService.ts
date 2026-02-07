@@ -3,9 +3,11 @@ import type { Database } from '../db/schema.js';
 import { RaceRepository } from '../db/repositories/RaceRepository.js';
 import { ParticipantRepository } from '../db/repositories/ParticipantRepository.js';
 import { ResultRepository } from '../db/repositories/ResultRepository.js';
+import { CourseRepository } from '../db/repositories/CourseRepository.js';
 import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
 import type { LiveResultInput, ResultsIngestResult } from '../types/ingest.js';
 import { createLogger } from '../utils/logger.js';
+import { transformTcpGates, gatesToJson } from '../utils/gateTransform.js';
 
 const log = createLogger('ResultIngestService');
 
@@ -16,12 +18,14 @@ export class ResultIngestService {
   private readonly raceRepo: RaceRepository;
   private readonly participantRepo: ParticipantRepository;
   private readonly resultRepo: ResultRepository;
+  private readonly courseRepo: CourseRepository;
   private readonly ingestRecordRepo: IngestRecordRepository;
 
   constructor(db: Kysely<Database>) {
     this.raceRepo = new RaceRepository(db);
     this.participantRepo = new ParticipantRepository(db);
     this.resultRepo = new ResultRepository(db);
+    this.courseRepo = new CourseRepository(db);
     this.ingestRecordRepo = new IngestRecordRepository(db);
   }
 
@@ -69,8 +73,21 @@ export class ResultIngestService {
         continue;
       }
 
-      // Prepare gates JSON if provided
-      const gatesJson = input.gates ? JSON.stringify(input.gates) : undefined;
+      // Transform gates to self-describing format if provided
+      let gatesJson: string | undefined;
+      if (input.gates && input.gates.length > 0) {
+        // Get course config for gate type information
+        let gateConfig: string | null = null;
+        if (race.course_nr !== null) {
+          const course = await this.courseRepo.findByEventAndCourseNr(
+            eventId,
+            race.course_nr
+          );
+          gateConfig = course?.gate_config ?? null;
+        }
+        const transformedGates = transformTcpGates(input.gates, gateConfig);
+        gatesJson = gatesToJson(transformedGates);
+      }
 
       // Upsert the result
       await this.resultRepo.upsert(eventId, race.id, {

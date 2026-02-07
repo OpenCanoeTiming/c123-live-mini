@@ -5,6 +5,8 @@
 **Status**: Draft
 **Input**: Feature #5 - Admin and data ingestion API endpoints
 
+> **Note:** Extended by Feature #006 (Client API) — see [006-client-api/data-model.md](../006-client-api/data-model.md) for schema additions.
+
 ## Clarifications
 
 ### Session 2026-02-06

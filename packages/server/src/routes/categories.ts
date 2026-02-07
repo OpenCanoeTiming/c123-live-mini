@@ -53,12 +53,12 @@ export function registerCategoriesRoutes(
     async (request, reply) => {
     const { eventId } = request.params;
 
-    // Find event
+    // Find event - return 404 for non-existent or draft events
     const event = await eventRepo.findByEventId(eventId);
-    if (!event) {
+    if (!event || event.status === 'draft') {
       reply.code(404).send({
-        error: 'Not found',
-        message: `Event not found: ${eventId}`,
+        error: 'NotFound',
+        message: 'Event not found',
       } as unknown as CategoriesResponse);
       return;
     }

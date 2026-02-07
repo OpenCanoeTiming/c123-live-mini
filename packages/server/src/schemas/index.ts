@@ -30,16 +30,17 @@ export const eventsListSchema = {
           items: {
             type: 'object',
             properties: {
-              id: { type: 'integer' },
+              // No internal ID - technology-transparent API
               eventId: { type: 'string' },
               mainTitle: { type: 'string' },
               subTitle: { type: ['string', 'null'] },
               location: { type: ['string', 'null'] },
               startDate: { type: ['string', 'null'] },
               endDate: { type: ['string', 'null'] },
+              discipline: { type: ['string', 'null'] },
               status: { type: 'string' },
             },
-            required: ['id', 'eventId', 'mainTitle', 'status'],
+            required: ['eventId', 'mainTitle', 'status'],
           },
         },
       },
@@ -65,7 +66,7 @@ export const eventDetailSchema = {
         event: {
           type: 'object',
           properties: {
-            id: { type: 'integer' },
+            // No internal ID - technology-transparent API
             eventId: { type: 'string' },
             mainTitle: { type: 'string' },
             subTitle: { type: ['string', 'null'] },
@@ -76,7 +77,7 @@ export const eventDetailSchema = {
             discipline: { type: ['string', 'null'] },
             status: { type: 'string' },
           },
-          required: ['id', 'eventId', 'mainTitle', 'status'],
+          required: ['eventId', 'mainTitle', 'status'],
         },
         classes: {
           type: 'array',
@@ -85,6 +86,7 @@ export const eventDetailSchema = {
             properties: {
               classId: { type: 'string' },
               name: { type: 'string' },
+              longTitle: { type: ['string', 'null'] },
               categories: {
                 type: 'array',
                 items: {
@@ -108,13 +110,14 @@ export const eventDetailSchema = {
             type: 'object',
             properties: {
               raceId: { type: 'string' },
-              classId: { type: ['string', 'null'] },
-              disId: { type: 'string' },
+              classId: { type: 'string' },
+              // Use raceType instead of disId
+              raceType: { type: 'string' },
               raceOrder: { type: ['integer', 'null'] },
               startTime: { type: ['string', 'null'] },
               raceStatus: { type: 'integer' },
             },
-            required: ['raceId', 'disId', 'raceStatus'],
+            required: ['raceId', 'classId', 'raceType', 'raceStatus'],
           },
         },
       },
@@ -146,6 +149,17 @@ export const resultsQuerySchema = {
   },
 } as const;
 
+// Schema for self-describing gate object
+const publicGateSchema = {
+  type: 'object',
+  properties: {
+    number: { type: 'integer' },
+    type: { type: 'string', enum: ['normal', 'reverse', 'unknown'] },
+    penalty: { type: ['integer', 'null'] },
+  },
+  required: ['number', 'type', 'penalty'],
+} as const;
+
 export const resultsSchema = {
   params: resultsParamsSchema,
   querystring: resultsQuerySchema,
@@ -158,10 +172,10 @@ export const resultsSchema = {
           properties: {
             raceId: { type: 'string' },
             classId: { type: ['string', 'null'] },
-            disId: { type: 'string' },
+            raceType: { type: 'string' },
             raceStatus: { type: 'integer' },
           },
-          required: ['raceId', 'disId', 'raceStatus'],
+          required: ['raceId', 'raceType', 'raceStatus'],
         },
         results: {
           type: 'array',
@@ -170,7 +184,7 @@ export const resultsSchema = {
             properties: {
               rnk: { type: ['integer', 'null'] },
               bib: { type: ['integer', 'null'] },
-              participantId: { type: 'string' },
+              athleteId: { type: ['string', 'null'] },
               name: { type: 'string' },
               club: { type: ['string', 'null'] },
               noc: { type: ['string', 'null'] },
@@ -180,11 +194,17 @@ export const resultsSchema = {
               pen: { type: ['integer', 'null'] },
               total: { type: ['integer', 'null'] },
               totalBehind: { type: ['string', 'null'] },
+              catTotalBehind: { type: ['string', 'null'] },
               status: { type: ['string', 'null'] },
+              // Detailed mode fields
+              dtStart: { type: ['string', 'null'] },
+              dtFinish: { type: ['string', 'null'] },
               gates: {
-                type: 'array',
-                items: { type: ['integer', 'null'] },
+                type: ['array', 'null'],
+                items: publicGateSchema,
               },
+              courseGateCount: { type: ['integer', 'null'] },
+              // Multi-run fields
               betterRunNr: { type: ['integer', 'null'] },
               totalTotal: { type: ['integer', 'null'] },
               prevTime: { type: ['integer', 'null'] },
@@ -203,15 +223,15 @@ export const resultsSchema = {
                     total: { type: ['integer', 'null'] },
                     rnk: { type: ['integer', 'null'] },
                     gates: {
-                      type: 'array',
-                      items: { type: ['integer', 'null'] },
+                      type: ['array', 'null'],
+                      items: publicGateSchema,
                     },
                   },
                   required: ['runNr', 'raceId'],
                 },
               },
             },
-            required: ['participantId', 'name'],
+            required: ['athleteId', 'name'],
           },
         },
       },
@@ -256,13 +276,14 @@ export const startlistSchema = {
             properties: {
               startOrder: { type: ['integer', 'null'] },
               bib: { type: ['integer', 'null'] },
-              participantId: { type: 'string' },
+              athleteId: { type: ['string', 'null'] },
               name: { type: 'string' },
               club: { type: ['string', 'null'] },
               noc: { type: ['string', 'null'] },
+              catId: { type: ['string', 'null'] },
               startTime: { type: ['string', 'null'] },
             },
-            required: ['participantId', 'name'],
+            required: ['athleteId', 'name'],
           },
         },
       },
@@ -295,26 +316,26 @@ export const oncourseSchema = {
           items: {
             type: 'object',
             properties: {
-              position: { type: 'integer' },
               raceId: { type: 'string' },
               bib: { type: 'integer' },
-              participantId: { type: 'string' },
               name: { type: 'string' },
-              club: { type: ['string', 'null'] },
+              club: { type: 'string' },
+              position: { type: 'integer' },
               gates: {
                 type: 'array',
-                items: { type: ['integer', 'null'] },
+                items: publicGateSchema,
               },
+              completed: { type: 'boolean' },
               dtStart: { type: ['string', 'null'] },
               dtFinish: { type: ['string', 'null'] },
               time: { type: ['integer', 'null'] },
-              pen: { type: ['integer', 'null'] },
+              pen: { type: 'integer' },
               total: { type: ['integer', 'null'] },
               rank: { type: ['integer', 'null'] },
               ttbDiff: { type: ['string', 'null'] },
               ttbName: { type: ['string', 'null'] },
             },
-            required: ['position', 'raceId', 'bib', 'participantId', 'name'],
+            required: ['raceId', 'bib', 'name', 'club', 'position', 'gates', 'completed'],
           },
         },
       },

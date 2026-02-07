@@ -1,0 +1,547 @@
+openapi: 3.1.0
+info:
+  title: c123-live-mini Client API
+  description: Public read-only API for live canoe slalom results
+  version: 1.0.0
+
+servers:
+  - url: /api/v1
+    description: API v1
+
+paths:
+  /events:
+    get:
+      summary: List public events
+      description: Returns all events with status other than "draft", ordered by start date (most recent first).
+      operationId: listEvents
+      tags: [Events]
+      responses:
+        "200":
+          description: List of public events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicEvent"
+
+  /events/{eventId}:
+    get:
+      summary: Get event details
+      description: Returns full event details including classes, categories, and race schedule. Returns 404 for draft or non-existent events.
+      operationId: getEventDetail
+      tags: [Events]
+      parameters:
+        - $ref: "#/components/parameters/eventId"
+      responses:
+        "200":
+          description: Event with classes and races
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    $ref: "#/components/schemas/PublicEvent"
+                  classes:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicClass"
+                  races:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicRace"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /events/{eventId}/categories:
+    get:
+      summary: Get event categories
+      description: Returns unique age categories aggregated across all classes for the event.
+      operationId: getEventCategories
+      tags: [Events]
+      parameters:
+        - $ref: "#/components/parameters/eventId"
+      responses:
+        "200":
+          description: Aggregated categories
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicAggregatedCategory"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /events/{eventId}/startlist/{raceId}:
+    get:
+      summary: Get race startlist
+      description: Returns participants for a race sorted by start order.
+      operationId: getRaceStartlist
+      tags: [Races]
+      parameters:
+        - $ref: "#/components/parameters/eventId"
+        - $ref: "#/components/parameters/raceId"
+      responses:
+        "200":
+          description: Race startlist
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  race:
+                    $ref: "#/components/schemas/PublicRace"
+                  startlist:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicStartlistEntry"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /events/{eventId}/results/{raceId}:
+    get:
+      summary: Get race results
+      description: |
+        Returns results for a race ranked by total time.
+        - Use `catId` to filter by age category (returns category-specific rankings).
+        - Use `detailed=true` to include gate penalties, timestamps, and course context.
+        - Use `includeAllRuns=true` for BR races to include both run details.
+      operationId: getRaceResults
+      tags: [Races]
+      parameters:
+        - $ref: "#/components/parameters/eventId"
+        - $ref: "#/components/parameters/raceId"
+        - name: catId
+          in: query
+          description: Filter by age category code
+          schema:
+            type: string
+          example: ZS
+        - name: detailed
+          in: query
+          description: Include gate penalties, timestamps, and course context
+          schema:
+            type: boolean
+          example: true
+        - name: includeAllRuns
+          in: query
+          description: Include both BR1/BR2 run details for best-run races
+          schema:
+            type: boolean
+          example: true
+      responses:
+        "200":
+          description: Race results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  race:
+                    $ref: "#/components/schemas/PublicRace"
+                  results:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicResult"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /events/{eventId}/oncourse:
+    get:
+      summary: Get athletes on course
+      description: Returns athletes currently on the water with intermediate timing data.
+      operationId: getOnCourse
+      tags: [Live]
+      parameters:
+        - $ref: "#/components/parameters/eventId"
+      responses:
+        "200":
+          description: Athletes currently on course
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  oncourse:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PublicOnCourseEntry"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    eventId:
+      name: eventId
+      in: path
+      required: true
+      description: Event identifier (timekeeper-assigned)
+      schema:
+        type: string
+      example: CZE2.2024062500
+    raceId:
+      name: raceId
+      in: path
+      required: true
+      description: Race identifier
+      schema:
+        type: string
+      example: K1M-ZS_BR1_25
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          example: NotFound
+        message:
+          type: string
+          example: Event not found
+
+    PublicEvent:
+      type: object
+      required: [eventId, mainTitle, status]
+      properties:
+        eventId:
+          type: string
+          example: CZE2.2024062500
+        mainTitle:
+          type: string
+          example: LODM 2024
+        subTitle:
+          type: string
+          nullable: true
+          example: Litoměřice
+        location:
+          type: string
+          nullable: true
+          example: Litoměřice
+        facility:
+          type: string
+          nullable: true
+          description: Only in event detail response
+          example: WWC Litoměřice
+        startDate:
+          type: string
+          nullable: true
+          example: "2024-06-25"
+        endDate:
+          type: string
+          nullable: true
+          example: "2024-06-26"
+        discipline:
+          type: string
+          nullable: true
+          example: Slalom
+        status:
+          type: string
+          enum: [startlist, running, finished, official]
+          example: running
+
+    PublicClass:
+      type: object
+      required: [classId, name]
+      properties:
+        classId:
+          type: string
+          example: K1M-ZS
+        name:
+          type: string
+          example: K1M
+        longTitle:
+          type: string
+          nullable: true
+          example: Kayak Single Men - Senior
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicCategory"
+
+    PublicCategory:
+      type: object
+      required: [catId, name]
+      properties:
+        catId:
+          type: string
+          example: ZS
+        name:
+          type: string
+          example: Senior
+        firstYear:
+          type: integer
+          nullable: true
+          example: 1990
+        lastYear:
+          type: integer
+          nullable: true
+          example: 2005
+
+    PublicAggregatedCategory:
+      allOf:
+        - $ref: "#/components/schemas/PublicCategory"
+        - type: object
+          properties:
+            classIds:
+              type: array
+              items:
+                type: string
+              example: ["K1M-ZS", "C1M-ZS"]
+
+    PublicRace:
+      type: object
+      required: [raceId, raceType, raceStatus]
+      properties:
+        raceId:
+          type: string
+          example: K1M-ZS_BR1_25
+        classId:
+          type: string
+          example: K1M-ZS
+        raceType:
+          type: string
+          enum: [best-run-1, best-run-2, training, seeding, qualification, semifinal, final, cross-trial, cross-heat, cross-semifinal, cross-final, cross-extra]
+          example: best-run-1
+        raceOrder:
+          type: integer
+          nullable: true
+          example: 1
+        startTime:
+          type: string
+          nullable: true
+          example: "2024-06-25T09:00:00Z"
+        raceStatus:
+          type: integer
+          description: "Race status (1=Scheduled, 3=StartListOK, 8=InProgress, 10=Completed, 11=Final)"
+          example: 8
+
+    PublicStartlistEntry:
+      type: object
+      properties:
+        startOrder:
+          type: integer
+          nullable: true
+          example: 1
+        bib:
+          type: integer
+          nullable: true
+          example: 23
+        athleteId:
+          type: string
+          nullable: true
+          example: "60070"
+        name:
+          type: string
+          example: NOVÁK Jan
+        club:
+          type: string
+          nullable: true
+          example: TJ Slavia Praha
+        noc:
+          type: string
+          nullable: true
+          example: CZE
+        catId:
+          type: string
+          nullable: true
+          example: ZS
+        startTime:
+          type: string
+          nullable: true
+          example: "2024-06-25T09:00:00Z"
+
+    PublicResult:
+      type: object
+      properties:
+        rnk:
+          type: integer
+          nullable: true
+          example: 1
+        bib:
+          type: integer
+          nullable: true
+          example: 23
+        athleteId:
+          type: string
+          nullable: true
+          example: "60070"
+        name:
+          type: string
+          example: NOVÁK Jan
+        club:
+          type: string
+          nullable: true
+          example: TJ Slavia Praha
+        noc:
+          type: string
+          nullable: true
+          example: CZE
+        catId:
+          type: string
+          nullable: true
+          example: ZS
+        catRnk:
+          type: integer
+          nullable: true
+          example: 1
+        time:
+          type: integer
+          nullable: true
+          description: Run time in hundredths of seconds
+          example: 9234
+        pen:
+          type: integer
+          nullable: true
+          description: Total penalty in hundredths
+          example: 200
+        total:
+          type: integer
+          nullable: true
+          description: time + pen
+          example: 9434
+        totalBehind:
+          type: string
+          nullable: true
+          example: "+0.00"
+        catTotalBehind:
+          type: string
+          nullable: true
+          example: "+0.00"
+        status:
+          type: string
+          nullable: true
+          enum: [DNS, DNF, DSQ, CAP, null]
+          example: null
+        # Detailed mode fields
+        dtStart:
+          type: string
+          nullable: true
+          description: "Detailed mode only: actual start timestamp"
+        dtFinish:
+          type: string
+          nullable: true
+          description: "Detailed mode only: actual finish timestamp"
+        gates:
+          type: array
+          nullable: true
+          description: "Detailed mode only: self-describing gate penalties"
+          items:
+            $ref: "#/components/schemas/PublicGate"
+        courseGateCount:
+          type: integer
+          nullable: true
+          description: "Detailed mode only: total gates on course"
+        # Multi-run fields (BR races with includeAllRuns)
+        betterRunNr:
+          type: integer
+          nullable: true
+          description: "BR races only: which run was better (1 or 2)"
+        totalTotal:
+          type: integer
+          nullable: true
+          description: "BR races only: best time of both runs"
+        prevTime:
+          type: integer
+          nullable: true
+          description: "BR races only: other run time"
+        prevPen:
+          type: integer
+          nullable: true
+          description: "BR races only: other run penalty"
+        prevTotal:
+          type: integer
+          nullable: true
+          description: "BR races only: other run total"
+        prevRnk:
+          type: integer
+          nullable: true
+          description: "BR races only: other run rank"
+
+    PublicGate:
+      type: object
+      required: [number, type, penalty]
+      properties:
+        number:
+          type: integer
+          description: Gate number (1-based)
+          example: 1
+        type:
+          type: string
+          enum: [normal, reverse, unknown]
+          example: normal
+        penalty:
+          type: integer
+          nullable: true
+          description: "0 = clean, 2 = touch, 50 = miss"
+          example: 0
+
+    PublicOnCourseEntry:
+      type: object
+      properties:
+        raceId:
+          type: string
+          example: K1M-ZS_BR1_25
+        bib:
+          type: integer
+          example: 23
+        name:
+          type: string
+          example: NOVÁK Jan
+        club:
+          type: string
+          example: TJ Slavia Praha
+        position:
+          type: integer
+          example: 1
+        gates:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicGate"
+        completed:
+          type: boolean
+          example: false
+        dtStart:
+          type: string
+          nullable: true
+        dtFinish:
+          type: string
+          nullable: true
+        time:
+          type: integer
+          nullable: true
+          description: Current time in hundredths
+        pen:
+          type: integer
+          description: Current penalty in hundredths
+        total:
+          type: integer
+          nullable: true
+          description: Current total in hundredths
+        rank:
+          type: integer
+          nullable: true
+        ttbDiff:
+          type: string
+          nullable: true
+          description: Time-to-beat difference
+        ttbName:
+          type: string
+          nullable: true
+          description: Time-to-beat reference athlete

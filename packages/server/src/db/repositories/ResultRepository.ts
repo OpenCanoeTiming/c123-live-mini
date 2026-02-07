@@ -195,6 +195,7 @@ export class ResultRepository extends BaseRepository {
         noc: string | null;
         cat_id: string | null;
         participant_id_str: string;
+        athlete_id: string | null;
       }
     >
   > {
@@ -237,6 +238,7 @@ export class ResultRepository extends BaseRepository {
         'participants.noc',
         'participants.cat_id',
         'participants.participant_id as participant_id_str',
+        'participants.athlete_id',
       ])
       .where('results.race_id', '=', raceId)
       .orderBy('results.rnk', 'asc')
@@ -257,7 +259,9 @@ export class ResultRepository extends BaseRepository {
         given_name: string | null;
         club: string | null;
         noc: string | null;
+        cat_id: string | null;
         participant_id_str: string;
+        athlete_id: string | null;
       }
     >
   > {
@@ -273,7 +277,9 @@ export class ResultRepository extends BaseRepository {
         'participants.given_name',
         'participants.club',
         'participants.noc',
+        'participants.cat_id',
         'participants.participant_id as participant_id_str',
+        'participants.athlete_id',
       ])
       .where('results.race_id', '=', raceId)
       .orderBy('results.start_order', 'asc')
@@ -293,6 +299,7 @@ export class ResultRepository extends BaseRepository {
         noc: string | null;
         cat_id: string | null;
         participant_id_str: string;
+        athlete_id: string | null;
       }
     >
   > {
@@ -335,6 +342,7 @@ export class ResultRepository extends BaseRepository {
         'participants.noc',
         'participants.cat_id',
         'participants.participant_id as participant_id_str',
+        'participants.athlete_id',
       ])
       .where('results.race_id', '=', raceId)
       .orderBy('results.rnk', 'asc')
@@ -354,7 +362,7 @@ export class ResultRepository extends BaseRepository {
     Array<
       Selectable<ResultsTable> & {
         race_id_str: string;
-        dis_id: string;
+        race_type: string | null;
       }
     >
   > {
@@ -392,50 +400,53 @@ export class ResultRepository extends BaseRepository {
         'results.round_nr',
         'results.qualified',
         'races.race_id as race_id_str',
-        'races.dis_id',
+        'races.race_type',
       ])
       .where('results.event_id', '=', eventId)
       .where('results.participant_id', '=', participantId)
       .where('races.class_id', '=', classId)
       .where((eb) =>
-        eb.or([eb('races.dis_id', '=', 'BR1'), eb('races.dis_id', '=', 'BR2')])
+        eb.or([
+          eb('races.race_type', '=', 'best-run-1'),
+          eb('races.race_type', '=', 'best-run-2'),
+        ])
       )
-      .orderBy('races.dis_id', 'asc')
+      .orderBy('races.race_type', 'asc')
       .execute();
   }
 
   /**
    * Find paired BR race (BR1 -> BR2 or BR2 -> BR1) by pattern
-   * Race IDs follow pattern: {ClassId}_{DisId}_{Day}
+   * Race IDs follow pattern: {ClassId}_{RunCode}_{Day} where RunCode is BR1 or BR2
    */
   async findPairedBrRace(
     eventId: number,
     raceId: string
-  ): Promise<{ id: number; race_id: string; dis_id: string } | undefined> {
+  ): Promise<{ id: number; race_id: string; race_type: string | null } | undefined> {
     // Extract class part and day from race_id (e.g., K1M-ZS_BR1_25 -> K1M-ZS, 25)
     const parts = raceId.split('_');
     if (parts.length < 3) return undefined;
 
     const classIdPart = parts[0];
-    const disId = parts[1];
+    const runCode = parts[1];
     const dayPart = parts.slice(2).join('_');
 
-    // Determine paired dis_id
-    let pairedDisId: string;
-    if (disId === 'BR1') {
-      pairedDisId = 'BR2';
-    } else if (disId === 'BR2') {
-      pairedDisId = 'BR1';
+    // Determine paired run code from race_id pattern
+    let pairedRunCode: string;
+    if (runCode === 'BR1') {
+      pairedRunCode = 'BR2';
+    } else if (runCode === 'BR2') {
+      pairedRunCode = 'BR1';
     } else {
       return undefined; // Not a BR race
     }
 
     // Build paired race_id
-    const pairedRaceId = `${classIdPart}_${pairedDisId}_${dayPart}`;
+    const pairedRaceId = `${classIdPart}_${pairedRunCode}_${dayPart}`;
 
     return this.db
       .selectFrom('races')
-      .select(['id', 'race_id', 'dis_id'])
+      .select(['id', 'race_id', 'race_type'])
       .where('event_id', '=', eventId)
       .where('race_id', '=', pairedRaceId)
       .executeTakeFirst();
@@ -454,13 +465,14 @@ export class ResultRepository extends BaseRepository {
       Array<
         Selectable<ResultsTable> & {
           race_id_str: string;
-          dis_id: string;
+          race_type: string | null;
           family_name: string;
           given_name: string | null;
           club: string | null;
           noc: string | null;
           cat_id: string | null;
           participant_id_str: string;
+          athlete_id: string | null;
         }
       >
     >
@@ -472,7 +484,7 @@ export class ResultRepository extends BaseRepository {
     const classIdPart = parts[0];
     const dayPart = parts.slice(2).join('_');
 
-    // Find all BR races for this class and day
+    // Find all BR races for this class and day (using race_id pattern)
     const br1RaceId = `${classIdPart}_BR1_${dayPart}`;
     const br2RaceId = `${classIdPart}_BR2_${dayPart}`;
 
@@ -511,13 +523,14 @@ export class ResultRepository extends BaseRepository {
         'results.round_nr',
         'results.qualified',
         'races.race_id as race_id_str',
-        'races.dis_id',
+        'races.race_type',
         'participants.family_name',
         'participants.given_name',
         'participants.club',
         'participants.noc',
         'participants.cat_id',
         'participants.participant_id as participant_id_str',
+        'participants.athlete_id',
       ])
       .where('results.event_id', '=', eventId)
       .where((eb) =>
@@ -526,7 +539,7 @@ export class ResultRepository extends BaseRepository {
           eb('races.race_id', '=', br2RaceId),
         ])
       )
-      .orderBy('races.dis_id', 'asc')
+      .orderBy('races.race_type', 'asc')
       .orderBy('results.rnk', 'asc')
       .execute();
 
@@ -536,13 +549,14 @@ export class ResultRepository extends BaseRepository {
       Array<
         Selectable<ResultsTable> & {
           race_id_str: string;
-          dis_id: string;
+          race_type: string | null;
           family_name: string;
           given_name: string | null;
           club: string | null;
           noc: string | null;
           cat_id: string | null;
           participant_id_str: string;
+          athlete_id: string | null;
         }
       >
     >();
@@ -572,6 +586,7 @@ export class ResultRepository extends BaseRepository {
         noc: string | null;
         cat_id: string | null;
         participant_id_str: string;
+        athlete_id: string | null;
       }
     >
   > {
@@ -614,6 +629,7 @@ export class ResultRepository extends BaseRepository {
         'participants.noc',
         'participants.cat_id',
         'participants.participant_id as participant_id_str',
+        'participants.athlete_id',
       ])
       .where('results.race_id', '=', raceId)
       .where('participants.cat_id', '=', catId)

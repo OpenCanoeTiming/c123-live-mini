@@ -8,15 +8,16 @@ import { ClassRepository } from '../db/repositories/ClassRepository.js';
 import { startlistSchema } from '../schemas/index.js';
 
 /**
- * Startlist entry
+ * Startlist entry (public API)
  */
 interface StartlistEntry {
   startOrder: number | null;
   bib: number | null;
-  participantId: string;
+  athleteId: string | null;
   name: string;
   club: string | null;
   noc: string | null;
+  catId: string | null;
   startTime: string | null;
 }
 
@@ -73,12 +74,12 @@ export function registerStartlistRoutes(
     async (request, reply) => {
     const { eventId, raceId } = request.params;
 
-    // Find event
+    // Find event - return 404 for non-existent or draft events
     const event = await eventRepo.findByEventId(eventId);
-    if (!event) {
+    if (!event || event.status === 'draft') {
       reply.code(404).send({
-        error: 'Not found',
-        message: `Event not found: ${eventId}`,
+        error: 'NotFound',
+        message: 'Event not found',
       } as unknown as StartlistResponse);
       return;
     }
@@ -87,8 +88,8 @@ export function registerStartlistRoutes(
     const race = await raceRepo.findByEventAndRaceId(event.id, raceId);
     if (!race) {
       reply.code(404).send({
-        error: 'Not found',
-        message: `Race not found: ${raceId}`,
+        error: 'NotFound',
+        message: 'Race not found',
       } as unknown as StartlistResponse);
       return;
     }
@@ -112,10 +113,11 @@ export function registerStartlistRoutes(
       startlist: startlist.map((s) => ({
         startOrder: s.start_order,
         bib: s.bib,
-        participantId: s.participant_id_str,
+        athleteId: s.athlete_id,
         name: formatName(s.family_name, s.given_name),
         club: s.club,
         noc: s.noc,
+        catId: s.cat_id,
         startTime: s.start_time,
       })),
     };

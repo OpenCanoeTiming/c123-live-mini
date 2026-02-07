@@ -3,6 +3,13 @@
 **Feature**: 005-ingest-api
 **Date**: 2026-02-06
 
+> **Note:** This specification was extended by Feature #006 (Client API) which added:
+> - `races.race_type` column — human-readable label mapped from C123 dis_id at ingest
+> - `participants.athlete_id` column — technology-transparent identifier (replaces icf_id)
+> - Gate transformation to self-describing `{number, type, penalty}` format at ingest time
+>
+> See [006-client-api/data-model.md](../006-client-api/data-model.md) for details.
+
 ## Schema Changes
 
 This feature extends the existing database schema from Feature #4.
