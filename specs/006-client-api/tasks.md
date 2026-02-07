@@ -144,8 +144,8 @@
 
 ### Implementation
 
-- [ ] T026 [US7] Write Client API documentation with all endpoints, parameters, response formats, and examples per contracts/openapi.yaml in `docs/api/client-api.md`
-- [ ] T027 [P] [US7] Verify OpenAPI spec in `specs/006-client-api/contracts/openapi.yaml` matches actual implemented endpoints — update if needed
+- [x] T026 [US7] Write Client API documentation with all endpoints, parameters, response formats, and examples per contracts/openapi.yaml in `docs/api/client-api.md`
+- [x] T027 [P] [US7] Verify OpenAPI spec in `specs/006-client-api/contracts/openapi.yaml` matches actual implemented endpoints — update if needed
 
 **Checkpoint**: API documentation complete and accurate
 
@@ -155,10 +155,10 @@
 
 **Purpose**: Validation, consistency, cleanup
 
-- [ ] T028 Verify no internal IDs leak — scan all public route responses for `id` (integer), `participant_id`, `icf_id`, `dis_id` fields that should not be exposed
-- [ ] T029 [P] Verify consistent error format — ensure all 404 responses follow `{ error: "NotFound", message: "..." }` pattern across all routes
-- [ ] T030 [P] Update quickstart.md with final curl examples matching actual response shapes in `specs/006-client-api/quickstart.md`
-- [ ] T031 Run full validation — seed database, start server, execute all quickstart.md curl commands, verify responses match expected shapes
+- [x] T028 Verify no internal IDs leak — scan all public route responses for `id` (integer), `participant_id`, `icf_id`, `dis_id` fields that should not be exposed
+- [x] T029 [P] Verify consistent error format — ensure all 404 responses follow `{ error: "NotFound", message: "..." }` pattern across all routes
+- [x] T030 [P] Update quickstart.md with final curl examples matching actual response shapes in `specs/006-client-api/quickstart.md`
+- [x] T031 Run full validation — seed database, start server, execute all quickstart.md curl commands, verify responses match expected shapes
 
 ---
 
