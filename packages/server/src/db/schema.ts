@@ -40,8 +40,7 @@ export interface ParticipantsTable {
   participant_id: string;
   class_id: number | null;
   event_bib: number | null;
-  icf_id: string | null;
-  /** Technology-transparent athlete identifier (from icf_id) */
+  /** Technology-transparent athlete identifier */
   athlete_id: string | null;
   family_name: string;
   given_name: string | null;
@@ -59,8 +58,7 @@ export interface RacesTable {
   event_id: number;
   race_id: string;
   class_id: number | null;
-  dis_id: string;
-  /** Human-readable race type (mapped from dis_id) */
+  /** Human-readable race type (e.g., best-run-1, qualification, final) */
   race_type: string | null;
   race_order: number | null;
   start_time: string | null;

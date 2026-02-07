@@ -91,14 +91,14 @@ async function seed(): Promise<void> {
   // Insert races and track their IDs
   const raceIdMap = new Map<string, number>();
   for (const race of seedRaces) {
-    const { class_ref, ...raceData } = race;
+    // Exclude class_ref and dis_id from spread - dis_id is source data only
+    const { class_ref, dis_id, ...raceData } = race;
     const classId = classIdMap.get(class_ref);
     const id = await raceRepo.insert({
       ...raceData,
       event_id: eventId,
       class_id: classId ?? null,
-      // Map dis_id to human-readable race_type
-      race_type: mapDisIdToRaceType(race.dis_id),
+      race_type: mapDisIdToRaceType(dis_id),
     });
     raceIdMap.set(race.race_id, id);
   }
@@ -108,14 +108,14 @@ async function seed(): Promise<void> {
   const participantIdMap = new Map<string, number>();
   const allParticipants = [...seedParticipantsK1M, ...seedParticipantsK1W];
   for (const participant of allParticipants) {
-    const { class_ref, ...participantData } = participant;
+    // Exclude class_ref and icf_id from spread - icf_id is source data only
+    const { class_ref, icf_id, ...participantData } = participant;
     const classId = classIdMap.get(class_ref);
     const id = await participantRepo.insert({
       ...participantData,
       event_id: eventId,
       class_id: classId ?? null,
-      // Write athlete_id from icf_id for technology-transparent access
-      athlete_id: participant.icf_id,
+      athlete_id: icf_id,
     });
     participantIdMap.set(participant.participant_id, id);
   }

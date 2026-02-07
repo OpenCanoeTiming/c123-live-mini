@@ -167,7 +167,7 @@ export function registerResultsRoutes(
     }
 
     // Check if this is a BR race and includeAllRuns is requested
-    const isBrRace = race.dis_id === 'BR1' || race.dis_id === 'BR2';
+    const isBrRace = race.race_type === 'best-run-1' || race.race_type === 'best-run-2';
 
     if (showAllRuns && isBrRace) {
       // Multi-run mode: get linked BR1/BR2 results
@@ -191,7 +191,7 @@ export function registerResultsRoutes(
         // Build runs array
         const runsArray: RunEntry[] = runs.map((r) => {
           const runEntry: RunEntry = {
-            runNr: r.dis_id === 'BR1' ? 1 : 2,
+            runNr: r.race_type === 'best-run-1' ? 1 : 2,
             raceId: r.race_id_str,
             time: r.time,
             pen: r.pen,
@@ -214,8 +214,8 @@ export function registerResultsRoutes(
         let totalTotal: number | null = null;
         let betterRunNr: number | null = null;
 
-        const br1 = runs.find((r) => r.dis_id === 'BR1');
-        const br2 = runs.find((r) => r.dis_id === 'BR2');
+        const br1 = runs.find((r) => r.race_type === 'best-run-1');
+        const br2 = runs.find((r) => r.race_type === 'best-run-2');
 
         if (
           br1?.total != null &&

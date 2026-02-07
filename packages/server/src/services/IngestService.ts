@@ -208,8 +208,6 @@ export class IngestService {
         participant_id: p.participantId,
         class_id: classDbId,
         event_bib: p.eventBib,
-        icf_id: p.icfId,
-        // Write athlete_id from icf_id for technology-transparent access
         athlete_id: p.icfId,
         family_name: p.familyName,
         given_name: p.givenName,
@@ -243,8 +241,6 @@ export class IngestService {
       const raceDbId = await this.raceRepo.upsert(eventId, {
         race_id: race.raceId,
         class_id: classDbId,
-        dis_id: race.disId,
-        // Map dis_id to human-readable race_type
         race_type: mapDisIdToRaceType(race.disId),
         race_order: race.raceOrder,
         start_time: race.startTime,
