@@ -12,6 +12,8 @@ import {
   validateParsedData,
   type ParsedC123Data,
 } from './xml/index.js';
+import { mapDisIdToRaceType } from '../utils/raceTypes.js';
+import { transformGates, gatesToJson } from '../utils/gateTransform.js';
 
 /**
  * Result of XML ingestion
@@ -125,13 +127,13 @@ export class IngestService {
     const raceIdMap = await this.importRaces(event.id, parsed, classIdMap);
     result.imported.races = parsed.races.length;
 
-    // 4. Import results (needs race and participant IDs)
-    await this.importResults(event.id, parsed, raceIdMap, participantIdMap);
-    result.imported.results = parsed.results.length;
-
-    // 5. Import courses
-    await this.importCourses(event.id, parsed);
+    // 4. Import courses (needed for gate transformation in results)
+    const courseConfigMap = await this.importCourses(event.id, parsed);
     result.imported.courses = parsed.courses.length;
+
+    // 5. Import results (needs race, participant IDs, and course configs)
+    await this.importResults(event.id, parsed, raceIdMap, participantIdMap, courseConfigMap);
+    result.imported.results = parsed.results.length;
 
     // 6. Set has_xml_data flag (enables JSON/TCP ingestion)
     await this.eventRepo.setHasXmlData(event.id);
@@ -207,6 +209,8 @@ export class IngestService {
         class_id: classDbId,
         event_bib: p.eventBib,
         icf_id: p.icfId,
+        // Write athlete_id from icf_id for technology-transparent access
+        athlete_id: p.icfId,
         family_name: p.familyName,
         given_name: p.givenName,
         noc: p.noc,
@@ -240,6 +244,8 @@ export class IngestService {
         race_id: race.raceId,
         class_id: classDbId,
         dis_id: race.disId,
+        // Map dis_id to human-readable race_type
+        race_type: mapDisIdToRaceType(race.disId),
         race_order: race.raceOrder,
         start_time: race.startTime,
         start_interval: race.startInterval,
@@ -259,8 +265,15 @@ export class IngestService {
     eventId: number,
     parsed: ParsedC123Data,
     raceIdMap: Map<string, number>,
-    participantIdMap: Map<string, number>
+    participantIdMap: Map<string, number>,
+    courseConfigMap: Map<number, string | null>
   ): Promise<void> {
+    // Build map from raceId to courseNr for gate transformation
+    const raceCourseMap = new Map<string, number | null>();
+    for (const race of parsed.races) {
+      raceCourseMap.set(race.raceId, race.courseNr);
+    }
+
     for (const result of parsed.results) {
       const raceDbId = raceIdMap.get(result.raceId);
       const participantDbId = participantIdMap.get(result.participantId);
@@ -268,6 +281,17 @@ export class IngestService {
       if (!raceDbId || !participantDbId) {
         // Skip results for unknown races or participants
         continue;
+      }
+
+      // Transform gates to self-describing format if available
+      let gatesJson: string | null = null;
+      if (result.gates && result.gates.length > 0) {
+        const courseNr = raceCourseMap.get(result.raceId);
+        const gateConfig = courseNr !== null && courseNr !== undefined
+          ? courseConfigMap.get(courseNr) ?? null
+          : null;
+        const transformedGates = transformGates(result.gates, gateConfig);
+        gatesJson = gatesToJson(transformedGates);
       }
 
       await this.resultRepo.upsert(eventId, raceDbId, {
@@ -279,7 +303,7 @@ export class IngestService {
         dt_start: result.dtStart,
         dt_finish: result.dtFinish,
         time: result.time,
-        gates: result.gates ? JSON.stringify(result.gates) : null,
+        gates: gatesJson,
         pen: result.pen,
         total: result.total,
         rnk: result.rnk,
@@ -303,17 +327,23 @@ export class IngestService {
 
   /**
    * Import courses
+   * @returns Map of course_nr to gate_config for gate transformation
    */
   private async importCourses(
     eventId: number,
     parsed: ParsedC123Data
-  ): Promise<void> {
+  ): Promise<Map<number, string | null>> {
+    const courseConfigMap = new Map<number, string | null>();
+
     for (const course of parsed.courses) {
       await this.courseRepo.upsert(eventId, {
         course_nr: course.courseNr,
         nr_gates: course.nrGates,
         gate_config: course.gateConfig,
       });
+      courseConfigMap.set(course.courseNr, course.gateConfig);
     }
+
+    return courseConfigMap;
   }
 }

@@ -17,9 +17,9 @@
 
 **Purpose**: Shared infrastructure — types, utilities, schemas
 
-- [ ] T001 Create race type mapping utility with dis_id → human-readable label mapping per research.md R1 in `packages/server/src/utils/raceTypes.ts`
-- [ ] T002 [P] Create public API response type definitions (PublicEvent, PublicRace, PublicResult, PublicGate, PublicParticipant, PublicOnCourseEntry, PublicAggregatedCategory) per data-model.md in `packages/shared/src/types/publicApi.ts`
-- [ ] T003 [P] Create gate transformation utility — function to merge positional penalty array + gate_config string into PublicGate[] objects per research.md R2 in `packages/server/src/utils/gateTransform.ts`
+- [x] T001 Create race type mapping utility with dis_id → human-readable label mapping per research.md R1 in `packages/server/src/utils/raceTypes.ts`
+- [x] T002 [P] Create public API response type definitions (PublicEvent, PublicRace, PublicResult, PublicGate, PublicParticipant, PublicOnCourseEntry, PublicAggregatedCategory) per data-model.md in `packages/shared/src/types/publicApi.ts`
+- [x] T003 [P] Create gate transformation utility — function to merge positional penalty array + gate_config string into PublicGate[] objects per research.md R2 in `packages/server/src/utils/gateTransform.ts`
 
 **Checkpoint**: Shared utilities ready for ingest and route changes
 
@@ -31,16 +31,16 @@
 
 **⚠️ CRITICAL**: All user story work depends on this phase. This extends the ingest layer from Feature #5.
 
-- [ ] T004 Create Kysely migration 007 — add `race_type` TEXT column to races table, add `athlete_id` TEXT column to participants table, per data-model.md schema changes in `packages/server/src/db/migrations/007-data-abstraction.ts`
-- [ ] T005 Write backfill logic in migration 007 — populate `race_type` from `dis_id` using R1 mapping, copy `icf_id` to `athlete_id`, transform existing `results.gates` from positional arrays to self-describing objects using course.gate_config
-- [ ] T006 Update DB schema types — add `race_type` to RacesTable, add `athlete_id` to ParticipantsTable in `packages/server/src/db/schema.ts`
-- [ ] T007 Update shared types — add `raceType` to Race interface in `packages/shared/src/types/race.ts`, add `athleteId` to Participant interface in `packages/shared/src/types/participant.ts`
-- [ ] T008 Update RaceRepository — include `race_type` in all query results and upsert methods in `packages/server/src/db/repositories/RaceRepository.ts`
-- [ ] T009 [P] Update ParticipantRepository — include `athlete_id` in all query results and upsert methods in `packages/server/src/db/repositories/ParticipantRepository.ts`
-- [ ] T010 Update IngestService (XML) — map dis_id → race_type when upserting races, write athlete_id when upserting participants, transform gates + gate_config → self-describing PublicGate[] format before storing results in `packages/server/src/services/IngestService.ts`
-- [ ] T011 Update ResultIngestService (TCP) — transform incoming gate data to self-describing format using stored course config before upserting results in `packages/server/src/services/ResultIngestService.ts`
-- [ ] T012 Update OnCourseStore — transform incoming gate data to self-describing PublicGate[] format when storing entries, using course config from DB in `packages/server/src/services/OnCourseStore.ts`
-- [ ] T013 Update seed data — use race_type values, athlete_id field, and self-describing gate format in `packages/server/src/db/seed-data.ts`
+- [x] T004 Create Kysely migration 010 — add `race_type` TEXT column to races table, add `athlete_id` TEXT column to participants table, per data-model.md schema changes in `packages/server/src/db/migrations/010_data_abstraction.ts`
+- [x] T005 Write backfill logic in migration 010 — populate `race_type` from `dis_id` using R1 mapping, copy `icf_id` to `athlete_id`, transform existing `results.gates` from positional arrays to self-describing objects using course.gate_config
+- [x] T006 Update DB schema types — add `race_type` to RacesTable, add `athlete_id` to ParticipantsTable in `packages/server/src/db/schema.ts`
+- [x] T007 Update shared types — add `raceType` to Race interface in `packages/shared/src/types/race.ts`, add `athleteId` to Participant interface in `packages/shared/src/types/participant.ts`
+- [x] T008 Update RaceRepository — include `race_type` in all query results and upsert methods in `packages/server/src/db/repositories/RaceRepository.ts` (uses selectAll which includes new column)
+- [x] T009 [P] Update ParticipantRepository — include `athlete_id` in all query results and upsert methods in `packages/server/src/db/repositories/ParticipantRepository.ts` (uses selectAll which includes new column)
+- [x] T010 Update IngestService (XML) — map dis_id → race_type when upserting races, write athlete_id when upserting participants, transform gates + gate_config → self-describing PublicGate[] format before storing results in `packages/server/src/services/IngestService.ts`
+- [x] T011 Update ResultIngestService (TCP) — transform incoming gate data to self-describing format using stored course config before upserting results in `packages/server/src/services/ResultIngestService.ts`
+- [x] T012 Update OnCourseStore — gate transformation handled at read time (oncourse route) rather than store time for simplicity
+- [x] T013 Update seed data — use race_type values, athlete_id field, and self-describing gate format in `packages/server/src/db/seed.ts`
 
 **Checkpoint**: Database stores abstracted data. Ingest transforms C123 → agnostic format. Run seed + verify DB contents.
 

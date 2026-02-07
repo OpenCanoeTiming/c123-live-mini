@@ -20,7 +20,7 @@ export type { Participant, ParticipantCreate } from './participant.js';
 export { getParticipantDisplayName } from './participant.js';
 
 // Race types
-export type { Race, RaceCreate, RaceStatus, DisId } from './race.js';
+export type { Race, RaceCreate, RaceStatus, DisId, RaceType } from './race.js';
 export { RACE_STATUS_NAMES } from './race.js';
 
 // Result types
@@ -38,3 +38,23 @@ export { parseGateConfig } from './course.js';
 
 // OnCourse types (real-time tracking, in-memory only)
 export type { OnCourseEntry, OnCourseInput } from './oncourse.js';
+
+// Public API types (client-facing, technology-transparent)
+export type {
+  PublicEventStatus,
+  PublicRaceType,
+  PublicGateType,
+  PublicGate,
+  PublicEvent,
+  PublicEventDetail,
+  PublicCategory,
+  PublicClass,
+  PublicAggregatedCategory,
+  PublicRace,
+  PublicParticipant,
+  PublicStartlistEntry,
+  PublicResult,
+  PublicResultDetailed,
+  PublicResultMultiRun,
+  PublicOnCourseEntry,
+} from './publicApi.js';

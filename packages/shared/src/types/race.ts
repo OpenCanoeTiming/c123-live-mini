@@ -51,6 +51,24 @@ export type DisId =
   | 'XER';
 
 /**
+ * Human-readable race type labels
+ */
+export type RaceType =
+  | 'best-run-1'
+  | 'best-run-2'
+  | 'training'
+  | 'seeding'
+  | 'qualification'
+  | 'semifinal'
+  | 'final'
+  | 'cross-trial'
+  | 'cross-heat'
+  | 'cross-semifinal'
+  | 'cross-final'
+  | 'cross-extra'
+  | 'unknown';
+
+/**
  * Race (scheduled run within an event)
  */
 export interface Race {
@@ -60,8 +78,10 @@ export interface Race {
   raceId: string;
   /** Class internal ID */
   classId: number | null;
-  /** Run type */
+  /** Run type (C123 internal code) */
   disId: string;
+  /** Human-readable race type */
+  raceType: RaceType | null;
   /** Schedule order */
   raceOrder: number | null;
   /** Scheduled start time (ISO 8601) */
@@ -81,6 +101,7 @@ export interface RaceCreate {
   raceId: string;
   classId?: number | null;
   disId: string;
+  raceType?: RaceType | null;
   raceOrder?: number | null;
   startTime?: string | null;
   startInterval?: string | null;

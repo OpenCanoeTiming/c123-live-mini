@@ -33,7 +33,10 @@ import {
   SEED_PARTICIPANT_COUNT,
   SEED_RACE_COUNT,
   SEED_RESULT_COUNT,
+  SEED_COURSE_CONFIG,
 } from './seed-data.js';
+import { mapDisIdToRaceType } from '../utils/raceTypes.js';
+import { transformGates, gatesToJson } from '../utils/gateTransform.js';
 
 async function seed(): Promise<void> {
   console.log('🌱 Starting database seed...\n');
@@ -94,6 +97,8 @@ async function seed(): Promise<void> {
       ...raceData,
       event_id: eventId,
       class_id: classId ?? null,
+      // Map dis_id to human-readable race_type
+      race_type: mapDisIdToRaceType(race.dis_id),
     });
     raceIdMap.set(race.race_id, id);
   }
@@ -109,6 +114,8 @@ async function seed(): Promise<void> {
       ...participantData,
       event_id: eventId,
       class_id: classId ?? null,
+      // Write athlete_id from icf_id for technology-transparent access
+      athlete_id: participant.icf_id,
     });
     participantIdMap.set(participant.participant_id, id);
   }
@@ -117,7 +124,7 @@ async function seed(): Promise<void> {
   // Insert results
   const allResults = [...seedResultsK1M, ...seedResultsK1W];
   for (const result of allResults) {
-    const { participant_ref, race_ref, ...resultData } = result;
+    const { participant_ref, race_ref, gates, ...resultData } = result;
     const raceId = raceIdMap.get(race_ref);
     const participantId = participantIdMap.get(participant_ref);
 
@@ -126,8 +133,16 @@ async function seed(): Promise<void> {
       continue;
     }
 
+    // Transform gates to self-describing format
+    let gatesJson: string | null = null;
+    if (gates) {
+      const transformedGates = transformGates(gates, SEED_COURSE_CONFIG);
+      gatesJson = gatesToJson(transformedGates);
+    }
+
     await resultRepo.insert({
       ...resultData,
+      gates: gatesJson,
       event_id: eventId,
       race_id: raceId,
       participant_id: participantId,
