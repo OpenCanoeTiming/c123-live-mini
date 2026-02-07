@@ -195,6 +195,7 @@ export class ResultRepository extends BaseRepository {
         noc: string | null;
         cat_id: string | null;
         participant_id_str: string;
+        athlete_id: string | null;
       }
     >
   > {
@@ -237,6 +238,7 @@ export class ResultRepository extends BaseRepository {
         'participants.noc',
         'participants.cat_id',
         'participants.participant_id as participant_id_str',
+        'participants.athlete_id',
       ])
       .where('results.race_id', '=', raceId)
       .orderBy('results.rnk', 'asc')
@@ -257,7 +259,9 @@ export class ResultRepository extends BaseRepository {
         given_name: string | null;
         club: string | null;
         noc: string | null;
+        cat_id: string | null;
         participant_id_str: string;
+        athlete_id: string | null;
       }
     >
   > {
@@ -273,7 +277,9 @@ export class ResultRepository extends BaseRepository {
         'participants.given_name',
         'participants.club',
         'participants.noc',
+        'participants.cat_id',
         'participants.participant_id as participant_id_str',
+        'participants.athlete_id',
       ])
       .where('results.race_id', '=', raceId)
       .orderBy('results.start_order', 'asc')
@@ -293,6 +299,7 @@ export class ResultRepository extends BaseRepository {
         noc: string | null;
         cat_id: string | null;
         participant_id_str: string;
+        athlete_id: string | null;
       }
     >
   > {
@@ -335,6 +342,7 @@ export class ResultRepository extends BaseRepository {
         'participants.noc',
         'participants.cat_id',
         'participants.participant_id as participant_id_str',
+        'participants.athlete_id',
       ])
       .where('results.race_id', '=', raceId)
       .orderBy('results.rnk', 'asc')
@@ -461,6 +469,7 @@ export class ResultRepository extends BaseRepository {
           noc: string | null;
           cat_id: string | null;
           participant_id_str: string;
+          athlete_id: string | null;
         }
       >
     >
@@ -518,6 +527,7 @@ export class ResultRepository extends BaseRepository {
         'participants.noc',
         'participants.cat_id',
         'participants.participant_id as participant_id_str',
+        'participants.athlete_id',
       ])
       .where('results.event_id', '=', eventId)
       .where((eb) =>
@@ -543,6 +553,7 @@ export class ResultRepository extends BaseRepository {
           noc: string | null;
           cat_id: string | null;
           participant_id_str: string;
+          athlete_id: string | null;
         }
       >
     >();
@@ -572,6 +583,7 @@ export class ResultRepository extends BaseRepository {
         noc: string | null;
         cat_id: string | null;
         participant_id_str: string;
+        athlete_id: string | null;
       }
     >
   > {
@@ -614,6 +626,7 @@ export class ResultRepository extends BaseRepository {
         'participants.noc',
         'participants.cat_id',
         'participants.participant_id as participant_id_str',
+        'participants.athlete_id',
       ])
       .where('results.race_id', '=', raceId)
       .where('participants.cat_id', '=', catId)

@@ -54,8 +54,8 @@
 
 ### Implementation
 
-- [ ] T014 [US1] Update events list route — strip internal `id`, `api_key`, `config`, `has_xml_data`, `created_at` from response; ensure only non-draft events returned; use consistent envelope `{ events: [...] }` in `packages/server/src/routes/events.ts`
-- [ ] T015 [US1] Verify draft filtering — ensure `findPublic()` correctly excludes draft events and orders by start_date desc in `packages/server/src/routes/events.ts`
+- [x] T014 [US1] Update events list route — strip internal `id`, `api_key`, `config`, `has_xml_data`, `created_at` from response; ensure only non-draft events returned; use consistent envelope `{ events: [...] }` in `packages/server/src/routes/events.ts`
+- [x] T015 [US1] Verify draft filtering — ensure `findPublic()` correctly excludes draft events and orders by start_date desc in `packages/server/src/routes/events.ts`
 
 **Checkpoint**: Events list endpoint returns clean public data, no draft events, no internal IDs
 
@@ -69,8 +69,8 @@
 
 ### Implementation
 
-- [ ] T016 [US2] Update event detail route — strip internal IDs from event, classes, categories, and races; include `raceType` from DB (not dis_id); return 404 for draft events; add facility field; use envelope `{ event, classes, races }` in `packages/server/src/routes/events.ts`
-- [ ] T017 [US2] Ensure race responses include raceType field — map race_type column to response, exclude dis_id, start_interval, course_nr from public response in `packages/server/src/routes/events.ts`
+- [x] T016 [US2] Update event detail route — strip internal IDs from event, classes, categories, and races; include `raceType` from DB (not dis_id); return 404 for draft events; add facility field; use envelope `{ event, classes, races }` in `packages/server/src/routes/events.ts`
+- [x] T017 [US2] Ensure race responses include raceType field — map race_type column to response, exclude dis_id, start_interval, course_nr from public response in `packages/server/src/routes/events.ts`
 
 **Checkpoint**: Event detail returns complete structure with human-readable race types
 
@@ -84,11 +84,11 @@
 
 ### Implementation
 
-- [ ] T018 [US3] Update results route standard mode — strip internal IDs, use athleteId from DB, exclude participant_id; format name from family_name + given_name; include catRnk and catTotalBehind in `packages/server/src/routes/results.ts`
-- [ ] T019 [US3] Update results route detailed mode — when `?detailed=true`, include dtStart, dtFinish, gates (already self-describing from DB), courseGateCount (lookup from courses table) in `packages/server/src/routes/results.ts`
-- [ ] T020 [US3] Verify category filtering — ensure `?catId` param uses `filterByCatId` with correct category-specific rankings (catRnk, catTotalBehind) in `packages/server/src/routes/results.ts`
-- [ ] T021 [US3] Verify multi-run mode — ensure `?includeAllRuns=true` correctly pairs BR1/BR2 via `getLinkedBrResults`, includes betterRunNr, totalTotal, prev* fields in `packages/server/src/routes/results.ts`
-- [ ] T022 [US3] Handle edge cases — DNS/DNF/DSQ at end of results, empty results for unstarted races, 404 for non-existent race, 404 if parent event is draft in `packages/server/src/routes/results.ts`
+- [x] T018 [US3] Update results route standard mode — strip internal IDs, use athleteId from DB, exclude participant_id; format name from family_name + given_name; include catRnk and catTotalBehind in `packages/server/src/routes/results.ts`
+- [x] T019 [US3] Update results route detailed mode — when `?detailed=true`, include dtStart, dtFinish, gates (already self-describing from DB), courseGateCount (lookup from courses table) in `packages/server/src/routes/results.ts`
+- [x] T020 [US3] Verify category filtering — ensure `?catId` param uses `filterByCatId` with correct category-specific rankings (catRnk, catTotalBehind) in `packages/server/src/routes/results.ts`
+- [x] T021 [US3] Verify multi-run mode — ensure `?includeAllRuns=true` correctly pairs BR1/BR2 via `getLinkedBrResults`, includes betterRunNr, totalTotal, prev* fields in `packages/server/src/routes/results.ts`
+- [x] T022 [US3] Handle edge cases — DNS/DNF/DSQ at end of results, empty results for unstarted races, 404 for non-existent race, 404 if parent event is draft in `packages/server/src/routes/results.ts`
 
 **Checkpoint**: Results endpoint fully functional with all modes (standard, detailed, category filter, multi-run)
 
@@ -102,7 +102,7 @@
 
 ### Implementation
 
-- [ ] T023 [US4] Update startlist route — strip internal IDs, use athleteId from DB, format name, include catId, startTime; 404 for non-existent race or draft event in `packages/server/src/routes/startlist.ts`
+- [x] T023 [US4] Update startlist route — strip internal IDs, use athleteId from DB, format name, include catId, startTime; 404 for non-existent race or draft event in `packages/server/src/routes/startlist.ts`
 
 **Checkpoint**: Startlist returns clean participant data in start order
 
@@ -116,7 +116,7 @@
 
 ### Implementation
 
-- [ ] T024 [US5] Update oncourse route — strip participantId (C123 internal), serve pre-transformed gate data from OnCourseStore, ensure empty array when no active athletes or no XML data in `packages/server/src/routes/oncourse.ts`
+- [x] T024 [US5] Update oncourse route — strip participantId (C123 internal), serve pre-transformed gate data from OnCourseStore, ensure empty array when no active athletes or no XML data in `packages/server/src/routes/oncourse.ts`
 
 **Checkpoint**: OnCourse endpoint serves self-describing gate data
 
@@ -130,7 +130,7 @@
 
 ### Implementation
 
-- [ ] T025 [US6] Update categories route — strip internal IDs, ensure aggregated categories include classIds array, 404 for draft/non-existent event in `packages/server/src/routes/categories.ts`
+- [x] T025 [US6] Update categories route — strip internal IDs, ensure aggregated categories include classIds array, 404 for draft/non-existent event in `packages/server/src/routes/categories.ts`
 
 **Checkpoint**: Categories endpoint returns aggregated data for frontend filter
 
