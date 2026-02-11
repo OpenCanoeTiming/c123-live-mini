@@ -17,7 +17,7 @@
   "dependencies": {
     "@c123-live-mini/shared": "*",
     "better-sqlite3": "^11.8.1",
-    "fast-xml-parser": "^5.3.4",
+    "fast-xml-parser": "^5.3.5",
     "fastify": "^5.2.1",
     "kysely": "^0.27.5",
     "zod": "^4.3.6"
