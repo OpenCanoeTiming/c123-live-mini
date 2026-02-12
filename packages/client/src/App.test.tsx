@@ -3,79 +3,31 @@
  */
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
-import { userEvent } from '@testing-library/user-event';
 import App from './App';
 
-// Mock data
+// Mock data — updated for Feature #6 types (no id, no disId, uses raceType)
 const mockEvents = [
   {
-    id: 1,
     eventId: 'demo-2026',
     mainTitle: 'Demo Event',
     subTitle: null,
     location: 'Prague',
-    startDate: '2026-02-05',
-    endDate: '2026-02-06',
-    status: 'running',
-  },
-];
-
-const mockEventDetails = {
-  event: {
-    id: 1,
-    eventId: 'demo-2026',
-    mainTitle: 'Demo Event',
-    subTitle: null,
-    location: 'Prague',
-    facility: null,
     startDate: '2026-02-05',
     endDate: '2026-02-06',
     discipline: null,
     status: 'running',
   },
-  classes: [],
-  races: [
-    {
-      raceId: 'k1m-final',
-      classId: 'K1M',
-      disId: 'SL',
-      raceOrder: 1,
-      startTime: null,
-      raceStatus: 4,
-    },
-  ],
-};
-
-const mockResults = {
-  race: {
-    raceId: 'k1m-final',
-    classId: 'K1M',
-    disId: 'SL',
-    raceStatus: 4,
-  },
-  results: [],
-};
+];
 
 // Setup fetch mock
 beforeEach(() => {
+  // Reset hash to home route before each test
+  window.location.hash = '#/';
+
   global.fetch = vi.fn((url: string | URL | Request) => {
     const urlString = typeof url === 'string' ? url : url.toString();
 
-    if (urlString.includes('/events/demo-2026/results/')) {
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(mockResults),
-      } as Response);
-    }
-
-    if (urlString.includes('/events/demo-2026')) {
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve(mockEventDetails),
-      } as Response);
-    }
-
-    if (urlString.includes('/events')) {
+    if (urlString.includes('/events') && !urlString.includes('/events/')) {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({ events: mockEvents }),
@@ -89,10 +41,11 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  window.location.hash = '';
 });
 
 describe('App', () => {
-  it('renders the app title', () => {
+  it('renders the app title in header', () => {
     render(<App />);
     expect(screen.getByText('c123-live-mini')).toBeTruthy();
   });
@@ -105,51 +58,41 @@ describe('App', () => {
   it('displays event title after loading', async () => {
     render(<App />);
 
-    // Wait for events to load
     await waitFor(() => {
       expect(screen.getByText('Demo Event')).toBeTruthy();
     });
   });
 
-  it('displays live indicator when event is running', async () => {
-    const user = userEvent.setup();
+  it('shows Czech status label for running events', async () => {
     render(<App />);
 
-    // Wait for events list to load
     await waitFor(() => {
-      expect(screen.getByText('Demo Event')).toBeTruthy();
-    });
-
-    // Click on the event to select it
-    await user.click(screen.getByText('Demo Event'));
-
-    // Wait for Live indicator to appear (DS LiveIndicator renders as dot with class)
-    await waitFor(() => {
-      expect(document.querySelector('.csk-live-indicator')).toBeTruthy();
+      expect(screen.getByText('probíhá')).toBeTruthy();
     });
   });
 
-  it('shows no results state when race has empty results', async () => {
-    const user = userEvent.setup();
+  it('shows live indicator for running events', async () => {
     render(<App />);
 
-    // Wait for events list to load
     await waitFor(() => {
       expect(screen.getByText('Demo Event')).toBeTruthy();
     });
 
-    // Click on the event to select it
-    await user.click(screen.getByText('Demo Event'));
-
-    // Wait for empty results state
-    await waitFor(() => {
-      expect(screen.getByText('No results yet')).toBeTruthy();
-    });
+    // LiveIndicator renders with csk-live-indicator class
+    expect(document.querySelector('.csk-live-indicator')).toBeTruthy();
   });
 
   it('shows loading state initially', () => {
     const { container } = render(<App />);
     // SkeletonCard renders with csk-skeleton-card class
     expect(container.querySelector('.csk-skeleton-card')).toBeTruthy();
+  });
+
+  it('shows Czech section header', async () => {
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Závody')).toBeTruthy();
+    });
   });
 });

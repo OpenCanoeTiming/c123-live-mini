@@ -17,10 +17,10 @@
 
 **Purpose**: Install dependencies, create shared utilities
 
-- [ ] T001 Install wouter dependency in client package — `npm install wouter -w @c123-live-mini/client`
-- [ ] T002 [P] Create time formatting utility — extract `formatTime` and `formatPenalty` from ResultList.tsx into reusable `packages/client/src/utils/formatTime.ts` per data-model.md
-- [ ] T003 [P] Create race type Czech label mapping — `raceType → Czech label` per research.md R3 in `packages/client/src/utils/raceTypeLabels.ts` (include `getRaceTypeLabel()` and `isBestRunRace()` helpers)
-- [ ] T004 [P] Create race grouping utility — flat race array → ClassGroup[] per research.md R2 in `packages/client/src/utils/groupRaces.ts` (group by classId, sort by raceOrder, handle single class/race edge cases)
+- [x] T001 Install wouter dependency in client package — `npm install wouter -w @c123-live-mini/client`
+- [x] T002 [P] Create time formatting utility — extract `formatTime` and `formatPenalty` from ResultList.tsx into reusable `packages/client/src/utils/formatTime.ts` per data-model.md
+- [x] T003 [P] Create race type Czech label mapping — `raceType → Czech label` per research.md R3 in `packages/client/src/utils/raceTypeLabels.ts` (include `getRaceTypeLabel()` and `isBestRunRace()` helpers)
+- [x] T004 [P] Create race grouping utility — flat race array → ClassGroup[] per research.md R2 in `packages/client/src/utils/groupRaces.ts` (group by classId, sort by raceOrder, handle single class/race edge cases)
 
 **Checkpoint**: Shared utilities ready. `npm run build` passes.
 
@@ -32,12 +32,12 @@
 
 **⚠️ CRITICAL**: All user story work depends on this phase.
 
-- [ ] T005 Update API response types in `packages/client/src/services/api.ts` — remove `id` (integer), `participantId`, `disId` fields; add `raceType`, `athleteId`, `facility`, `catTotalBehind` per data-model.md; update EventListItem, EventDetail, RaceInfo, ResultEntry interfaces
-- [ ] T006 Add startlist API function `getStartlist(eventId, raceId)` returning StartlistEntry[] in `packages/client/src/services/api.ts` per data-model.md StartlistEntry type
-- [ ] T007 [P] Add categories API function `getCategories(eventId)` returning CategoryInfo[] in `packages/client/src/services/api.ts` per data-model.md CategoryInfo type
-- [ ] T008 Set up wouter hash routing in `packages/client/src/App.tsx` — configure HashRouter with routes: `/#/` → EventListPage, `/#/events/:eventId` → EventDetailPage, `/#/events/:eventId/race/:raceId` → EventDetailPage; wrap in PageLayout satellite; move existing header/footer into App shell
-- [ ] T009 [P] Create EventListPage shell in `packages/client/src/pages/EventListPage.tsx` — move event fetching logic from current App.tsx, render EventList component
-- [ ] T010 [P] Create EventDetailPage shell in `packages/client/src/pages/EventDetailPage.tsx` — accept eventId and optional raceId from route params, placeholder for event detail rendering
+- [x] T005 Update API response types in `packages/client/src/services/api.ts` — remove `id` (integer), `participantId`, `disId` fields; add `raceType`, `athleteId`, `facility`, `catTotalBehind` per data-model.md; update EventListItem, EventDetail, RaceInfo, ResultEntry interfaces
+- [x] T006 Add startlist API function `getStartlist(eventId, raceId)` returning StartlistEntry[] in `packages/client/src/services/api.ts` per data-model.md StartlistEntry type
+- [x] T007 [P] Add categories API function `getCategories(eventId)` returning CategoryInfo[] in `packages/client/src/services/api.ts` per data-model.md CategoryInfo type
+- [x] T008 Set up wouter hash routing in `packages/client/src/App.tsx` — configure HashRouter with routes: `/#/` → EventListPage, `/#/events/:eventId` → EventDetailPage, `/#/events/:eventId/race/:raceId` → EventDetailPage; wrap in PageLayout satellite; move existing header/footer into App shell
+- [x] T009 [P] Create EventListPage shell in `packages/client/src/pages/EventListPage.tsx` — move event fetching logic from current App.tsx, render EventList component
+- [x] T010 [P] Create EventDetailPage shell in `packages/client/src/pages/EventDetailPage.tsx` — accept eventId and optional raceId from route params, placeholder for event detail rendering
 
 **Checkpoint**: App routes between two pages. API types match Feature #6. `npm run build` passes.
 
@@ -51,9 +51,9 @@
 
 ### Implementation
 
-- [ ] T011 [US1] Refactor EventList component — update to use new API types (no `id` field), Czech status labels ("probíhá", "dokončeno", "startovní listina"), use `eventId` as key; update Badge labels in `packages/client/src/components/EventList.tsx`
-- [ ] T012 [US1] Complete EventListPage — fetch events on mount, show SkeletonCard during loading, EmptyState with Czech text ("Žádné závody nejsou k dispozici") when empty, error state with Czech message ("Chyba připojení") and retry button ("Zkusit znovu"), navigate to `/#/events/:eventId` on event click in `packages/client/src/pages/EventListPage.tsx`
-- [ ] T013 [US1] Verify live indicator — ensure LiveIndicator shows on events with status "running" in EventList component in `packages/client/src/components/EventList.tsx`
+- [x] T011 [US1] Refactor EventList component — update to use new API types (no `id` field), Czech status labels ("probíhá", "dokončeno", "startovní listina"), use `eventId` as key; update Badge labels in `packages/client/src/components/EventList.tsx`
+- [x] T012 [US1] Complete EventListPage — fetch events on mount, show SkeletonCard during loading, EmptyState with Czech text ("Žádné závody nejsou k dispozici") when empty, error state with Czech message ("Chyba připojení") and retry button ("Zkusit znovu"), navigate to `/#/events/:eventId` on event click in `packages/client/src/pages/EventListPage.tsx`
+- [x] T013 [US1] Verify live indicator — ensure LiveIndicator shows on events with status "running" in EventList component in `packages/client/src/components/EventList.tsx`
 
 **Checkpoint**: Event list page fully functional with Czech UI. Tapping event navigates to event detail URL.
 
@@ -67,13 +67,13 @@
 
 ### Implementation
 
-- [ ] T014 [P] [US2] Create EventHeader component — display event mainTitle, subTitle, location, dates, discipline; show LiveIndicator when status is "running"; use SectionHeader from DS in `packages/client/src/components/EventHeader.tsx`
-- [ ] T015 [P] [US2] Create ClassTabs component — render Tabs (variant="pills") for class-level navigation; accept classGroups and selectedClassId; hide entirely when only one class; callback onClassChange in `packages/client/src/components/ClassTabs.tsx`
-- [ ] T016 [P] [US2] Create RoundTabs component — render Tabs (variant="pills", size="sm") for round-level navigation within selected class; use Czech labels from raceTypeLabels.ts; hide when only one race in class; callback onRaceChange in `packages/client/src/components/RoundTabs.tsx`
-- [ ] T017 [US2] Refactor ResultList for standard results — Czech column headers (Poř., St.č., Jméno, Čas, Trest, Výsledek, Ztráta), monospace font for time values, DNS/DNF/DSQ at bottom with status in red, remove stale race info header (disId); use updated API types in `packages/client/src/components/ResultList.tsx`
-- [ ] T018 [US2] Add best-run display mode to ResultList — when race is best-run type (detect via `isBestRunRace()`), show columns for 1. jízda and 2. jízda per athlete, highlight better run (bold), show Výsledek as `totalTotal`; use `prevTime`, `prevPen`, `prevTotal`, `betterRunNr` fields in `packages/client/src/components/ResultList.tsx`
-- [ ] T019 [US2] Complete EventDetailPage — fetch event detail + categories on mount; derive classGroups using groupRaces utility; manage selectedClassId and selectedRaceId state; auto-select first class and first race; fetch results when race changes; for BR races automatically add `includeAllRuns=true`; render EventHeader, ClassTabs, RoundTabs, ResultList; show SkeletonCard during loading, EmptyState with Czech messages on error/empty in `packages/client/src/pages/EventDetailPage.tsx`
-- [ ] T020 [US2] Handle single class/race edge case — skip ClassTabs when only one class; skip RoundTabs when only one race in class; show results directly in `packages/client/src/pages/EventDetailPage.tsx`
+- [x] T014 [P] [US2] Create EventHeader component — display event mainTitle, subTitle, location, dates, discipline; show LiveIndicator when status is "running"; use SectionHeader from DS in `packages/client/src/components/EventHeader.tsx`
+- [x] T015 [P] [US2] Create ClassTabs component — render Tabs (variant="pills") for class-level navigation; accept classGroups and selectedClassId; hide entirely when only one class; callback onClassChange in `packages/client/src/components/ClassTabs.tsx`
+- [x] T016 [P] [US2] Create RoundTabs component — render Tabs (variant="pills", size="sm") for round-level navigation within selected class; use Czech labels from raceTypeLabels.ts; hide when only one race in class; callback onRaceChange in `packages/client/src/components/RoundTabs.tsx`
+- [x] T017 [US2] Refactor ResultList for standard results — Czech column headers (Poř., St.č., Jméno, Čas, Trest, Výsledek, Ztráta), monospace font for time values, DNS/DNF/DSQ at bottom with status in red, remove stale race info header (disId); use updated API types in `packages/client/src/components/ResultList.tsx`
+- [x] T018 [US2] Add best-run display mode to ResultList — when race is best-run type (detect via `isBestRunRace()`), show columns for 1. jízda and 2. jízda per athlete, highlight better run (bold), show Výsledek as `totalTotal`; use `prevTime`, `prevPen`, `prevTotal`, `betterRunNr` fields in `packages/client/src/components/ResultList.tsx`
+- [x] T019 [US2] Complete EventDetailPage — fetch event detail + categories on mount; derive classGroups using groupRaces utility; manage selectedClassId and selectedRaceId state; auto-select first class and first race; fetch results when race changes; for BR races automatically add `includeAllRuns=true`; render EventHeader, ClassTabs, RoundTabs, ResultList; show SkeletonCard during loading, EmptyState with Czech messages on error/empty in `packages/client/src/pages/EventDetailPage.tsx`
+- [x] T020 [US2] Handle single class/race edge case — skip ClassTabs when only one class; skip RoundTabs when only one race in class; show results directly in `packages/client/src/pages/EventDetailPage.tsx`
 
 **Checkpoint**: Full two-level navigation works. Standard results and BR results display correctly with Czech UI.
 
@@ -87,8 +87,8 @@
 
 ### Implementation
 
-- [ ] T021 [P] [US3] Create CategoryFilter component — use FilterPills from DS; render available categories from API; show "Vše" (all) option; highlight active filter; callback onCategoryChange; hide when no categories available in `packages/client/src/components/CategoryFilter.tsx`
-- [ ] T022 [US3] Integrate category filter into EventDetailPage — fetch categories via getCategories on event load; manage selectedCatId state that persists across race/round changes; pass catId to getEventResults API call; render CategoryFilter between navigation and results; show EmptyState when filtered results are empty ("V této kategorii nejsou žádní závodníci v tomto závodě") in `packages/client/src/pages/EventDetailPage.tsx`
+- [x] T021 [P] [US3] Create CategoryFilter component — use FilterPills from DS; render available categories from API; show "Vše" (all) option; highlight active filter; callback onCategoryChange; hide when no categories available in `packages/client/src/components/CategoryFilter.tsx`
+- [x] T022 [US3] Integrate category filter into EventDetailPage — fetch categories via getCategories on event load; manage selectedCatId state that persists across race/round changes; pass catId to getEventResults API call; render CategoryFilter between navigation and results; show EmptyState when filtered results are empty ("V této kategorii nejsou žádní závodníci v tomto závodě") in `packages/client/src/pages/EventDetailPage.tsx`
 
 **Checkpoint**: Category filtering works with persistence. Switching races keeps filter active.
 
@@ -102,9 +102,9 @@
 
 ### Implementation
 
-- [ ] T023 [US4] Wire URL updates on navigation — when class/race changes in EventDetailPage, update URL hash to `/#/events/:eventId/race/:raceId` using wouter's `useLocation`; when navigating back to event list, URL returns to `/#/` in `packages/client/src/pages/EventDetailPage.tsx`
-- [ ] T024 [US4] Handle deep linking — when EventDetailPage loads with raceId from URL params, find the matching class and race from the loaded data, set selectedClassId and selectedRaceId accordingly; if raceId not found in event's races, show error in `packages/client/src/pages/EventDetailPage.tsx`
-- [ ] T025 [US4] Add NotFound handling — when event API returns 404, show "Závod nenalezen" message with link ("Zpět na přehled závodů") navigating to `/#/`; handle in EventDetailPage error state in `packages/client/src/pages/EventDetailPage.tsx`
+- [x] T023 [US4] Wire URL updates on navigation — when class/race changes in EventDetailPage, update URL hash to `/#/events/:eventId/race/:raceId` using wouter's `useLocation`; when navigating back to event list, URL returns to `/#/` in `packages/client/src/pages/EventDetailPage.tsx`
+- [x] T024 [US4] Handle deep linking — when EventDetailPage loads with raceId from URL params, find the matching class and race from the loaded data, set selectedClassId and selectedRaceId accordingly; if raceId not found in event's races, show error in `packages/client/src/pages/EventDetailPage.tsx`
+- [x] T025 [US4] Add NotFound handling — when event API returns 404, show "Závod nenalezen" message with link ("Zpět na přehled závodů") navigating to `/#/`; handle in EventDetailPage error state in `packages/client/src/pages/EventDetailPage.tsx`
 
 **Checkpoint**: URLs are shareable. Deep links load correct view. Back button works. 404 shows Czech message.
 
@@ -118,8 +118,8 @@
 
 ### Implementation
 
-- [ ] T026 [P] [US5] Create StartlistTable component — Czech column headers (St.č., Jméno, Klub, Kategorie); use Table from DS; show athletes in start order (by startNr); display bib, name, club, catId; EmptyState when empty in `packages/client/src/components/StartlistTable.tsx`
-- [ ] T027 [US5] Integrate startlist into EventDetailPage — when results are empty for selected race, fetch startlist via getStartlist; show StartlistTable instead of ResultList; if both startlist and results exist, show results (results take priority); show empty state when neither exists ("Zatím nejsou k dispozici žádná data") in `packages/client/src/pages/EventDetailPage.tsx`
+- [x] T026 [P] [US5] Create StartlistTable component — Czech column headers (St.č., Jméno, Klub, Kategorie); use Table from DS; show athletes in start order (by startNr); display bib, name, club, catId; EmptyState when empty in `packages/client/src/components/StartlistTable.tsx`
+- [x] T027 [US5] Integrate startlist into EventDetailPage — when results are empty for selected race, fetch startlist via getStartlist; show StartlistTable instead of ResultList; if both startlist and results exist, show results (results take priority); show empty state when neither exists ("Zatím nejsou k dispozici žádná data") in `packages/client/src/pages/EventDetailPage.tsx`
 
 **Checkpoint**: Startlists display for races without results. Results take priority when both exist.
 
@@ -129,8 +129,8 @@
 
 **Purpose**: DS compliance, inline style cleanup, test updates, validation
 
-- [ ] T028 Remove inline styles — scan all components for inline `style={}` attributes; replace with DS component props or DS CSS variables where possible; document any remaining inline styles that have no DS equivalent in `packages/client/src/components/*.tsx` and `packages/client/src/pages/*.tsx`
-- [ ] T029 [P] Update existing tests — update App.test.tsx for new routing structure; ensure tests pass with wouter HashRouter wrapping; update mocks for new API types in `packages/client/src/App.test.tsx`
+- [x] T028 Remove inline styles — scan all components for inline `style={}` attributes; replace with DS component props or DS CSS variables where possible; document any remaining inline styles that have no DS equivalent in `packages/client/src/components/*.tsx` and `packages/client/src/pages/*.tsx`
+- [x] T029 [P] Update existing tests — update App.test.tsx for new routing structure; ensure tests pass with wouter HashRouter wrapping; update mocks for new API types in `packages/client/src/App.test.tsx`
 - [ ] T030 [P] Verify responsive behavior — test all pages at 320px viewport width; ensure no horizontal scroll; verify tap targets are at least 44px; test on mobile device emulation
 - [ ] T031 Run full quickstart.md validation — seed database, start dev server, execute all 10 quickstart scenarios manually; verify all Czech labels, loading states, error states, and navigation flows work as specified in `specs/007-frontend-foundation/quickstart.md`
 
