@@ -9,7 +9,7 @@ import { IngestService, type IngestResult } from '../services/IngestService.js';
 import { ResultIngestService } from '../services/ResultIngestService.js';
 import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
 import { getOnCourseStore } from '../services/OnCourseStore.js';
-import type { OnCourseInput } from '@c123-live-mini/shared';
+import type { OnCourseInput, EventStatus } from '@c123-live-mini/shared';
 import { ALLOWED_INGEST } from '@c123-live-mini/shared';
 import type { LiveResultInput } from '../types/ingest.js';
 import {
@@ -100,8 +100,8 @@ export function registerIngestRoutes(
       }
 
       // State-dependent ingestion guard
-      const eventStatus = authRequest.event?.status;
-      if (eventStatus && !ALLOWED_INGEST[eventStatus]?.includes('xml')) {
+      const eventStatus = authRequest.event?.status as EventStatus;
+      if (!ALLOWED_INGEST[eventStatus]?.includes('xml')) {
         reply.code(403).send({
           error: 'Forbidden',
           message: `Data type 'xml' not accepted in '${eventStatus}' state`,
@@ -159,8 +159,8 @@ export function registerIngestRoutes(
       }
 
       // State-dependent ingestion guard
-      const eventStatus = authRequest.event?.status;
-      if (eventStatus && !ALLOWED_INGEST[eventStatus]?.includes('json_oncourse')) {
+      const eventStatus = authRequest.event?.status as EventStatus;
+      if (!ALLOWED_INGEST[eventStatus]?.includes('json_oncourse')) {
         reply.code(403).send({
           error: 'Forbidden',
           message: `Data type 'json_oncourse' not accepted in '${eventStatus}' state`,
@@ -251,8 +251,8 @@ export function registerIngestRoutes(
       }
 
       // State-dependent ingestion guard
-      const eventStatus = authRequest.event?.status;
-      if (eventStatus && !ALLOWED_INGEST[eventStatus]?.includes('json_results')) {
+      const eventStatus = authRequest.event?.status as EventStatus;
+      if (!ALLOWED_INGEST[eventStatus]?.includes('json_results')) {
         reply.code(403).send({
           error: 'Forbidden',
           message: `Data type 'json_results' not accepted in '${eventStatus}' state`,

@@ -153,7 +153,8 @@ export function registerAdminRoutes(
       schema: updateStatusSchema,
       preHandler: apiKeyAuth,
     },
-    async (request: AuthenticatedRequest, reply) => {
+    async (request, reply) => {
+      const authRequest = request as AuthenticatedRequest;
       const { eventId } = request.params;
       const { status: targetStatus } = request.body;
 
@@ -169,7 +170,7 @@ export function registerAdminRoutes(
       }
 
       // Verify authenticated event matches request
-      if (request.event?.id !== event.id) {
+      if (authRequest.event?.id !== event.id) {
         reply.code(401).send({
           error: 'Unauthorized',
           message: 'API key does not match event',
@@ -180,8 +181,7 @@ export function registerAdminRoutes(
       // Attempt state transition
       const result = await lifecycleService.transitionEvent(
         event.id,
-        targetStatus,
-        db
+        targetStatus
       );
 
       if (!result.success) {

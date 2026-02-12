@@ -49,8 +49,7 @@ export class EventLifecycleService {
    */
   async transitionEvent(
     eventId: number,
-    targetStatus: EventStatus,
-    db: Kysely<Database>
+    targetStatus: EventStatus
   ): Promise<{
     success: boolean;
     previousStatus?: EventStatus;

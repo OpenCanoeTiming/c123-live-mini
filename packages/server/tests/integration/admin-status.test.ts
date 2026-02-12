@@ -26,11 +26,17 @@ describe('Admin Status Endpoint - PATCH /api/v1/admin/events/:eventId/status', (
       .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
       .addColumn('event_id', 'text', (col) => col.notNull().unique())
       .addColumn('main_title', 'text', (col) => col.notNull())
+      .addColumn('sub_title', 'text')
+      .addColumn('location', 'text')
+      .addColumn('facility', 'text')
+      .addColumn('start_date', 'text')
+      .addColumn('end_date', 'text')
+      .addColumn('discipline', 'text')
       .addColumn('status', 'text', (col) => col.notNull().defaultTo('draft'))
       .addColumn('status_changed_at', 'text')
       .addColumn('api_key', 'text', (col) => col.unique())
-      .addColumn('start_date', 'text')
-      .addColumn('end_date', 'text')
+      .addColumn('config', 'text')
+      .addColumn('has_xml_data', 'integer', (col) => col.notNull().defaultTo(0))
       .addColumn('created_at', 'text', (col) =>
         col.notNull().defaultTo('2026-02-12T00:00:00.000Z')
       )
@@ -55,11 +61,16 @@ describe('Admin Status Endpoint - PATCH /api/v1/admin/events/:eventId/status', (
     await eventRepo.insert({
       event_id: testEventId,
       main_title: 'Test Event',
+      sub_title: null,
+      location: null,
+      facility: null,
+      discipline: null,
       status: 'draft',
       status_changed_at: new Date().toISOString(),
       api_key: testApiKey,
       start_date: startDate.toISOString(),
       end_date: endDate.toISOString(),
+      has_xml_data: 0,
     });
   });
 
