@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { ThemeProvider } from '@czechcanoe/rvp-design-system';
 import '@czechcanoe/rvp-design-system/styles';
 import App from './App';
 
@@ -10,6 +11,8 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <App />
+    <ThemeProvider defaultTheme="light">
+      <App />
+    </ThemeProvider>
   </StrictMode>
 );
