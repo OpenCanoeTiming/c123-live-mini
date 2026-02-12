@@ -10,8 +10,10 @@ export interface Participant {
   classId: number | null;
   /** Event bib number */
   eventBib: number | null;
-  /** ICF registration number */
+  /** ICF registration number (legacy, kept for backward compatibility) */
   icfId: string | null;
+  /** Technology-transparent athlete identifier */
+  athleteId: string | null;
   /** Last name */
   familyName: string;
   /** First name */
@@ -48,6 +50,7 @@ export interface ParticipantCreate {
   classId?: number | null;
   eventBib?: number | null;
   icfId?: string | null;
+  athleteId?: string | null;
   familyName: string;
   givenName?: string | null;
   noc?: string | null;

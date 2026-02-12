@@ -1,10 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
+import type { PublicGate, PublicRaceType } from '@c123-live-mini/shared';
 import { EventRepository } from '../db/repositories/EventRepository.js';
 import { RaceRepository } from '../db/repositories/RaceRepository.js';
 import { ResultRepository } from '../db/repositories/ResultRepository.js';
 import { ClassRepository } from '../db/repositories/ClassRepository.js';
+import { CourseRepository } from '../db/repositories/CourseRepository.js';
 import { resultsSchema } from '../schemas/index.js';
 
 /**
@@ -13,7 +15,7 @@ import { resultsSchema } from '../schemas/index.js';
 interface ResultEntry {
   rnk: number | null;
   bib: number | null;
-  participantId: string;
+  athleteId: string | null;
   name: string;
   club: string | null;
   noc: string | null;
@@ -23,8 +25,13 @@ interface ResultEntry {
   pen: number | null;
   total: number | null;
   totalBehind: string | null;
+  catTotalBehind: string | null;
   status: string | null;
-  gates?: number[];
+  // Detailed mode fields
+  dtStart?: string | null;
+  dtFinish?: string | null;
+  gates?: PublicGate[] | null;
+  courseGateCount?: number | null;
   // Multi-run fields (BR1/BR2)
   betterRunNr?: number | null;
   totalTotal?: number | null;
@@ -44,7 +51,7 @@ interface RunEntry {
   pen: number | null;
   total: number | null;
   rnk: number | null;
-  gates?: number[];
+  gates?: PublicGate[] | null;
 }
 
 /**
@@ -61,7 +68,7 @@ interface ResultsResponse {
   race: {
     raceId: string;
     classId: string | null;
-    disId: string;
+    raceType: PublicRaceType;
     raceStatus: number;
   };
   results: ResultEntry[] | MultiRunResultEntry[];
@@ -103,6 +110,7 @@ export function registerResultsRoutes(
   const raceRepo = new RaceRepository(db);
   const resultRepo = new ResultRepository(db);
   const classRepo = new ClassRepository(db);
+  const courseRepo = new CourseRepository(db);
 
   /**
    * GET /api/v1/events/:eventId/results/:raceId
@@ -121,12 +129,12 @@ export function registerResultsRoutes(
     const includeGates = detailed === 'true' || detailed === '1';
     const showAllRuns = includeAllRuns === 'true' || includeAllRuns === '1';
 
-    // Find event
+    // Find event - return 404 for non-existent or draft events
     const event = await eventRepo.findByEventId(eventId);
-    if (!event) {
+    if (!event || event.status === 'draft') {
       reply.code(404).send({
-        error: 'Not found',
-        message: `Event not found: ${eventId}`,
+        error: 'NotFound',
+        message: 'Event not found',
       } as unknown as ResultsResponse);
       return;
     }
@@ -135,10 +143,20 @@ export function registerResultsRoutes(
     const race = await raceRepo.findByEventAndRaceId(event.id, raceId);
     if (!race) {
       reply.code(404).send({
-        error: 'Not found',
-        message: `Race not found: ${raceId}`,
+        error: 'NotFound',
+        message: 'Race not found',
       } as unknown as ResultsResponse);
       return;
+    }
+
+    // Get course gate count for detailed mode
+    let courseGateCount: number | null = null;
+    if (includeGates && race.course_nr) {
+      const course = await courseRepo.findByEventAndCourseNr(
+        event.id,
+        race.course_nr
+      );
+      courseGateCount = course?.nr_gates ?? null;
     }
 
     // Get class ID string for response
@@ -149,7 +167,7 @@ export function registerResultsRoutes(
     }
 
     // Check if this is a BR race and includeAllRuns is requested
-    const isBrRace = race.dis_id === 'BR1' || race.dis_id === 'BR2';
+    const isBrRace = race.race_type === 'best-run-1' || race.race_type === 'best-run-2';
 
     if (showAllRuns && isBrRace) {
       // Multi-run mode: get linked BR1/BR2 results
@@ -173,7 +191,7 @@ export function registerResultsRoutes(
         // Build runs array
         const runsArray: RunEntry[] = runs.map((r) => {
           const runEntry: RunEntry = {
-            runNr: r.dis_id === 'BR1' ? 1 : 2,
+            runNr: r.race_type === 'best-run-1' ? 1 : 2,
             raceId: r.race_id_str,
             time: r.time,
             pen: r.pen,
@@ -196,8 +214,8 @@ export function registerResultsRoutes(
         let totalTotal: number | null = null;
         let betterRunNr: number | null = null;
 
-        const br1 = runs.find((r) => r.dis_id === 'BR1');
-        const br2 = runs.find((r) => r.dis_id === 'BR2');
+        const br1 = runs.find((r) => r.race_type === 'best-run-1');
+        const br2 = runs.find((r) => r.race_type === 'best-run-2');
 
         if (
           br1?.total != null &&
@@ -228,7 +246,7 @@ export function registerResultsRoutes(
         multiRunResults.push({
           rnk: primaryResult.rnk,
           bib: primaryResult.bib,
-          participantId: primaryResult.participant_id_str,
+          athleteId: primaryResult.athlete_id,
           name: formatName(primaryResult.family_name, primaryResult.given_name),
           club: primaryResult.club,
           noc: primaryResult.noc,
@@ -238,6 +256,7 @@ export function registerResultsRoutes(
           pen: primaryResult.pen,
           total: primaryResult.total,
           totalBehind: primaryResult.total_behind,
+          catTotalBehind: primaryResult.cat_total_behind,
           status: primaryResult.status,
           betterRunNr,
           totalTotal,
@@ -261,7 +280,7 @@ export function registerResultsRoutes(
         race: {
           raceId: race.race_id,
           classId: classIdStr,
-          disId: race.dis_id,
+          raceType: (race.race_type ?? 'unknown') as PublicRaceType,
           raceStatus: race.race_status,
         },
         results: multiRunResults,
@@ -279,14 +298,14 @@ export function registerResultsRoutes(
       race: {
         raceId: race.race_id,
         classId: classIdStr,
-        disId: race.dis_id,
+        raceType: (race.race_type ?? 'unknown') as PublicRaceType,
         raceStatus: race.race_status,
       },
       results: results.map((r) => {
         const entry: ResultEntry = {
           rnk: r.rnk,
           bib: r.bib,
-          participantId: r.participant_id_str,
+          athleteId: r.athlete_id,
           name: formatName(r.family_name, r.given_name),
           club: r.club,
           noc: r.noc,
@@ -296,6 +315,7 @@ export function registerResultsRoutes(
           pen: r.pen,
           total: r.total,
           totalBehind: r.total_behind,
+          catTotalBehind: r.cat_total_behind,
           status: r.status,
         };
 
@@ -309,11 +329,21 @@ export function registerResultsRoutes(
           entry.prevRnk = r.prev_rnk;
         }
 
-        if (includeGates && r.gates) {
-          try {
-            entry.gates = JSON.parse(r.gates);
-          } catch {
-            // Invalid JSON, skip gates
+        // Detailed mode fields
+        if (includeGates) {
+          entry.dtStart = r.dt_start;
+          entry.dtFinish = r.dt_finish;
+          entry.courseGateCount = courseGateCount;
+
+          if (r.gates) {
+            try {
+              entry.gates = JSON.parse(r.gates) as PublicGate[];
+            } catch {
+              // Invalid JSON, set gates to null
+              entry.gates = null;
+            }
+          } else {
+            entry.gates = null;
           }
         }
 

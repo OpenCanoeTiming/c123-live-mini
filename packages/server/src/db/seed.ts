@@ -33,7 +33,10 @@ import {
   SEED_PARTICIPANT_COUNT,
   SEED_RACE_COUNT,
   SEED_RESULT_COUNT,
+  SEED_COURSE_CONFIG,
 } from './seed-data.js';
+import { mapDisIdToRaceType } from '../utils/raceTypes.js';
+import { transformGates, gatesToJson } from '../utils/gateTransform.js';
 
 async function seed(): Promise<void> {
   console.log('🌱 Starting database seed...\n');
@@ -88,12 +91,14 @@ async function seed(): Promise<void> {
   // Insert races and track their IDs
   const raceIdMap = new Map<string, number>();
   for (const race of seedRaces) {
-    const { class_ref, ...raceData } = race;
+    // Exclude class_ref and dis_id from spread - dis_id is source data only
+    const { class_ref, dis_id, ...raceData } = race;
     const classId = classIdMap.get(class_ref);
     const id = await raceRepo.insert({
       ...raceData,
       event_id: eventId,
       class_id: classId ?? null,
+      race_type: mapDisIdToRaceType(dis_id),
     });
     raceIdMap.set(race.race_id, id);
   }
@@ -103,12 +108,14 @@ async function seed(): Promise<void> {
   const participantIdMap = new Map<string, number>();
   const allParticipants = [...seedParticipantsK1M, ...seedParticipantsK1W];
   for (const participant of allParticipants) {
-    const { class_ref, ...participantData } = participant;
+    // Exclude class_ref and icf_id from spread - icf_id is source data only
+    const { class_ref, icf_id, ...participantData } = participant;
     const classId = classIdMap.get(class_ref);
     const id = await participantRepo.insert({
       ...participantData,
       event_id: eventId,
       class_id: classId ?? null,
+      athlete_id: icf_id,
     });
     participantIdMap.set(participant.participant_id, id);
   }
@@ -117,7 +124,7 @@ async function seed(): Promise<void> {
   // Insert results
   const allResults = [...seedResultsK1M, ...seedResultsK1W];
   for (const result of allResults) {
-    const { participant_ref, race_ref, ...resultData } = result;
+    const { participant_ref, race_ref, gates, ...resultData } = result;
     const raceId = raceIdMap.get(race_ref);
     const participantId = participantIdMap.get(participant_ref);
 
@@ -126,8 +133,16 @@ async function seed(): Promise<void> {
       continue;
     }
 
+    // Transform gates to self-describing format
+    let gatesJson: string | null = null;
+    if (gates) {
+      const transformedGates = transformGates(gates, SEED_COURSE_CONFIG);
+      gatesJson = gatesToJson(transformedGates);
+    }
+
     await resultRepo.insert({
       ...resultData,
+      gates: gatesJson,
       event_id: eventId,
       race_id: raceId,
       participant_id: participantId,

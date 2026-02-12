@@ -35,19 +35,25 @@ export type SeedCourse = Omit<Insertable<CoursesTable>, 'event_id'>;
 /**
  * Seed race data with class_ref for lookup during insertion
  * event_id and class_id are resolved during insertion
+ * dis_id is C123 source data - gets mapped to race_type during insertion
  */
 export type SeedRace = Omit<Insertable<RacesTable>, 'event_id' | 'class_id'> & {
   /** Reference to class_id string for lookup */
   class_ref: string;
+  /** C123 discipline ID (source data) - mapped to race_type during insertion */
+  dis_id: string;
 };
 
 /**
  * Seed participant data with class_ref for lookup during insertion
  * event_id and class_id are resolved during insertion
+ * icf_id is C123 source data - gets mapped to athlete_id during insertion
  */
 export type SeedParticipant = Omit<Insertable<ParticipantsTable>, 'event_id' | 'class_id'> & {
   /** Reference to class_id string for lookup */
   class_ref: string;
+  /** C123 ICF ID (source data) - mapped to athlete_id during insertion */
+  icf_id: string;
 };
 
 /**
