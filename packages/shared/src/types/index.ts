@@ -6,6 +6,7 @@ export type {
   EventStatus,
   Discipline,
 } from './event.js';
+export { VALID_TRANSITIONS, ALLOWED_INGEST } from './event.js';
 
 // Class and Category types
 export type {

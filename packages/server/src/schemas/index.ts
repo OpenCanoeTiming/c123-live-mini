@@ -611,3 +611,65 @@ export const updateEventConfigSchema = {
     404: errorResponseSchema,
   },
 } as const;
+
+// ============================================================================
+// Event Lifecycle Schemas
+// ============================================================================
+
+export const updateStatusBodySchema = {
+  type: 'object',
+  properties: {
+    status: {
+      type: 'string',
+      enum: ['draft', 'startlist', 'running', 'finished', 'official'],
+    },
+  },
+  required: ['status'],
+} as const;
+
+export const updateStatusParamsSchema = {
+  type: 'object',
+  properties: {
+    eventId: { type: 'string' },
+  },
+  required: ['eventId'],
+} as const;
+
+export const updateStatusSchema = {
+  params: updateStatusParamsSchema,
+  body: updateStatusBodySchema,
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        eventId: { type: 'string' },
+        previousStatus: {
+          type: 'string',
+          enum: ['draft', 'startlist', 'running', 'finished', 'official'],
+        },
+        status: {
+          type: 'string',
+          enum: ['draft', 'startlist', 'running', 'finished', 'official'],
+        },
+        statusChangedAt: { type: 'string', format: 'date-time' },
+      },
+      required: ['eventId', 'previousStatus', 'status', 'statusChangedAt'],
+    },
+    400: {
+      type: 'object',
+      properties: {
+        error: { type: 'string' },
+        message: { type: 'string' },
+        currentStatus: { type: 'string' },
+        requestedStatus: { type: 'string' },
+        validTransitions: {
+          type: 'array',
+          items: { type: 'string' },
+        },
+      },
+      required: ['error', 'message'],
+    },
+    401: errorResponseSchema,
+    404: errorResponseSchema,
+  },
+} as const;

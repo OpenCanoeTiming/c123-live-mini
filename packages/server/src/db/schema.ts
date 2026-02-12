@@ -15,6 +15,7 @@ export interface EventsTable {
   config: string | null;
   has_xml_data: number;
   created_at: ColumnType<string, string | undefined, string | undefined>;
+  status_changed_at: ColumnType<string, string | undefined, string | undefined>;
 }
 
 export interface ClassesTable {

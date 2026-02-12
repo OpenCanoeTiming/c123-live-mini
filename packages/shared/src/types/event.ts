@@ -61,3 +61,25 @@ export interface EventCreate {
 export interface EventWithApiKey extends Event {
   apiKey: string;
 }
+
+/**
+ * Map of valid transitions: current state → allowed next states
+ */
+export const VALID_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
+  draft: ['startlist'],
+  startlist: ['running', 'draft'],
+  running: ['finished'],
+  finished: ['official', 'running'],
+  official: [],
+};
+
+/**
+ * Map of allowed ingest source types per event state
+ */
+export const ALLOWED_INGEST: Record<EventStatus, string[]> = {
+  draft: ['xml', 'config'],
+  startlist: ['xml'],
+  running: ['xml', 'json_oncourse', 'json_results'],
+  finished: ['xml', 'json_results'],
+  official: [],
+};
