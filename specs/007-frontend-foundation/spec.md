@@ -5,6 +5,16 @@
 **Status**: Draft
 **Input**: Feature #7 — Basic frontend with RVP Design System integration, data display from API, responsive mobile-first layout
 
+## Clarifications
+
+### Session 2026-02-12
+
+- Q: How should race tabs be organized when events have multiple classes and race types? → A: Two-level navigation — first select class (C1M, K1W), then select round/type within class (qualification, final, BR1)
+- Q: Should the frontend support combined best-run (BR) display with both runs paired? → A: Full BR support — display both runs, highlight the better run, show combined result
+- Q: What language should the UI use (labels, buttons, error messages, empty states)? → A: Czech — all UI text in Czech
+- Q: What URL format should be used for shareable links? → A: Hash-based routing (e.g., `/#/events/CZE2.2024062500/race/Q-C1M`) — no server configuration needed
+- Q: Should the category filter persist when switching between races/rounds? → A: Persist — category filter remains active when switching races and rounds
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Browse and Select Events (Priority: P1)
@@ -18,7 +28,7 @@ A spectator opens the application on their phone at a canoe slalom venue. They s
 **Acceptance Scenarios**:
 
 1. **Given** the application is opened, **When** events exist in the system, **Then** a list of non-draft events is displayed ordered by start date (most recent first)
-2. **Given** the event list is displayed, **When** the spectator taps an event, **Then** the event detail view shows the event name, location, dates, discipline, and a list of races
+2. **Given** the event list is displayed, **When** the spectator taps an event, **Then** the event detail view shows the event name, location, dates, discipline, and a two-level race navigator (classes, then rounds)
 3. **Given** the event list is loading, **When** the data has not yet arrived, **Then** skeleton placeholders are shown instead of a blank screen
 4. **Given** the server is unreachable, **When** the event list fails to load, **Then** an error message with a retry action is displayed
 5. **Given** an event is live (status "running"), **When** the event list is displayed, **Then** a live indicator is visible next to that event
@@ -27,42 +37,45 @@ A spectator opens the application on their phone at a canoe slalom venue. They s
 
 ### User Story 2 — View Race Results (Priority: P1)
 
-A spectator has selected an event and wants to see race results. They see a race selector (tabs) and a results table showing ranked athletes with times, penalties, and time behind leader. They can switch between races using the tabs. Results for DNS/DNF/DSQ athletes appear at the bottom with their status clearly indicated.
+A spectator has selected an event and wants to see race results. They first select a class (e.g., C1M, K1W) and then a round within that class (e.g., qualification, final, best-run-1). A results table shows ranked athletes with times, penalties, and time behind leader. For best-run disciplines, both runs are displayed with the better run highlighted and a combined result shown. Results for DNS/DNF/DSQ athletes appear at the bottom with their status clearly indicated.
 
 **Why this priority**: Results are the primary reason spectators use the application. This is the core value proposition — seeing who is winning and by how much.
 
-**Independent Test**: Navigate to an event with completed races, see a results table with ranking, names, times, penalties, totals, and behind. Switch between races using tabs. Delivers the core value — spectators can check results.
+**Independent Test**: Navigate to an event with completed races, see a results table with ranking, names, times, penalties, totals, and behind. Switch between classes and rounds. For best-run races, verify both runs are shown. Delivers the core value — spectators can check results.
 
 **Acceptance Scenarios**:
 
-1. **Given** an event is selected with multiple races, **When** the event detail loads, **Then** race tabs are shown and the first race is auto-selected with its results displayed
-2. **Given** results are displayed, **When** the spectator taps a different race tab, **Then** results for the selected race replace the previous results
-3. **Given** a race has results, **When** results are displayed, **Then** each row shows rank, bib number, athlete name, club/country, run time, penalties, total time, and time behind leader
-4. **Given** a race has DNS/DNF/DSQ athletes, **When** results are displayed, **Then** these athletes appear at the bottom with their status label instead of times
-5. **Given** a race has no results yet, **When** results are requested, **Then** an empty state message indicates results will appear when the race starts
+1. **Given** an event is selected with multiple classes, **When** the event detail loads, **Then** class-level navigation is shown and the first class is auto-selected with its first round's results displayed
+2. **Given** a class is selected with multiple rounds, **When** the class is active, **Then** round-level navigation shows available rounds (qualification, semifinal, final, best-run-1, etc.)
+3. **Given** results are displayed, **When** the spectator selects a different round, **Then** results for the selected round replace the previous results
+4. **Given** a race has results, **When** results are displayed, **Then** each row shows rank, bib number, athlete name, club/country, run time, penalties, total time, and time behind leader
+5. **Given** a best-run discipline, **When** results are displayed, **Then** both BR1 and BR2 times are shown per athlete, the better run is visually highlighted, and the combined/total result is displayed
+6. **Given** a race has DNS/DNF/DSQ athletes, **When** results are displayed, **Then** these athletes appear at the bottom with their status label instead of times
+7. **Given** a race has no results yet, **When** results are requested, **Then** an empty state message indicates results will appear when the race starts
 
 ---
 
 ### User Story 3 — Filter Results by Category (Priority: P2)
 
-A spectator wants to see results for a specific age category (e.g., "Ženy Seniorky" or "Muži Junioři"). They select a category filter and see only athletes from that category with category-specific rankings. They can clear the filter to return to the full results view.
+A spectator wants to see results for a specific age category (e.g., "Ženy Seniorky" or "Muži Junioři"). They select a category filter and see only athletes from that category with category-specific rankings. They can clear the filter to return to the full results view. The selected category filter persists when switching between races and rounds, so the spectator can follow their category across the entire event.
 
 **Why this priority**: Category filtering is essential for parents, coaches, and athletes who care about specific age groups. It's the most requested feature after basic results display.
 
-**Independent Test**: View race results, select a category filter, see only matching athletes with category-specific ranking. Clear the filter and see all athletes again.
+**Independent Test**: View race results, select a category filter, see only matching athletes with category-specific ranking. Switch races — filter stays active. Clear the filter and see all athletes again.
 
 **Acceptance Scenarios**:
 
 1. **Given** an event has multiple categories, **When** the results view loads, **Then** a category filter selector is available
 2. **Given** the category filter is available, **When** the spectator selects a category, **Then** only athletes from that category are displayed with category-specific ranking (catRnk) and category-specific time behind (catTotalBehind)
-3. **Given** a category filter is active, **When** the spectator clears the filter, **Then** all athletes from all categories are displayed with overall ranking
-4. **Given** an event has no categories defined, **When** the results view loads, **Then** no category filter is shown
+3. **Given** a category filter is active, **When** the spectator switches to a different race or round, **Then** the category filter remains active and is applied to the new race's results
+4. **Given** a category filter is active, **When** the spectator clears the filter, **Then** all athletes from all categories are displayed with overall ranking
+5. **Given** an event has no categories defined, **When** the results view loads, **Then** no category filter is shown
 
 ---
 
 ### User Story 4 — URL-Based Navigation (Priority: P2)
 
-A spectator wants to share a link to specific race results with a friend. The application uses URL-based navigation so each view (event list, event detail, race results) has a unique shareable URL. When the friend opens the link, they see the same view directly.
+A spectator wants to share a link to specific race results with a friend. The application uses hash-based URL navigation (e.g., `/#/events/CZE2.2024062500/race/Q-C1M`) so each view has a unique shareable URL without requiring server-side configuration. When the friend opens the link, they see the same view directly.
 
 **Why this priority**: Shareable URLs are critical for social media sharing and bookmarking. Without URL routing, spectators cannot share or bookmark specific results, which significantly reduces the application's reach and usability.
 
@@ -70,10 +83,10 @@ A spectator wants to share a link to specific race results with a friend. The ap
 
 **Acceptance Scenarios**:
 
-1. **Given** the spectator navigates to an event, **When** the event detail loads, **Then** the browser URL reflects the selected event
+1. **Given** the spectator navigates to an event, **When** the event detail loads, **Then** the browser URL hash reflects the selected event
 2. **Given** the spectator is viewing race results, **When** they copy the URL and open it in a new tab, **Then** the same event and race results are displayed
 3. **Given** the spectator uses the browser back button, **When** they were on event detail, **Then** they return to the event list
-4. **Given** a spectator opens a URL for a non-existent event, **When** the page loads, **Then** a "not found" message is shown with a link back to the event list
+4. **Given** a spectator opens a URL for a non-existent event, **When** the page loads, **Then** a "nenalezeno" message is shown with a link back to the event list
 
 ---
 
@@ -96,10 +109,11 @@ A spectator wants to see who is starting in an upcoming race and their start ord
 ### Edge Cases
 
 - What happens when the server returns an error mid-navigation (e.g., event loads but results call fails)? — Show the event detail with an error message in the results section; do not lose the already-loaded event data
-- What happens when an event has only one race? — Skip the race tab selector entirely and show results directly
+- What happens when an event has only one class with one race? — Skip class-level navigation entirely and show results directly
 - What happens on extremely slow connections? — Skeleton loaders are shown for each section independently; partially loaded data is displayed as it arrives
-- What happens when the spectator navigates to a draft event URL? — The API returns 404; the application shows a "not found" message
+- What happens when the spectator navigates to a draft event URL? — The API returns 404; the application shows a "nenalezeno" message
 - What happens when the event list is empty (no public events)? — An empty state message informs the spectator that no events are currently available
+- What happens when a category filter is active but the selected category has no athletes in a newly selected race? — Show an empty results state with the filter still active and a hint that no athletes match the selected category in this race
 
 ## Requirements *(mandatory)*
 
@@ -108,9 +122,9 @@ A spectator wants to see who is starting in an upcoming race and their start ord
 - **FR-001**: The application MUST display a list of public events fetched from the Client API, excluding draft events
 - **FR-002**: The application MUST allow spectators to select an event and view its detail (name, location, dates, discipline, race schedule)
 - **FR-003**: The application MUST display race results in a table with rank, bib, name, club/country, time, penalties, total, and time behind
-- **FR-004**: The application MUST allow switching between races using a tab-style selector
+- **FR-004**: The application MUST provide two-level race navigation — first by class (C1M, K1W), then by round/type within the class (qualification, semifinal, final, best-run)
 - **FR-005**: The application MUST support filtering results by age category, showing category-specific rankings
-- **FR-006**: The application MUST use URL-based navigation so that event and race views have unique shareable URLs
+- **FR-006**: The application MUST use hash-based URL navigation so that event and race views have unique shareable URLs without requiring server-side configuration
 - **FR-007**: The application MUST show appropriate loading states (skeletons) while data is being fetched
 - **FR-008**: The application MUST show error states with retry options when API calls fail
 - **FR-009**: The application MUST indicate live events with a visual live indicator
@@ -119,13 +133,16 @@ A spectator wants to see who is starting in an upcoming race and their start ord
 - **FR-012**: The application MUST use only the project's designated design system for all visual components — no custom CSS or inline styles for standard UI patterns
 - **FR-013**: The application MUST be responsive and optimized for mobile viewports (320px and up) as the primary display target
 - **FR-014**: The application MUST use monospaced font for all time values to ensure visual alignment
+- **FR-015**: The application MUST display best-run results showing both BR1 and BR2 per athlete, highlight the better run, and show the combined result
+- **FR-016**: The application MUST present all UI text (labels, buttons, headings, error messages, empty states) in Czech
+- **FR-017**: The category filter MUST persist when the spectator switches between races or rounds within an event
 
 ### Key Entities
 
 - **Event**: A competition with a name, location, dates, discipline, status, and a set of races. Spectators browse and select events.
-- **Race**: A single competition run within an event, identified by class and race type (e.g., qualification, semifinal, best-run). Spectators switch between races.
-- **Result**: An athlete's performance in a race, with ranking, time, penalties, and status. The primary data spectators consume.
-- **Category**: An age/gender group used for filtering results (e.g., "Muži Senioři", "Ženy Juniorky"). Derived from event configuration.
+- **Race**: A single competition run within an event, identified by class and race type (e.g., qualification, semifinal, best-run). Spectators navigate first by class, then by round.
+- **Result**: An athlete's performance in a race, with ranking, time, penalties, and status. For best-run disciplines, includes both runs with better-run indication.
+- **Category**: An age/gender group used for filtering results (e.g., "Muži Senioři", "Ženy Juniorky"). Derived from event configuration. Filter selection persists across race changes.
 - **Startlist Entry**: An athlete's registration for a race with start order, bib number, and category.
 
 ## Assumptions
@@ -145,7 +162,8 @@ A spectator wants to see who is starting in an upcoming race and their start ord
 - **SC-001**: A spectator can navigate from the event list to viewing race results in under 3 taps/clicks
 - **SC-002**: The initial event list loads and displays within 2 seconds on a 3G mobile connection
 - **SC-003**: All views are usable without horizontal scrolling on screens 320px wide and larger
-- **SC-004**: Shared URLs load the correct view directly without requiring additional navigation
+- **SC-004**: Shared URLs (hash-based) load the correct view directly without requiring additional navigation
 - **SC-005**: 100% of UI components come from the designated design system — no custom CSS for standard patterns
-- **SC-006**: Category filter correctly shows category-specific rankings that match the API response
-- **SC-007**: All error states provide clear messaging and a path to recovery (retry or navigate back)
+- **SC-006**: Category filter correctly shows category-specific rankings and persists across race/round changes
+- **SC-007**: All error states provide clear messaging in Czech and a path to recovery (retry or navigate back)
+- **SC-008**: Best-run results display both runs per athlete with better-run visually distinguishable
