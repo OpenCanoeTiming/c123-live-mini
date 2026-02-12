@@ -214,6 +214,8 @@ flowchart LR
 - SQLite file-based (`packages/server/data/live-mini.db`, Repository Pattern)
 - TypeScript 5.x, Node.js 20 LTS (strict mode) + Fastify, Kysely, better-sqlite3 (006-client-api)
 - SQLite file-based (`packages/server/data/live-mini.db`), Repository Pattern (006-client-api)
+- TypeScript 5.x strict mode, React 18, Node.js 20 LTS + wouter (new), react 18, @czechcanoe/rvp-design-system 1.0.2 (007-frontend-foundation)
+- N/A (frontend-only, all data from Client API) (007-frontend-foundation)
 
 ## Recent Changes
 - 003-technical-poc: Monorepo structure (packages/server, packages/page), React + Vite frontend
