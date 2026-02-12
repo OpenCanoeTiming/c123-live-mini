@@ -10,6 +10,7 @@ import { ResultIngestService } from '../services/ResultIngestService.js';
 import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
 import { getOnCourseStore } from '../services/OnCourseStore.js';
 import type { OnCourseInput } from '@c123-live-mini/shared';
+import { ALLOWED_INGEST } from '@c123-live-mini/shared';
 import type { LiveResultInput } from '../types/ingest.js';
 import {
   ingestXmlSchema,
@@ -98,6 +99,16 @@ export function registerIngestRoutes(
         return;
       }
 
+      // State-dependent ingestion guard
+      const eventStatus = authRequest.event?.status;
+      if (eventStatus && !ALLOWED_INGEST[eventStatus]?.includes('xml')) {
+        reply.code(403).send({
+          error: 'Forbidden',
+          message: `Data type 'xml' not accepted in '${eventStatus}' state`,
+        } as unknown as IngestXmlResponse);
+        return;
+      }
+
       const apiKey = request.headers['x-api-key'] as string;
 
       try {
@@ -143,6 +154,16 @@ export function registerIngestRoutes(
         reply.code(400).send({
           error: 'Invalid request',
           message: 'Missing required field: oncourse (array)',
+        } as unknown as IngestOnCourseResponse);
+        return;
+      }
+
+      // State-dependent ingestion guard
+      const eventStatus = authRequest.event?.status;
+      if (eventStatus && !ALLOWED_INGEST[eventStatus]?.includes('json_oncourse')) {
+        reply.code(403).send({
+          error: 'Forbidden',
+          message: `Data type 'json_oncourse' not accepted in '${eventStatus}' state`,
         } as unknown as IngestOnCourseResponse);
         return;
       }
@@ -225,6 +246,16 @@ export function registerIngestRoutes(
         reply.code(400).send({
           error: 'Invalid request',
           message: 'Missing required field: results (array)',
+        } as unknown as IngestResultsResponse);
+        return;
+      }
+
+      // State-dependent ingestion guard
+      const eventStatus = authRequest.event?.status;
+      if (eventStatus && !ALLOWED_INGEST[eventStatus]?.includes('json_results')) {
+        reply.code(403).send({
+          error: 'Forbidden',
+          message: `Data type 'json_results' not accepted in '${eventStatus}' state`,
         } as unknown as IngestResultsResponse);
         return;
       }
