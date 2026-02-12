@@ -17,6 +17,7 @@ export interface AuthenticatedRequest extends FastifyRequest {
     id: number;
     eventId: string;
     hasXmlData: boolean;
+    status: string;
   };
 }
 
@@ -67,6 +68,7 @@ export function createApiKeyAuth(db: Kysely<Database>) {
       id: event.id,
       eventId: event.event_id,
       hasXmlData: event.has_xml_data === 1,
+      status: event.status,
     };
   };
 }
