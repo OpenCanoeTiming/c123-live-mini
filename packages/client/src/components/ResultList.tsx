@@ -152,10 +152,10 @@ const bestRunColumns: ColumnDef<ResultEntry>[] = [
           </span>
         );
       }
-      // betterRunNr=1 → current run is run 1, prev is run 2
-      // betterRunNr=2 → current run is run 2, prev is run 1
-      const isRun1Current = row.betterRunNr !== 2;
-      const run1Total = isRun1Current ? row.total : row.prevTotal;
+      // Server always uses BR2 as primary (contains prev_ fields):
+      //   total = Run 2 result, prevTotal = Run 1 result
+      // When only BR1 exists: total = Run 1, prevTotal = null
+      const run1Total = row.prevTotal ?? (row.prevTotal === undefined ? row.total : null);
       const isBetter = row.betterRunNr === 1;
       return (
         <span
@@ -175,8 +175,9 @@ const bestRunColumns: ColumnDef<ResultEntry>[] = [
     align: 'right',
     cell: (row) => {
       if (row.status) return '';
-      const isRun2Current = row.betterRunNr === 2;
-      const run2Total = isRun2Current ? row.total : row.prevTotal;
+      // When BR2 exists: total = Run 2 result
+      // When only BR1: prevTotal is null → Run 2 doesn't exist
+      const run2Total = row.prevTotal != null ? row.total : null;
       const isBetter = row.betterRunNr === 2;
       return (
         <span

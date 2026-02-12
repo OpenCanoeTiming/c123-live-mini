@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   SkeletonCard,
   Card,
@@ -40,6 +40,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   // Event data
   const [eventDetail, setEventDetail] = useState<EventDetail | null>(null);
   const [races, setRaces] = useState<RaceInfo[]>([]);
+  const racesRef = useRef<RaceInfo[]>([]);
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
   const [categories, setCategories] = useState<CategoryInfo[]>([]);
   const [eventState, setEventState] = useState<LoadingState>('idle');
@@ -72,6 +73,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
         setEventDetail(eventData.event);
         setRaces(eventData.races);
+        racesRef.current = eventData.races;
         setCategories(cats);
 
         const groups = groupRaces(eventData.races);
@@ -128,7 +130,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       setResults(null);
       setStartlist(null);
 
-      const selectedRace = races.find((r) => r.raceId === raceId);
+      const selectedRace = racesRef.current.find((r) => r.raceId === raceId);
       const isBR = selectedRace ? isBestRunRace(selectedRace.raceType) : false;
 
       try {
@@ -163,14 +165,14 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           setResultsState('success');
         } catch {
           if (cancelled) return;
-          setResultsState('success');
+          setResultsState('error');
         }
       }
     }
 
     loadResults();
     return () => { cancelled = true; };
-  }, [eventId, selectedRaceId, selectedCatId, races, eventState]);
+  }, [eventId, selectedRaceId, selectedCatId, eventState]);
 
   // Handle class change
   const handleClassChange = useCallback(
@@ -270,6 +272,15 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
       {resultsState === 'loading' && <SkeletonCard />}
 
+      {resultsState === 'error' && (
+        <Card>
+          <EmptyState
+            title="Chyba načítání"
+            description="Nepodařilo se načíst výsledky ani startovní listinu."
+          />
+        </Card>
+      )}
+
       {resultsState === 'success' && results && results.results.length === 0 && selectedCatId && (
         <Card>
           <EmptyState
@@ -300,7 +311,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         </Card>
       )}
 
-      {races.length === 0 && (
+      {races.length === 0 && resultsState !== 'loading' && (
         <Card>
           <EmptyState
             title="Žádné závody"
