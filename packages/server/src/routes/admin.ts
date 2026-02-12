@@ -1,10 +1,13 @@
 import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
+import type { EventStatus } from '@c123-live-mini/shared';
 import { EventRepository } from '../db/repositories/EventRepository.js';
 import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
+import { EventLifecycleService } from '../services/EventLifecycleService.js';
 import { generateApiKey, isApiKeyValid } from '../utils/apiKey.js';
-import { createEventSchema } from '../schemas/index.js';
+import { createApiKeyAuth, type AuthenticatedRequest } from '../middleware/apiKeyAuth.js';
+import { createEventSchema, updateStatusSchema } from '../schemas/index.js';
 
 /**
  * Create event request body
@@ -42,6 +45,8 @@ export function registerAdminRoutes(
 ): void {
   const eventRepo = new EventRepository(db);
   const ingestRecordRepo = new IngestRecordRepository(db);
+  const lifecycleService = new EventLifecycleService(db);
+  const apiKeyAuth = createApiKeyAuth(db);
 
   /**
    * POST /api/v1/admin/events
@@ -131,6 +136,77 @@ export function registerAdminRoutes(
           validFrom: validity.validFrom?.toISOString(),
           validUntil: validity.validUntil?.toISOString(),
         },
+      };
+    }
+  );
+
+  /**
+   * PATCH /api/v1/admin/events/:eventId/status
+   * Update event status (state transition)
+   */
+  app.patch<{
+    Params: { eventId: string };
+    Body: { status: EventStatus };
+  }>(
+    '/api/v1/admin/events/:eventId/status',
+    {
+      schema: updateStatusSchema,
+      preHandler: apiKeyAuth,
+    },
+    async (request, reply) => {
+      const authRequest = request as AuthenticatedRequest;
+      const { eventId } = request.params;
+      const { status: targetStatus } = request.body;
+
+      // Verify event exists and matches authenticated event
+      const event = await eventRepo.findByEventId(eventId);
+
+      if (!event) {
+        reply.code(404).send({
+          error: 'NotFound',
+          message: `Event not found: ${eventId}`,
+        });
+        return;
+      }
+
+      // Verify authenticated event matches request
+      if (authRequest.event?.id !== event.id) {
+        reply.code(401).send({
+          error: 'Unauthorized',
+          message: 'API key does not match event',
+        });
+        return;
+      }
+
+      // Attempt state transition
+      const result = await lifecycleService.transitionEvent(
+        event.id,
+        targetStatus
+      );
+
+      if (!result.success) {
+        reply.code(400).send({
+          error: 'InvalidTransition',
+          message: result.error ?? 'Invalid state transition',
+          currentStatus: result.previousStatus,
+          requestedStatus: targetStatus,
+          validTransitions: result.validTransitions,
+        });
+        return;
+      }
+
+      // TODO: WebSocket notification for state changes (FR-012)
+      // When WebSocket infrastructure is implemented, emit a 'diff' message here:
+      // webSocketService.emitToEvent(eventId, {
+      //   type: 'diff',
+      //   data: { status: targetStatus }
+      // });
+
+      return {
+        eventId,
+        previousStatus: result.previousStatus,
+        status: targetStatus,
+        statusChangedAt: result.statusChangedAt,
       };
     }
   );

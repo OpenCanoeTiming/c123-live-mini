@@ -7,6 +7,8 @@ import {
 } from '../middleware/apiKeyAuth.js';
 import { EventRepository } from '../db/repositories/EventRepository.js';
 import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
+import type { EventStatus } from '@c123-live-mini/shared';
+import { ALLOWED_INGEST } from '@c123-live-mini/shared';
 import {
   eventConfigSchema,
   parseEventConfig,
@@ -105,6 +107,16 @@ export function registerConfigRoutes(
         reply.code(404).send({
           error: 'Not found',
           message: `Event not found: ${eventId}`,
+        });
+        return;
+      }
+
+      // State-dependent ingestion guard - config only allowed in draft state
+      const eventStatus = authRequest.event.status as EventStatus;
+      if (!ALLOWED_INGEST[eventStatus]?.includes('config')) {
+        reply.code(403).send({
+          error: 'Forbidden',
+          message: `Data type 'config' not accepted in '${eventStatus}' state`,
         });
         return;
       }

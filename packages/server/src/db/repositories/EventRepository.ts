@@ -170,4 +170,25 @@ export class EventRepository extends BaseRepository {
     this.logOperation('setHasXmlData', { id });
     return this.update(id, { has_xml_data: 1 });
   }
+
+  /**
+   * Update event status with timestamp (atomic)
+   */
+  async updateStatusWithTimestamp(
+    id: number,
+    status: string,
+    statusChangedAt: string
+  ): Promise<boolean> {
+    this.logOperation('updateStatusWithTimestamp', { id, status });
+    const result = await this.db
+      .updateTable('events')
+      .set({ status, status_changed_at: statusChangedAt })
+      .where('id', '=', id)
+      .executeTakeFirst();
+    const updated = Number(result.numUpdatedRows) > 0;
+    if (updated) {
+      this.log.info('Event status updated', { id, status, statusChangedAt });
+    }
+    return updated;
+  }
 }
