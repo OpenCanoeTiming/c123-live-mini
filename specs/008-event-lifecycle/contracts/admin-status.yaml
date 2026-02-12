@@ -1,0 +1,113 @@
+openapi: 3.0.3
+info:
+  title: Event Lifecycle - Admin Status API
+  version: 1.0.0
+
+paths:
+  /api/v1/admin/events/{eventId}/status:
+    patch:
+      summary: Change event status
+      description: |
+        Transition an event to a new lifecycle state.
+        Only valid transitions are accepted (see state machine definition).
+        Authenticated via X-API-Key header (same as ingest routes).
+      operationId: updateEventStatus
+      tags:
+        - Admin
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: C123 event identifier
+        - name: X-API-Key
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Event API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - draft
+                    - startlist
+                    - running
+                    - finished
+                    - official
+                  description: Target event state
+            examples:
+              publishStartlist:
+                summary: Publish startlist
+                value:
+                  status: startlist
+              startRace:
+                summary: Start race timing
+                value:
+                  status: running
+              finishRace:
+                summary: Mark race as finished
+                value:
+                  status: finished
+              confirmResults:
+                summary: Confirm official results
+                value:
+                  status: official
+      responses:
+        '200':
+          description: State transition successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  eventId:
+                    type: string
+                  previousStatus:
+                    type: string
+                    enum: [draft, startlist, running, finished, official]
+                  status:
+                    type: string
+                    enum: [draft, startlist, running, finished, official]
+                  statusChangedAt:
+                    type: string
+                    format: date-time
+              example:
+                eventId: "CZE2.2024062500"
+                previousStatus: draft
+                status: startlist
+                statusChangedAt: "2026-02-12T10:30:00.000Z"
+        '400':
+          description: Invalid state transition
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: InvalidTransition
+                  message:
+                    type: string
+                    example: "Cannot transition from 'draft' to 'running'. Valid transitions: draft → startlist"
+                  currentStatus:
+                    type: string
+                  requestedStatus:
+                    type: string
+                  validTransitions:
+                    type: array
+                    items:
+                      type: string
+        '401':
+          description: Missing or invalid API key
+        '404':
+          description: Event not found
