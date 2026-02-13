@@ -218,6 +218,8 @@ flowchart LR
 - N/A (frontend-only, all data from Client API) (007-frontend-foundation)
 - TypeScript 5.x, Node.js 20 LTS (strict mode) + Fastify, Kysely, better-sqlite3, `@fastify/websocket` (new) (009-live-data-pipeline)
 - SQLite file-based (`packages/server/data/live-mini.db`), Repository Pattern — no schema changes (009-live-data-pipeline)
+- TypeScript 5.x strict mode, React 18, Node.js 20 LTS + React 18.3.1, wouter, @czechcanoe/rvp-design-system 1.0.3, Vite (010-live-results-ui)
+- N/A (frontend-only, all data from server API and WebSocket) (010-live-results-ui)
 
 ## Recent Changes
 - 003-technical-poc: Monorepo structure (packages/server, packages/page), React + Vite frontend

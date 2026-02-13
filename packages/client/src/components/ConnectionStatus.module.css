@@ -1,0 +1,10 @@
+.liveContainer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.liveText {
+  font-size: var(--csk-font-size-sm, 0.875rem);
+  color: var(--csk-color-text-secondary, #4b5563);
+}
