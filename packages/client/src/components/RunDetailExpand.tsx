@@ -14,6 +14,7 @@
 import { SkeletonCard } from '@czechcanoe/rvp-design-system';
 import type { RunDetailData } from '../hooks/useEventLiveState';
 import { GatePenalties } from './GatePenalties';
+import styles from './RunDetailExpand.module.css';
 
 interface RunDetailExpandProps {
   detail: RunDetailData | null;
@@ -22,6 +23,9 @@ interface RunDetailExpandProps {
 
 /**
  * Format ISO timestamp to readable time (HH:MM:SS.mmm)
+ *
+ * Note: Uses browser local timezone. For production, consider using event timezone
+ * or UTC to ensure consistent display across different user locations.
  */
 function formatTimestamp(isoString: string | null): string {
   if (!isoString) return '-';
@@ -38,7 +42,7 @@ function formatTimestamp(isoString: string | null): string {
 export function RunDetailExpand({ detail, isLoading }: RunDetailExpandProps) {
   if (isLoading) {
     return (
-      <div style={{ padding: '0.75rem' }}>
+      <div className={styles.loadingContainer}>
         <SkeletonCard />
       </div>
     );
@@ -49,26 +53,20 @@ export function RunDetailExpand({ detail, isLoading }: RunDetailExpandProps) {
   }
 
   return (
-    <div
-      style={{
-        padding: '0.75rem',
-        backgroundColor: 'var(--csk-color-bg-secondary)',
-        borderTop: '1px solid var(--csk-color-border-secondary)',
-      }}
-    >
+    <div className={styles.container}>
       {/* Timestamps */}
-      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '0.75rem', fontSize: '0.875rem' }}>
+      <div className={styles.timestamps}>
         <div>
-          <span style={{ color: 'var(--csk-color-text-tertiary)' }}>Start:</span>{' '}
+          <span className={styles.timestampLabel}>Start:</span>{' '}
           {formatTimestamp(detail.dtStart)}
         </div>
         <div>
-          <span style={{ color: 'var(--csk-color-text-tertiary)' }}>Cíl:</span>{' '}
+          <span className={styles.timestampLabel}>Cíl:</span>{' '}
           {formatTimestamp(detail.dtFinish)}
         </div>
         {detail.courseGateCount !== null && (
           <div>
-            <span style={{ color: 'var(--csk-color-text-tertiary)' }}>Branek:</span>{' '}
+            <span className={styles.timestampLabel}>Branek:</span>{' '}
             {detail.courseGateCount}
           </div>
         )}
@@ -77,9 +75,7 @@ export function RunDetailExpand({ detail, isLoading }: RunDetailExpandProps) {
       {/* Gate penalties */}
       {detail.gates && detail.gates.length > 0 && (
         <div>
-          <div style={{ fontSize: '0.75rem', color: 'var(--csk-color-text-tertiary)', marginBottom: '0.25rem' }}>
-            Brankový průběh:
-          </div>
+          <div className={styles.gatesLabel}>Brankový průběh:</div>
           <GatePenalties gates={detail.gates} />
         </div>
       )}

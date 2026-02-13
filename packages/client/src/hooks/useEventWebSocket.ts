@@ -39,6 +39,12 @@ export function useEventWebSocket(
   const reconnectTimeoutRef = useRef<number | null>(null);
   const retryCountRef = useRef(0);
   const shouldConnectRef = useRef(false);
+  const onMessageRef = useRef(onMessage);
+
+  // Keep onMessage ref up to date without triggering reconnection
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
 
   const connect = useCallback(() => {
     if (!eventId) return;
@@ -61,7 +67,7 @@ export function useEventWebSocket(
     ws.onmessage = (event) => {
       try {
         const message = JSON.parse(event.data) as WsMessage;
-        onMessage(message);
+        onMessageRef.current(message);
       } catch (error) {
         console.error('[useEventWebSocket] Failed to parse message:', error);
       }

@@ -2,8 +2,20 @@
  * API service for c123-live-mini
  *
  * Fetch wrapper for /api/v1 endpoints with error handling.
- * Types match Feature #6 Client API responses.
+ * Uses Public types from shared package.
  */
+
+import type {
+  PublicEvent,
+  PublicEventDetail,
+  PublicClass,
+  PublicRace,
+  PublicResult,
+  PublicResultMultiRun,
+  PublicAggregatedCategory,
+  PublicStartlistEntry,
+  PublicOnCourseEntry,
+} from '@c123-live-mini/shared';
 
 const API_BASE = '/api/v1';
 
@@ -36,109 +48,48 @@ async function fetchApi<T>(endpoint: string): Promise<T> {
   return response.json();
 }
 
-// --- Types ---
+// --- Type Re-exports for convenience ---
+
+export type EventListItem = PublicEvent;
+export type EventDetail = PublicEventDetail;
+export type ClassInfo = PublicClass;
+export type RaceInfo = PublicRace;
+export type CategoryInfo = PublicAggregatedCategory;
+export type StartlistEntry = PublicStartlistEntry;
 
 /**
- * Event list item from API
+ * Result entry - combines standard, multi-run, and detailed fields
+ * Server returns different optional fields based on query params (detailed, includeAllRuns)
  */
-export interface EventListItem {
-  eventId: string;
-  mainTitle: string;
-  subTitle: string | null;
-  location: string | null;
-  startDate: string | null;
-  endDate: string | null;
-  discipline: string | null;
-  status: string;
-}
-
-/**
- * Event list response
- */
-interface EventsListResponse {
-  events: EventListItem[];
-}
-
-/**
- * Event detail from API
- */
-export interface EventDetail {
-  eventId: string;
-  mainTitle: string;
-  subTitle: string | null;
-  location: string | null;
-  facility: string | null;
-  startDate: string | null;
-  endDate: string | null;
-  discipline: string | null;
-  status: string;
-}
-
-/**
- * Category from API (class-level)
- */
-export interface Category {
-  catId: string;
-  name: string;
-  firstYear: number | null;
-  lastYear: number | null;
-}
-
-/**
- * Class from API
- */
-export interface ClassInfo {
-  classId: string;
-  name: string;
-  categories: Category[];
-}
-
-/**
- * Race from API
- */
-export interface RaceInfo {
-  raceId: string;
-  classId: string | null;
-  raceType: string;
-  raceOrder: number | null;
-  startTime: string | null;
-  raceStatus: number;
-}
-
-/**
- * Event detail response
- */
-interface EventDetailResponse {
-  event: EventDetail;
-  classes: ClassInfo[];
-  races: RaceInfo[];
-}
-
-/**
- * Result entry from API
- */
-export interface ResultEntry {
-  rnk: number | null;
-  bib: number | null;
-  athleteId: string | null;
-  name: string;
-  club: string | null;
-  noc: string | null;
-  catId: string | null;
-  catRnk: number | null;
-  catTotalBehind: string | null;
-  time: number | null;
-  pen: number | null;
-  total: number | null;
-  totalBehind: string | null;
-  status: string | null;
-  // Multi-run (best-run) fields
+export interface ResultEntry extends PublicResult {
+  // Multi-run fields (when includeAllRuns=true for BR races)
   betterRunNr?: number | null;
   totalTotal?: number | null;
   prevTime?: number | null;
   prevPen?: number | null;
   prevTotal?: number | null;
   prevRnk?: number | null;
+  // Detailed fields (when detailed=true)
+  dtStart?: string | null;
+  dtFinish?: string | null;
+  gates?: import('@c123-live-mini/shared').PublicGate[] | null;
+  courseGateCount?: number | null;
+}
+
+/**
+ * Event list response
+ */
+interface EventsListResponse {
+  events: PublicEvent[];
+}
+
+/**
+ * Event detail response
+ */
+interface EventDetailResponse {
+  event: PublicEventDetail;
+  classes: PublicClass[];
+  races: PublicRace[];
 }
 
 /**
@@ -147,25 +98,11 @@ export interface ResultEntry {
 export interface ResultsResponse {
   race: {
     raceId: string;
-    classId: string | null;
+    classId: string;
     raceType: string;
     raceStatus: number;
   };
   results: ResultEntry[];
-}
-
-/**
- * Startlist entry from API
- */
-export interface StartlistEntry {
-  bib: number | null;
-  athleteId: string | null;
-  name: string;
-  club: string | null;
-  noc: string | null;
-  catId: string | null;
-  startNr: number | null;
-  startTime: string | null;
 }
 
 /**
@@ -174,27 +111,18 @@ export interface StartlistEntry {
 interface StartlistResponse {
   race: {
     raceId: string;
-    classId: string | null;
+    classId: string;
     raceType: string;
     raceStatus: number;
   };
-  startlist: StartlistEntry[];
-}
-
-/**
- * Category info from /categories endpoint
- */
-export interface CategoryInfo {
-  catId: string;
-  name: string;
-  classIds: string[];
+  startlist: PublicStartlistEntry[];
 }
 
 /**
  * Categories response
  */
 interface CategoriesResponse {
-  categories: CategoryInfo[];
+  categories: PublicAggregatedCategory[];
 }
 
 // --- API Functions ---
@@ -260,42 +188,19 @@ export async function getCategories(
   return response.categories;
 }
 
-/**
- * OnCourse entry from API
- */
-export interface OnCourseEntry {
-  raceId: string;
-  bib: number;
-  name: string;
-  club: string;
-  position: number;
-  gates: {
-    number: number;
-    type: string;
-    penalty: number | null;
-  }[];
-  completed: boolean;
-  dtStart: string | null;
-  dtFinish: string | null;
-  time: number | null;
-  pen: number;
-  total: number | null;
-  rank: number | null;
-  ttbDiff: string | null;
-  ttbName: string | null;
-}
+export type OnCourseEntry = PublicOnCourseEntry;
 
 /**
  * OnCourse response
  */
 interface OnCourseResponse {
-  oncourse: OnCourseEntry[];
+  oncourse: PublicOnCourseEntry[];
 }
 
 /**
  * Get on-course entries for an event
  */
-export async function getOnCourse(eventId: string): Promise<OnCourseEntry[]> {
+export async function getOnCourse(eventId: string): Promise<PublicOnCourseEntry[]> {
   const response = await fetchApi<OnCourseResponse>(
     `/events/${eventId}/oncourse`
   );

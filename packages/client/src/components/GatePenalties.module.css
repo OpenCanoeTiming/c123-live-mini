@@ -1,0 +1,10 @@
+/**
+ * Layout styles for GatePenalties
+ * Uses DS CSS variables for colors and spacing tokens
+ */
+
+.container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}

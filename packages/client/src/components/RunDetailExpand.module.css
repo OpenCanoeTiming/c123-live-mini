@@ -1,0 +1,31 @@
+/**
+ * Layout styles for RunDetailExpand
+ * Uses DS CSS variables for colors and spacing tokens
+ */
+
+.loadingContainer {
+  padding: 0.75rem;
+}
+
+.container {
+  padding: 0.75rem;
+  background-color: var(--csk-color-bg-secondary);
+  border-top: 1px solid var(--csk-color-border-secondary);
+}
+
+.timestamps {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.875rem;
+}
+
+.timestampLabel {
+  color: var(--csk-color-text-tertiary);
+}
+
+.gatesLabel {
+  font-size: 0.75rem;
+  color: var(--csk-color-text-tertiary);
+  margin-bottom: 0.25rem;
+}

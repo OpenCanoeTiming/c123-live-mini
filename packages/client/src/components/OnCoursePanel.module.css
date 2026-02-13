@@ -1,0 +1,61 @@
+/**
+ * Layout styles for OnCoursePanel
+ * Uses DS CSS variables for colors and spacing tokens
+ */
+
+.panelContent {
+  margin-top: 1rem;
+}
+
+.entry {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--csk-color-border-secondary);
+}
+
+.athleteInfo {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.athleteName {
+  font-weight: 500;
+}
+
+.athleteBib {
+  color: var(--csk-color-text-tertiary);
+}
+
+.athleteClub {
+  font-size: 0.75rem;
+  color: var(--csk-color-text-tertiary);
+}
+
+.rankInfo {
+  text-align: right;
+}
+
+.rankText {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.gateProgress {
+  margin-bottom: 0.5rem;
+}
+
+.timeInfo {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.timeLabel {
+  color: var(--csk-color-text-tertiary);
+}
+
+.ttbDiff {
+  font-size: 0.75rem;
+  color: var(--csk-color-text-tertiary);
+  margin-top: 0.25rem;
+}

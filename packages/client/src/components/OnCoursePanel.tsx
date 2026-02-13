@@ -17,6 +17,7 @@ import { Card, SectionHeader, Button } from '@czechcanoe/rvp-design-system';
 import type { PublicOnCourseEntry } from '@c123-live-mini/shared';
 import { GatePenalties } from './GatePenalties';
 import { formatTime, formatPenalty } from '../utils/formatTime';
+import styles from './OnCoursePanel.module.css';
 
 interface OnCoursePanelProps {
   oncourse: PublicOnCourseEntry[];
@@ -42,58 +43,48 @@ export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps
       />
 
       {isOpen && (
-        <div style={{ marginTop: '1rem' }}>
+        <div className={styles.panelContent}>
           {oncourse.map((entry) => (
-            <div
-              key={`${entry.raceId}-${entry.bib}`}
-              style={{
-                padding: '0.75rem',
-                borderBottom: '1px solid var(--csk-color-border-secondary)',
-              }}
-            >
+            <div key={`${entry.raceId}-${entry.bib}`} className={styles.entry}>
               {/* Athlete info */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+              <div className={styles.athleteInfo}>
                 <div>
-                  <div style={{ fontWeight: 500 }}>
-                    {entry.name} <span style={{ color: 'var(--csk-color-text-tertiary)' }}>({entry.bib})</span>
+                  <div className={styles.athleteName}>
+                    {entry.name} <span className={styles.athleteBib}>({entry.bib})</span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--csk-color-text-tertiary)' }}>
-                    {entry.club}
-                  </div>
+                  <div className={styles.athleteClub}>{entry.club}</div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
+                <div className={styles.rankInfo}>
                   {entry.rank !== null && (
-                    <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>
-                      Průběžně #{entry.rank}
-                    </div>
+                    <div className={styles.rankText}>Průběžně #{entry.rank}</div>
                   )}
                 </div>
               </div>
 
               {/* Gate progress */}
-              <div style={{ marginBottom: '0.5rem' }}>
+              <div className={styles.gateProgress}>
                 <GatePenalties gates={entry.gates} />
               </div>
 
               {/* Time and penalty */}
-              <div style={{ display: 'flex', gap: '1rem', fontSize: '0.875rem' }}>
+              <div className={styles.timeInfo}>
                 <div>
-                  <span style={{ color: 'var(--csk-color-text-tertiary)' }}>Čas:</span>{' '}
+                  <span className={styles.timeLabel}>Čas:</span>{' '}
                   {entry.time !== null ? formatTime(entry.time) : '-'}
                 </div>
                 <div>
-                  <span style={{ color: 'var(--csk-color-text-tertiary)' }}>Trest:</span>{' '}
+                  <span className={styles.timeLabel}>Trest:</span>{' '}
                   {formatPenalty(entry.pen)}
                 </div>
                 <div>
-                  <span style={{ color: 'var(--csk-color-text-tertiary)' }}>Celkem:</span>{' '}
+                  <span className={styles.timeLabel}>Celkem:</span>{' '}
                   {entry.total !== null ? formatTime(entry.total) : '-'}
                 </div>
               </div>
 
               {/* Time-to-beat comparison */}
               {entry.ttbDiff && entry.ttbName && (
-                <div style={{ fontSize: '0.75rem', color: 'var(--csk-color-text-tertiary)', marginTop: '0.25rem' }}>
+                <div className={styles.ttbDiff}>
                   {entry.ttbDiff.startsWith('+')
                     ? `${entry.ttbDiff} za ${entry.ttbName}`
                     : `${entry.ttbDiff} před ${entry.ttbName}`}

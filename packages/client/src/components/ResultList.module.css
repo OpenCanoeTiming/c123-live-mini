@@ -1,0 +1,93 @@
+/**
+ * Layout styles for ResultList
+ * Uses DS CSS variables for colors and spacing tokens
+ */
+
+.athleteName {
+  font-weight: 500;
+}
+
+.athleteClub {
+  font-size: 0.75rem;
+  color: var(--csk-color-text-tertiary);
+}
+
+.statusText {
+  font-family: var(--csk-font-mono);
+  color: var(--csk-color-error);
+  font-weight: 600;
+}
+
+.monoText {
+  font-family: var(--csk-font-mono);
+}
+
+.secondaryText {
+  color: var(--csk-color-text-secondary);
+}
+
+.betterRun {
+  font-weight: 700;
+}
+
+.totalTotal {
+  font-weight: 600;
+}
+
+/* Custom table styles (for expandable rows) */
+.customTable {
+  width: 100%;
+  font-size: 0.875rem;
+}
+
+.tableHeader {
+  border-bottom: 1px solid var(--csk-color-border-secondary);
+}
+
+.tableHeaderCell {
+  padding: 0.5rem;
+  font-weight: 600;
+  color: var(--csk-color-text-secondary);
+}
+
+.tableHeaderCellCenter {
+  text-align: center;
+}
+
+.tableHeaderCellRight {
+  text-align: right;
+}
+
+.tableRow {
+  cursor: pointer;
+  border-bottom: 1px solid var(--csk-color-border-secondary);
+}
+
+.tableRow:hover {
+  background-color: var(--csk-color-bg-hover);
+}
+
+.tableCell {
+  padding: 0.5rem;
+}
+
+.tableCellCenter {
+  text-align: center;
+}
+
+.tableCellRight {
+  text-align: right;
+}
+
+.chevronCell {
+  width: 24px;
+  font-size: 0.75rem;
+}
+
+.expandedRow td {
+  padding: 0;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}

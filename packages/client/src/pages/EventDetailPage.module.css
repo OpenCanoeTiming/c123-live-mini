@@ -1,0 +1,12 @@
+/**
+ * Layout styles for EventDetailPage
+ * Uses DS CSS variables for colors and spacing tokens
+ */
+
+.connectionStatus {
+  margin-bottom: 1rem;
+}
+
+.viewModeToggle {
+  margin-bottom: 1rem;
+}

@@ -13,6 +13,7 @@
 
 import { Badge } from '@czechcanoe/rvp-design-system';
 import type { PublicGate } from '@c123-live-mini/shared';
+import styles from './GatePenalties.module.css';
 
 interface GatePenaltiesProps {
   gates: PublicGate[];
@@ -42,7 +43,7 @@ export function GatePenalties({ gates }: GatePenaltiesProps) {
   }
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
+    <div className={styles.container}>
       {gates.map((gate) => (
         <Badge
           key={gate.number}

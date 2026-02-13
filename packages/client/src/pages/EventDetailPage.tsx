@@ -6,6 +6,7 @@ import {
   Button,
 } from '@czechcanoe/rvp-design-system';
 import { useLocation } from 'wouter';
+import styles from './EventDetailPage.module.css';
 import {
   getEventDetails,
   getEventResults,
@@ -114,7 +115,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
                 type: 'SET_RESULTS',
                 payload: {
                   raceId: selectedRaceId,
-                  results: resultsData.results as any,
+                  results: resultsData.results,
                 },
               });
             })
@@ -127,7 +128,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             .then((oncourseData) => {
               dispatch({
                 type: 'SET_ONCOURSE',
-                payload: oncourseData as any,
+                payload: oncourseData,
               });
             })
             .catch((err) => {
@@ -147,6 +148,12 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
   // REST polling fallback when WebSocket is disconnected
   const pollingIntervalRef = useRef<number | null>(null);
+  const pollingParamsRef = useRef({ raceId: selectedRaceId, catId: selectedCatId });
+
+  // Track current polling parameters
+  useEffect(() => {
+    pollingParamsRef.current = { raceId: selectedRaceId, catId: selectedCatId };
+  }, [selectedRaceId, selectedCatId]);
 
   useEffect(() => {
     // Start polling when disconnected and should be connected
@@ -154,24 +161,36 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       console.log('[EventDetailPage] Starting polling fallback (15s interval)');
 
       const poll = async () => {
+        // Capture current params at poll time
+        const currentRaceId = pollingParamsRef.current.raceId;
+        const currentCatId = pollingParamsRef.current.catId;
+
+        if (!currentRaceId) return;
+
         try {
           // Fetch current race results
-          const resultsData = await getEventResults(eventId, selectedRaceId, {
-            catId: selectedCatId ?? undefined,
+          const resultsData = await getEventResults(eventId, currentRaceId, {
+            catId: currentCatId ?? undefined,
           });
-          dispatch({
-            type: 'SET_RESULTS',
-            payload: {
-              raceId: selectedRaceId,
-              results: resultsData.results as any,
-            },
-          });
+
+          // Only dispatch if params haven't changed during the request
+          if (pollingParamsRef.current.raceId === currentRaceId && pollingParamsRef.current.catId === currentCatId) {
+            dispatch({
+              type: 'SET_RESULTS',
+              payload: {
+                raceId: currentRaceId,
+                results: resultsData.results,
+              },
+            });
+          }
 
           // Fetch oncourse data
           const oncourseData = await getOnCourse(eventId);
+
+          // Oncourse data is event-wide, so always dispatch
           dispatch({
             type: 'SET_ONCOURSE',
-            payload: oncourseData as any,
+            payload: oncourseData,
           });
         } catch (err) {
           console.error('[EventDetailPage] Polling failed:', err);
@@ -196,7 +215,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         pollingIntervalRef.current = null;
       }
     };
-  }, [connectionState, shouldConnect, eventId, selectedRaceId, selectedCatId, dispatch]);
+  }, [connectionState, shouldConnect, eventId, selectedRaceId, dispatch]);
 
   // Fetch detailed data when view mode changes to 'detailed'
   useEffect(() => {
@@ -256,19 +275,18 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
         if (cancelled) return;
 
-        // Dispatch to reducer instead of individual setState
-        // Note: API types are compatible with Public types (same structure, different names)
+        // Dispatch to reducer (API types are now Public types from shared package)
         dispatch({
           type: 'SET_INITIAL',
           payload: {
-            event: eventData.event as any, // EventDetail → PublicEventDetail
-            classes: eventData.classes as any, // ClassInfo[] → PublicClass[]
-            races: eventData.races as any, // RaceInfo[] → PublicRace[]
-            categories: cats as any, // CategoryInfo[] → PublicAggregatedCategory[]
+            event: eventData.event,
+            classes: eventData.classes,
+            races: eventData.races,
+            categories: cats,
           },
         });
 
-        racesRef.current = eventData.races as any;
+        racesRef.current = eventData.races;
 
         const groups = groupRaces(eventData.races);
         setClassGroups(groups);
@@ -438,7 +456,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         // Check if detail data is already cached
         if (!liveState.detailedCache[key] && selectedRaceId) {
           // Fetch detailed data for the entire race
-          setDetailedLoading(new Set([...detailedLoading, key]));
+          setDetailedLoading(prev => new Set([...prev, key]));
 
           try {
             const resultsData = await getEventResults(eventId, selectedRaceId, {
@@ -450,18 +468,17 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             resultsData.results.forEach((result) => {
               if (result.bib !== null) {
                 const resultKey = `${selectedRaceId}-${result.bib}`;
-                // Type assertion: detailed results have the extra fields
-                const detailedResult = result as any;
+                // Detailed results include extra optional fields
                 dispatch({
                   type: 'CACHE_DETAILED',
                   payload: {
                     raceId: selectedRaceId,
                     bib: result.bib,
                     detail: {
-                      dtStart: detailedResult.dtStart ?? null,
-                      dtFinish: detailedResult.dtFinish ?? null,
-                      courseGateCount: detailedResult.courseGateCount ?? null,
-                      gates: detailedResult.gates ?? null,
+                      dtStart: result.dtStart ?? null,
+                      dtFinish: result.dtFinish ?? null,
+                      courseGateCount: result.courseGateCount ?? null,
+                      gates: result.gates ?? null,
                     },
                   },
                 });
@@ -470,9 +487,11 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           } catch (err) {
             console.error('[EventDetailPage] Failed to fetch detailed results:', err);
           } finally {
-            const newLoading = new Set(detailedLoading);
-            newLoading.delete(key);
-            setDetailedLoading(newLoading);
+            setDetailedLoading(prev => {
+              const newLoading = new Set(prev);
+              newLoading.delete(key);
+              return newLoading;
+            });
           }
         }
       }
@@ -533,7 +552,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       )}
 
       {shouldConnect && (
-        <div style={{ marginBottom: '1rem' }}>
+        <div className={styles.connectionStatus}>
           <ConnectionStatus connectionState={connectionState} />
         </div>
       )}
@@ -568,7 +587,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         />
       )}
 
-      <div style={{ marginBottom: '1rem' }}>
+      <div className={styles.viewModeToggle}>
         <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
       </div>
 

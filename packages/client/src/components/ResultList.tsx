@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   Card,
   Table,
@@ -9,6 +8,7 @@ import type { ResultEntry, ResultsResponse } from '../services/api';
 import type { RunDetailData } from '../hooks/useEventLiveState';
 import { formatTime, formatPenalty } from '../utils/formatTime';
 import { RunDetailExpand } from './RunDetailExpand';
+import styles from './ResultList.module.css';
 
 // Standard result columns with Czech headers
 const standardColumns: ColumnDef<ResultEntry>[] = [
@@ -31,17 +31,8 @@ const standardColumns: ColumnDef<ResultEntry>[] = [
     header: 'Jméno',
     cell: (row) => (
       <div>
-        <div style={{ fontWeight: 500 }}>{row.name}</div>
-        {row.club && (
-          <div
-            style={{
-              fontSize: '0.75rem',
-              color: 'var(--csk-color-text-tertiary)',
-            }}
-          >
-            {row.club}
-          </div>
-        )}
+        <div className={styles.athleteName}>{row.name}</div>
+        {row.club && <div className={styles.athleteClub}>{row.club}</div>}
       </div>
     ),
   },
@@ -51,23 +42,9 @@ const standardColumns: ColumnDef<ResultEntry>[] = [
     align: 'right',
     cell: (row) => {
       if (row.status) {
-        return (
-          <span
-            style={{
-              fontFamily: 'var(--csk-font-mono)',
-              color: 'var(--csk-color-error)',
-              fontWeight: 600,
-            }}
-          >
-            {row.status}
-          </span>
-        );
+        return <span className={styles.statusText}>{row.status}</span>;
       }
-      return (
-        <span style={{ fontFamily: 'var(--csk-font-mono)' }}>
-          {formatTime(row.time)}
-        </span>
-      );
+      return <span className={styles.monoText}>{formatTime(row.time)}</span>;
     },
   },
   {
@@ -75,7 +52,7 @@ const standardColumns: ColumnDef<ResultEntry>[] = [
     header: 'Trest',
     align: 'right',
     cell: (row) => (
-      <span style={{ fontFamily: 'var(--csk-font-mono)' }}>
+      <span className={styles.monoText}>
         {row.status === null ? formatPenalty(row.pen) : ''}
       </span>
     ),
@@ -85,7 +62,7 @@ const standardColumns: ColumnDef<ResultEntry>[] = [
     header: 'Výsledek',
     align: 'right',
     cell: (row) => (
-      <span style={{ fontFamily: 'var(--csk-font-mono)' }}>
+      <span className={styles.monoText}>
         {row.status === null ? formatTime(row.total) : ''}
       </span>
     ),
@@ -95,9 +72,7 @@ const standardColumns: ColumnDef<ResultEntry>[] = [
     header: 'Ztráta',
     align: 'right',
     cell: (row) => (
-      <span style={{ color: 'var(--csk-color-text-secondary)' }}>
-        {row.totalBehind ?? ''}
-      </span>
+      <span className={styles.secondaryText}>{row.totalBehind ?? ''}</span>
     ),
   },
 ];
@@ -123,17 +98,8 @@ const bestRunColumns: ColumnDef<ResultEntry>[] = [
     header: 'Jméno',
     cell: (row) => (
       <div>
-        <div style={{ fontWeight: 500 }}>{row.name}</div>
-        {row.club && (
-          <div
-            style={{
-              fontSize: '0.75rem',
-              color: 'var(--csk-color-text-tertiary)',
-            }}
-          >
-            {row.club}
-          </div>
-        )}
+        <div className={styles.athleteName}>{row.name}</div>
+        {row.club && <div className={styles.athleteClub}>{row.club}</div>}
       </div>
     ),
   },
@@ -143,17 +109,7 @@ const bestRunColumns: ColumnDef<ResultEntry>[] = [
     align: 'right',
     cell: (row) => {
       if (row.status) {
-        return (
-          <span
-            style={{
-              fontFamily: 'var(--csk-font-mono)',
-              color: 'var(--csk-color-error)',
-              fontWeight: 600,
-            }}
-          >
-            {row.status}
-          </span>
-        );
+        return <span className={styles.statusText}>{row.status}</span>;
       }
       // Server always uses BR2 as primary (contains prev_ fields):
       //   total = Run 2 result, prevTotal = Run 1 result
@@ -161,12 +117,7 @@ const bestRunColumns: ColumnDef<ResultEntry>[] = [
       const run1Total = row.prevTotal ?? (row.prevTotal === undefined ? row.total : null);
       const isBetter = row.betterRunNr === 1;
       return (
-        <span
-          style={{
-            fontFamily: 'var(--csk-font-mono)',
-            fontWeight: isBetter ? 700 : undefined,
-          }}
-        >
+        <span className={isBetter ? `${styles.monoText} ${styles.betterRun}` : styles.monoText}>
           {formatTime(run1Total ?? null)}
         </span>
       );
@@ -183,12 +134,7 @@ const bestRunColumns: ColumnDef<ResultEntry>[] = [
       const run2Total = row.prevTotal != null ? row.total : null;
       const isBetter = row.betterRunNr === 2;
       return (
-        <span
-          style={{
-            fontFamily: 'var(--csk-font-mono)',
-            fontWeight: isBetter ? 700 : undefined,
-          }}
-        >
+        <span className={isBetter ? `${styles.monoText} ${styles.betterRun}` : styles.monoText}>
           {formatTime(run2Total ?? null)}
         </span>
       );
@@ -199,7 +145,7 @@ const bestRunColumns: ColumnDef<ResultEntry>[] = [
     header: 'Výsledek',
     align: 'right',
     cell: (row) => (
-      <span style={{ fontFamily: 'var(--csk-font-mono)', fontWeight: 600 }}>
+      <span className={`${styles.monoText} ${styles.totalTotal}`}>
         {row.status === null ? formatTime(row.totalTotal ?? null) : ''}
       </span>
     ),
@@ -209,9 +155,7 @@ const bestRunColumns: ColumnDef<ResultEntry>[] = [
     header: 'Ztráta',
     align: 'right',
     cell: (row) => (
-      <span style={{ color: 'var(--csk-color-text-secondary)' }}>
-        {row.totalBehind ?? ''}
-      </span>
+      <span className={styles.secondaryText}>{row.totalBehind ?? ''}</span>
     ),
   },
 ];
@@ -231,7 +175,7 @@ function getCategoryColumns(
       return {
         ...col,
         cell: (row: ResultEntry) => (
-          <span style={{ color: 'var(--csk-color-text-secondary)' }}>
+          <span className={styles.secondaryText}>
             {row.catTotalBehind ?? row.totalBehind ?? ''}
           </span>
         ),
@@ -313,21 +257,16 @@ export function ResultList({
   // Custom table with expandable rows
   return (
     <Card>
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', fontSize: '0.875rem' }}>
-          <thead style={{ borderBottom: '1px solid var(--csk-color-border-secondary)' }}>
+      <div className={styles.tableWrapper}>
+        <table className={styles.customTable}>
+          <thead className={styles.tableHeader}>
             <tr>
-              <th style={{ width: '24px' }}></th> {/* Chevron column */}
+              <th className={styles.chevronCell}></th>
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  style={{
-                    padding: '0.5rem',
-                    textAlign: col.align ?? 'left',
-                    fontWeight: 600,
-                    color: 'var(--csk-color-text-secondary)',
-                    width: col.width,
-                  }}
+                  className={`${styles.tableHeaderCell} ${col.align === 'center' ? styles.tableHeaderCellCenter : col.align === 'right' ? styles.tableHeaderCellRight : ''}`}
+                  style={col.width ? { width: col.width } : undefined}
                 >
                   {col.header}
                 </th>
@@ -342,45 +281,32 @@ export function ResultList({
               const detail = detailedCache[rowKey] ?? null;
 
               return (
-                <React.Fragment key={rowKey}>
+                <>
                   <tr
+                    key={`row-${rowKey}`}
                     onClick={() => onToggleExpand(rowKey)}
-                    style={{
-                      cursor: 'pointer',
-                      borderBottom: '1px solid var(--csk-color-border-secondary)',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = 'var(--csk-color-bg-hover)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }}
+                    className={styles.tableRow}
                   >
-                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                      <span style={{ fontSize: '0.75rem' }}>
-                        {isExpanded ? '▼' : '▶'}
-                      </span>
+                    <td className={`${styles.tableCell} ${styles.tableCellCenter} ${styles.chevronCell}`}>
+                      {isExpanded ? '▼' : '▶'}
                     </td>
                     {columns.map((col) => (
                       <td
                         key={col.key}
-                        style={{
-                          padding: '0.5rem',
-                          textAlign: col.align ?? 'left',
-                        }}
+                        className={`${styles.tableCell} ${col.align === 'center' ? styles.tableCellCenter : col.align === 'right' ? styles.tableCellRight : ''}`}
                       >
                         {col.cell?.(row, index) ?? null}
                       </td>
                     ))}
                   </tr>
                   {isExpanded && (
-                    <tr>
-                      <td colSpan={columns.length + 1} style={{ padding: 0 }}>
+                    <tr key={`expand-${rowKey}`} className={styles.expandedRow}>
+                      <td colSpan={columns.length + 1}>
                         <RunDetailExpand detail={detail} isLoading={isLoading} />
                       </td>
                     </tr>
                   )}
-                </React.Fragment>
+                </>
               );
             })}
           </tbody>
