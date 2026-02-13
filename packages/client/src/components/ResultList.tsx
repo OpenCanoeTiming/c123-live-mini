@@ -1,3 +1,4 @@
+import React from 'react';
 import {
   Card,
   Table,
@@ -5,7 +6,9 @@ import {
   type ColumnDef,
 } from '@czechcanoe/rvp-design-system';
 import type { ResultEntry, ResultsResponse } from '../services/api';
+import type { RunDetailData } from '../hooks/useEventLiveState';
 import { formatTime, formatPenalty } from '../utils/formatTime';
+import { RunDetailExpand } from './RunDetailExpand';
 
 // Standard result columns with Czech headers
 const standardColumns: ColumnDef<ResultEntry>[] = [
@@ -242,13 +245,32 @@ interface ResultListProps {
   data: ResultsResponse;
   isBestRun?: boolean;
   selectedCatId?: string | null;
+  expandedRows?: Set<string>;
+  onToggleExpand?: (key: string) => void;
+  detailedCache?: Record<string, RunDetailData>;
+  detailedLoading?: Set<string>;
+  viewMode?: 'simple' | 'detailed';
 }
 
 /**
  * Display race results in a table using DS components
  */
-export function ResultList({ data, isBestRun, selectedCatId }: ResultListProps) {
-  const { results } = data;
+export function ResultList({
+  data,
+  isBestRun,
+  selectedCatId,
+  expandedRows = new Set(),
+  onToggleExpand,
+  detailedCache = {},
+  detailedLoading = new Set(),
+  viewMode = 'simple',
+}: ResultListProps) {
+  const { results, race } = data;
+
+  // In detailed mode, all rows are expanded
+  const effectiveExpandedRows = viewMode === 'detailed'
+    ? new Set(results.map((r) => `${race.raceId}-${r.bib}`))
+    : expandedRows;
 
   if (results.length === 0) {
     return (
@@ -273,15 +295,97 @@ export function ResultList({ data, isBestRun, selectedCatId }: ResultListProps) 
     ? getCategoryColumns(baseColumns)
     : baseColumns;
 
+  // If no expand handler provided, use standard Table
+  if (!onToggleExpand) {
+    return (
+      <Card>
+        <Table
+          columns={columns}
+          data={sorted}
+          rowKey={(row, index) => row.athleteId ?? `row-${index}`}
+          size="sm"
+          hoverable
+        />
+      </Card>
+    );
+  }
+
+  // Custom table with expandable rows
   return (
     <Card>
-      <Table
-        columns={columns}
-        data={sorted}
-        rowKey={(row, index) => row.athleteId ?? `row-${index}`}
-        size="sm"
-        hoverable
-      />
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', fontSize: '0.875rem' }}>
+          <thead style={{ borderBottom: '1px solid var(--csk-color-border-secondary)' }}>
+            <tr>
+              <th style={{ width: '24px' }}></th> {/* Chevron column */}
+              {columns.map((col) => (
+                <th
+                  key={col.key}
+                  style={{
+                    padding: '0.5rem',
+                    textAlign: col.align ?? 'left',
+                    fontWeight: 600,
+                    color: 'var(--csk-color-text-secondary)',
+                    width: col.width,
+                  }}
+                >
+                  {col.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((row, index) => {
+              const rowKey = `${race.raceId}-${row.bib}`;
+              const isExpanded = effectiveExpandedRows.has(rowKey);
+              const isLoading = detailedLoading.has(rowKey);
+              const detail = detailedCache[rowKey] ?? null;
+
+              return (
+                <React.Fragment key={rowKey}>
+                  <tr
+                    onClick={() => onToggleExpand(rowKey)}
+                    style={{
+                      cursor: 'pointer',
+                      borderBottom: '1px solid var(--csk-color-border-secondary)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = 'var(--csk-color-bg-hover)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }}
+                  >
+                    <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.75rem' }}>
+                        {isExpanded ? '▼' : '▶'}
+                      </span>
+                    </td>
+                    {columns.map((col) => (
+                      <td
+                        key={col.key}
+                        style={{
+                          padding: '0.5rem',
+                          textAlign: col.align ?? 'left',
+                        }}
+                      >
+                        {col.cell?.(row, index) ?? null}
+                      </td>
+                    ))}
+                  </tr>
+                  {isExpanded && (
+                    <tr>
+                      <td colSpan={columns.length + 1} style={{ padding: 0 }}>
+                        <RunDetailExpand detail={detail} isLoading={isLoading} />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </Card>
   );
 }

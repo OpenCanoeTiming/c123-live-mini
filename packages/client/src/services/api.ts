@@ -259,3 +259,45 @@ export async function getCategories(
   );
   return response.categories;
 }
+
+/**
+ * OnCourse entry from API
+ */
+export interface OnCourseEntry {
+  raceId: string;
+  bib: number;
+  name: string;
+  club: string;
+  position: number;
+  gates: {
+    number: number;
+    type: string;
+    penalty: number | null;
+  }[];
+  completed: boolean;
+  dtStart: string | null;
+  dtFinish: string | null;
+  time: number | null;
+  pen: number;
+  total: number | null;
+  rank: number | null;
+  ttbDiff: string | null;
+  ttbName: string | null;
+}
+
+/**
+ * OnCourse response
+ */
+interface OnCourseResponse {
+  oncourse: OnCourseEntry[];
+}
+
+/**
+ * Get on-course entries for an event
+ */
+export async function getOnCourse(eventId: string): Promise<OnCourseEntry[]> {
+  const response = await fetchApi<OnCourseResponse>(
+    `/events/${eventId}/oncourse`
+  );
+  return response.oncourse;
+}

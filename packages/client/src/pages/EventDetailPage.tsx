@@ -26,6 +26,13 @@ import { RoundTabs } from '../components/RoundTabs';
 import { CategoryFilter } from '../components/CategoryFilter';
 import { ResultList } from '../components/ResultList';
 import { StartlistTable } from '../components/StartlistTable';
+import { OnCoursePanel } from '../components/OnCoursePanel';
+import { ViewModeToggle, type ViewMode } from '../components/ViewModeToggle';
+import { useEventLiveState } from '../hooks/useEventLiveState';
+import { useEventWebSocket } from '../hooks/useEventWebSocket';
+import { ConnectionStatus } from '../components/ConnectionStatus';
+import { getOnCourse } from '../services/api';
+import type { PublicClass, PublicRace, WsMessage } from '@c123-live-mini/shared';
 
 type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -37,12 +44,16 @@ interface EventDetailPageProps {
 export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageProps) {
   const [, navigate] = useLocation();
 
-  // Event data
-  const [eventDetail, setEventDetail] = useState<EventDetail | null>(null);
-  const [races, setRaces] = useState<RaceInfo[]>([]);
-  const racesRef = useRef<RaceInfo[]>([]);
+  // Live state reducer (replaces individual useState for event/classes/races/categories/results)
+  const [liveState, dispatch] = useEventLiveState();
+
+  // Derived state from reducer
+  const eventDetail = liveState.event;
+  const races = liveState.races;
+  const categories = liveState.categories;
+
+  const racesRef = useRef<PublicRace[]>([]);
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
-  const [categories, setCategories] = useState<CategoryInfo[]>([]);
   const [eventState, setEventState] = useState<LoadingState>('idle');
   const [eventError, setEventError] = useState<string | null>(null);
 
@@ -51,10 +62,184 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const [selectedRaceId, setSelectedRaceId] = useState<string | null>(null);
   const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
 
+  // OnCourse panel state
+  const [oncoursePanelOpen, setOncoursePanelOpen] = useState(true);
+
+  // Expandable rows state
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [detailedLoading, setDetailedLoading] = useState<Set<string>>(new Set());
+
+  // View mode state (simple/detailed)
+  const [viewMode, setViewMode] = useState<ViewMode>('simple');
+
   // Results/startlist state
-  const [results, setResults] = useState<ResultsResponse | null>(null);
   const [startlist, setStartlist] = useState<StartlistEntry[] | null>(null);
   const [resultsState, setResultsState] = useState<LoadingState>('idle');
+  const [currentRaceInfo, setCurrentRaceInfo] = useState<ResultsResponse['race'] | null>(null);
+
+  // Get results from reducer for selected race and construct ResultsResponse
+  const results: ResultsResponse | null = selectedRaceId && liveState.resultsByRace[selectedRaceId] && currentRaceInfo
+    ? {
+        race: currentRaceInfo,
+        results: liveState.resultsByRace[selectedRaceId],
+      }
+    : null;
+
+  // WebSocket message handler
+  const handleWsMessage = useCallback((message: WsMessage) => {
+    switch (message.type) {
+      case 'full':
+        dispatch({
+          type: 'WS_FULL',
+          payload: message.data,
+        });
+        break;
+
+      case 'diff':
+        dispatch({
+          type: 'WS_DIFF',
+          payload: message.data,
+        });
+        break;
+
+      case 'refresh':
+        dispatch({ type: 'WS_REFRESH' });
+        // Trigger REST re-fetch of current race and oncourse
+        if (selectedRaceId && eventId) {
+          getEventResults(eventId, selectedRaceId, {
+            catId: selectedCatId ?? undefined,
+          })
+            .then((resultsData) => {
+              dispatch({
+                type: 'SET_RESULTS',
+                payload: {
+                  raceId: selectedRaceId,
+                  results: resultsData.results as any,
+                },
+              });
+            })
+            .catch((err) => {
+              console.error('[EventDetailPage] Failed to re-fetch results:', err);
+            });
+        }
+        if (eventId) {
+          getOnCourse(eventId)
+            .then((oncourseData) => {
+              dispatch({
+                type: 'SET_ONCOURSE',
+                payload: oncourseData as any,
+              });
+            })
+            .catch((err) => {
+              console.error('[EventDetailPage] Failed to re-fetch oncourse:', err);
+            });
+        }
+        break;
+    }
+  }, [dispatch, eventId, selectedRaceId, selectedCatId]);
+
+  // Connect WebSocket for running/startlist events
+  const shouldConnect = eventDetail && (eventDetail.status === 'running' || eventDetail.status === 'startlist');
+  const { connectionState } = useEventWebSocket(
+    shouldConnect ? eventId : null,
+    handleWsMessage
+  );
+
+  // REST polling fallback when WebSocket is disconnected
+  const pollingIntervalRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Start polling when disconnected and should be connected
+    if (connectionState === 'disconnected' && shouldConnect && selectedRaceId) {
+      console.log('[EventDetailPage] Starting polling fallback (15s interval)');
+
+      const poll = async () => {
+        try {
+          // Fetch current race results
+          const resultsData = await getEventResults(eventId, selectedRaceId, {
+            catId: selectedCatId ?? undefined,
+          });
+          dispatch({
+            type: 'SET_RESULTS',
+            payload: {
+              raceId: selectedRaceId,
+              results: resultsData.results as any,
+            },
+          });
+
+          // Fetch oncourse data
+          const oncourseData = await getOnCourse(eventId);
+          dispatch({
+            type: 'SET_ONCOURSE',
+            payload: oncourseData as any,
+          });
+        } catch (err) {
+          console.error('[EventDetailPage] Polling failed:', err);
+        }
+      };
+
+      // Start interval
+      pollingIntervalRef.current = window.setInterval(poll, 15000);
+    } else {
+      // Stop polling when WebSocket reconnects or no longer needed
+      if (pollingIntervalRef.current !== null) {
+        console.log('[EventDetailPage] Stopping polling fallback');
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    }
+
+    // Cleanup on unmount
+    return () => {
+      if (pollingIntervalRef.current !== null) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [connectionState, shouldConnect, eventId, selectedRaceId, selectedCatId, dispatch]);
+
+  // Fetch detailed data when view mode changes to 'detailed'
+  useEffect(() => {
+    if (viewMode === 'detailed' && selectedRaceId && results) {
+      // Check if we need to fetch detailed data
+      const needsDetail = results.results.some((result) => {
+        if (result.bib === null) return false;
+        const key = `${selectedRaceId}-${result.bib}`;
+        return !liveState.detailedCache[key];
+      });
+
+      if (needsDetail) {
+        getEventResults(eventId, selectedRaceId, {
+          detailed: true,
+          catId: selectedCatId ?? undefined,
+        })
+          .then((resultsData) => {
+            // Cache detailed data for all results
+            resultsData.results.forEach((result) => {
+              if (result.bib !== null) {
+                const detailedResult = result as any;
+                dispatch({
+                  type: 'CACHE_DETAILED',
+                  payload: {
+                    raceId: selectedRaceId,
+                    bib: result.bib,
+                    detail: {
+                      dtStart: detailedResult.dtStart ?? null,
+                      dtFinish: detailedResult.dtFinish ?? null,
+                      courseGateCount: detailedResult.courseGateCount ?? null,
+                      gates: detailedResult.gates ?? null,
+                    },
+                  },
+                });
+              }
+            });
+          })
+          .catch((err) => {
+            console.error('[EventDetailPage] Failed to fetch detailed data for view mode:', err);
+          });
+      }
+    }
+  }, [viewMode, selectedRaceId, results, liveState.detailedCache, eventId, selectedCatId, dispatch]);
 
   // Load event details + categories
   useEffect(() => {
@@ -71,10 +256,19 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
         if (cancelled) return;
 
-        setEventDetail(eventData.event);
-        setRaces(eventData.races);
-        racesRef.current = eventData.races;
-        setCategories(cats);
+        // Dispatch to reducer instead of individual setState
+        // Note: API types are compatible with Public types (same structure, different names)
+        dispatch({
+          type: 'SET_INITIAL',
+          payload: {
+            event: eventData.event as any, // EventDetail → PublicEventDetail
+            classes: eventData.classes as any, // ClassInfo[] → PublicClass[]
+            races: eventData.races as any, // RaceInfo[] → PublicRace[]
+            categories: cats as any, // CategoryInfo[] → PublicAggregatedCategory[]
+          },
+        });
+
+        racesRef.current = eventData.races as any;
 
         const groups = groupRaces(eventData.races);
         setClassGroups(groups);
@@ -99,6 +293,21 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         }
 
         setEventState('success');
+
+        // Fetch initial oncourse data for running events
+        if (eventData.event.status === 'running') {
+          getOnCourse(eventId)
+            .then((oncourseData) => {
+              if (cancelled) return;
+              dispatch({
+                type: 'SET_ONCOURSE',
+                payload: oncourseData as any,
+              });
+            })
+            .catch((err) => {
+              console.error('[EventDetailPage] Failed to load oncourse:', err);
+            });
+        }
       } catch (err) {
         if (cancelled) return;
         if (err instanceof ApiError && err.status === 404) {
@@ -127,7 +336,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
     async function loadResults() {
       setResultsState('loading');
-      setResults(null);
+      setCurrentRaceInfo(null);
       setStartlist(null);
 
       const selectedRace = racesRef.current.find((r) => r.raceId === raceId);
@@ -142,7 +351,17 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         if (cancelled) return;
 
         if (resultsData.results.length > 0) {
-          setResults(resultsData);
+          // Dispatch results to reducer
+          // Note: ResultEntry is compatible with PublicResult
+          dispatch({
+            type: 'SET_RESULTS',
+            payload: {
+              raceId,
+              results: resultsData.results as any,
+            },
+          });
+          // Store race metadata for ResultList
+          setCurrentRaceInfo(resultsData.race);
           setResultsState('success');
         } else {
           // No results — try startlist
@@ -202,6 +421,73 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     setSelectedCatId(catId);
   }, []);
 
+  // Handle row expand/collapse with detail data fetching
+  const handleToggleExpand = useCallback(
+    async (key: string) => {
+      const newExpanded = new Set(expandedRows);
+
+      if (newExpanded.has(key)) {
+        // Collapse row
+        newExpanded.delete(key);
+        setExpandedRows(newExpanded);
+      } else {
+        // Expand row
+        newExpanded.add(key);
+        setExpandedRows(newExpanded);
+
+        // Check if detail data is already cached
+        if (!liveState.detailedCache[key] && selectedRaceId) {
+          // Fetch detailed data for the entire race
+          setDetailedLoading(new Set([...detailedLoading, key]));
+
+          try {
+            const resultsData = await getEventResults(eventId, selectedRaceId, {
+              detailed: true,
+              catId: selectedCatId ?? undefined,
+            });
+
+            // Cache detailed data for all results in the race
+            resultsData.results.forEach((result) => {
+              if (result.bib !== null) {
+                const resultKey = `${selectedRaceId}-${result.bib}`;
+                // Type assertion: detailed results have the extra fields
+                const detailedResult = result as any;
+                dispatch({
+                  type: 'CACHE_DETAILED',
+                  payload: {
+                    raceId: selectedRaceId,
+                    bib: result.bib,
+                    detail: {
+                      dtStart: detailedResult.dtStart ?? null,
+                      dtFinish: detailedResult.dtFinish ?? null,
+                      courseGateCount: detailedResult.courseGateCount ?? null,
+                      gates: detailedResult.gates ?? null,
+                    },
+                  },
+                });
+              }
+            });
+          } catch (err) {
+            console.error('[EventDetailPage] Failed to fetch detailed results:', err);
+          } finally {
+            const newLoading = new Set(detailedLoading);
+            newLoading.delete(key);
+            setDetailedLoading(newLoading);
+          }
+        }
+      }
+    },
+    [
+      expandedRows,
+      liveState.detailedCache,
+      selectedRaceId,
+      eventId,
+      selectedCatId,
+      detailedLoading,
+      dispatch,
+    ]
+  );
+
   // 404 / error with back link
   if (eventState === 'error') {
     return (
@@ -246,6 +532,18 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         <EventHeader event={eventDetail} />
       )}
 
+      {shouldConnect && (
+        <div style={{ marginBottom: '1rem' }}>
+          <ConnectionStatus connectionState={connectionState} />
+        </div>
+      )}
+
+      <OnCoursePanel
+        oncourse={liveState.oncourse}
+        isOpen={oncoursePanelOpen}
+        onToggle={() => setOncoursePanelOpen(!oncoursePanelOpen)}
+      />
+
       {showClassTabs && (
         <ClassTabs
           classGroups={classGroups}
@@ -269,6 +567,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           onCategoryChange={handleCategoryChange}
         />
       )}
+
+      <div style={{ marginBottom: '1rem' }}>
+        <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+      </div>
 
       {resultsState === 'loading' && <SkeletonCard />}
 
@@ -295,6 +597,11 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           data={results}
           isBestRun={isBR}
           selectedCatId={selectedCatId}
+          expandedRows={expandedRows}
+          onToggleExpand={handleToggleExpand}
+          detailedCache={liveState.detailedCache}
+          detailedLoading={detailedLoading}
+          viewMode={viewMode}
         />
       )}
 
