@@ -236,17 +236,16 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             // Cache detailed data for all results
             resultsData.results.forEach((result) => {
               if (result.bib !== null) {
-                const detailedResult = result as any;
                 dispatch({
                   type: 'CACHE_DETAILED',
                   payload: {
                     raceId: selectedRaceId,
                     bib: result.bib,
                     detail: {
-                      dtStart: detailedResult.dtStart ?? null,
-                      dtFinish: detailedResult.dtFinish ?? null,
-                      courseGateCount: detailedResult.courseGateCount ?? null,
-                      gates: detailedResult.gates ?? null,
+                      dtStart: result.dtStart ?? null,
+                      dtFinish: result.dtFinish ?? null,
+                      courseGateCount: result.courseGateCount ?? null,
+                      gates: result.gates ?? null,
                     },
                   },
                 });
@@ -319,7 +318,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
               if (cancelled) return;
               dispatch({
                 type: 'SET_ONCOURSE',
-                payload: oncourseData as any,
+                payload: oncourseData,
               });
             })
             .catch((err) => {
@@ -375,7 +374,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             type: 'SET_RESULTS',
             payload: {
               raceId,
-              results: resultsData.results as any,
+              results: resultsData.results,
             },
           });
           // Store race metadata for ResultList

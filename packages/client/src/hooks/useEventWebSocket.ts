@@ -99,7 +99,7 @@ export function useEventWebSocket(
     };
 
     wsRef.current = ws;
-  }, [eventId, onMessage]);
+  }, [eventId]);
 
   const disconnect = useCallback(() => {
     shouldConnectRef.current = false;

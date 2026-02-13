@@ -13,6 +13,7 @@
 
 import { LiveIndicator, Badge } from '@czechcanoe/rvp-design-system';
 import type { ConnectionState } from '../hooks/useEventWebSocket';
+import styles from './ConnectionStatus.module.css';
 
 interface ConnectionStatusProps {
   connectionState: ConnectionState;
@@ -21,9 +22,9 @@ interface ConnectionStatusProps {
 export function ConnectionStatus({ connectionState }: ConnectionStatusProps) {
   if (connectionState === 'connected') {
     return (
-      <div className="flex items-center gap-2">
+      <div className={styles.liveContainer}>
         <LiveIndicator variant="live" color="success" size="sm" />
-        <span className="text-sm text-gray-700">Live</span>
+        <span className={styles.liveText}>Live</span>
       </div>
     );
   }

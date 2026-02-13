@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import {
   Card,
   Table,
@@ -281,9 +282,8 @@ export function ResultList({
               const detail = detailedCache[rowKey] ?? null;
 
               return (
-                <>
+                <Fragment key={rowKey}>
                   <tr
-                    key={`row-${rowKey}`}
                     onClick={() => onToggleExpand(rowKey)}
                     className={styles.tableRow}
                   >
@@ -300,13 +300,13 @@ export function ResultList({
                     ))}
                   </tr>
                   {isExpanded && (
-                    <tr key={`expand-${rowKey}`} className={styles.expandedRow}>
+                    <tr className={styles.expandedRow}>
                       <td colSpan={columns.length + 1}>
                         <RunDetailExpand detail={detail} isLoading={isLoading} />
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               );
             })}
           </tbody>
