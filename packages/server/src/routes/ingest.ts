@@ -9,7 +9,15 @@ import { IngestService, type IngestResult } from '../services/IngestService.js';
 import { ResultIngestService } from '../services/ResultIngestService.js';
 import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
 import { getOnCourseStore } from '../services/OnCourseStore.js';
-import type { OnCourseInput, EventStatus } from '@c123-live-mini/shared';
+import type {
+  OnCourseInput,
+  EventStatus,
+  PublicEventDetail,
+  PublicClass,
+  PublicRace,
+  PublicAggregatedCategory,
+  PublicOnCourseEntry,
+} from '@c123-live-mini/shared';
 import { ALLOWED_INGEST } from '@c123-live-mini/shared';
 import type { LiveResultInput } from '../types/ingest.js';
 import {
@@ -17,6 +25,11 @@ import {
   ingestOncourseSchema,
   ingestResultsSchema,
 } from '../schemas/index.js';
+import type { WebSocketManager } from '../services/WebSocketManager.js';
+import { EventRepository } from '../db/repositories/EventRepository.js';
+import { ClassRepository } from '../db/repositories/ClassRepository.js';
+import { RaceRepository } from '../db/repositories/RaceRepository.js';
+import { ResultRepository } from '../db/repositories/ResultRepository.js';
 
 /**
  * XML ingest request body
@@ -67,12 +80,17 @@ interface IngestResultsResponse {
  */
 export function registerIngestRoutes(
   app: FastifyInstance,
-  db: Kysely<Database>
+  db: Kysely<Database>,
+  wsManager: WebSocketManager
 ): void {
   const apiKeyAuth = createApiKeyAuth(db);
   const ingestService = new IngestService(db);
   const resultIngestService = new ResultIngestService(db);
   const ingestRecordRepo = new IngestRecordRepository(db);
+  const eventRepo = new EventRepository(db);
+  const classRepo = new ClassRepository(db);
+  const raceRepo = new RaceRepository(db);
+  const resultRepo = new ResultRepository(db);
 
   /**
    * POST /api/v1/ingest/xml
@@ -112,7 +130,66 @@ export function registerIngestRoutes(
       const apiKey = request.headers['x-api-key'] as string;
 
       try {
+        // MERGE INTEGRATION (Feature #5): IngestService handles XML import and merging
+        // The merge strategy is configurable per event (ARCHITECTURE.md).
+        // Default: XML authoritative for structure, TCP authoritative for results.
         const result = await ingestService.ingestXml(xml, apiKey);
+
+        // Broadcast full state to WebSocket clients after XML import
+        // DECISION: Use `full` message for XML import (FR-005)
+        // Rationale: XML import changes event structure (classes, races, categories).
+        // A diff would be massive, so sending complete state is more efficient.
+        // The broadcasted state reflects the MERGED data from all sources.
+        const eventId = authRequest.event?.eventId;
+        const eventDbId = authRequest.event?.id;
+        if (eventId && eventDbId) {
+          try {
+            const event = await eventRepo.findByEventId(eventId);
+            if (event) {
+              const classes = await classRepo.findByEventId(event.id);
+              const races = await raceRepo.findByEventId(event.id);
+              const categories = await classRepo.getCategoriesForEvent(event.id);
+
+              wsManager.broadcastFull(eventId, {
+                event: {
+                  eventId: event.event_id,
+                  mainTitle: event.main_title,
+                  subTitle: event.sub_title,
+                  location: event.location,
+                  startDate: event.start_date,
+                  endDate: event.end_date,
+                  discipline: event.discipline,
+                  status: event.status as PublicEventDetail['status'],
+                  facility: event.facility,
+                },
+                classes: classes.map((cls) => ({
+                  classId: cls.class_id,
+                  name: cls.name,
+                  longTitle: cls.long_title,
+                  categories: cls.categories.map((cat) => ({
+                    catId: cat.cat_id,
+                    name: cat.name,
+                    firstYear: cat.first_year,
+                    lastYear: cat.last_year,
+                  })),
+                })) as PublicClass[],
+                races: races.map((race) => ({
+                  raceId: race.race_id,
+                  classId: race.class_id,
+                  raceType: race.race_type as PublicRace['raceType'],
+                  raceOrder: race.race_order,
+                  startTime: race.start_time,
+                  raceStatus: race.race_status,
+                })),
+                categories: categories as PublicAggregatedCategory[],
+              });
+            }
+          } catch (broadcastError) {
+            // Log broadcast errors but don't fail the ingestion
+            request.log.error('Failed to broadcast XML import:', broadcastError);
+          }
+        }
+
         return { imported: result.imported };
       } catch (error) {
         const message =
@@ -220,6 +297,18 @@ export function registerIngestRoutes(
         itemsProcessed: oncourse.length,
       });
 
+      // Broadcast oncourse updates to WebSocket clients
+      // DECISION: Use `diff` message for oncourse updates (FR-004)
+      // Rationale: OnCourse changes are incremental (1-3 entries at a time).
+      // Sending only changed entries is ~100-500 bytes vs full state 5-50KB (SC-003).
+      try {
+        const publicOncourse = onCourseStore.getByEvent(eventId) as PublicOnCourseEntry[];
+        wsManager.broadcastDiff(eventId, { oncourse: publicOncourse });
+      } catch (broadcastError) {
+        // Log broadcast errors but don't fail the ingestion
+        request.log.error('Failed to broadcast oncourse update:', broadcastError);
+      }
+
       return { active };
     }
   );
@@ -286,11 +375,65 @@ export function registerIngestRoutes(
       }
 
       const payloadSize = JSON.stringify(request.body).length;
+      // MERGE INTEGRATION (Feature #5): ResultIngestService handles result merging
+      // Merge strategy: TCP results overwrite XML results (configurable per event).
       const result = await resultIngestService.ingestResults(
         eventDbId,
         results,
         payloadSize
       );
+
+      // Broadcast result updates to WebSocket clients
+      // DECISION: Use `diff` message for result updates (FR-004)
+      // Rationale: Result changes are typically 1-5 entries per message (~200-1000 bytes).
+      // Much smaller than full state (5-50KB). Satisfies SC-003 (80% reduction).
+      // FALLBACK: If diff composition fails, use `refresh` signal (FR-006) to trigger client re-fetch.
+      const eventId = authRequest.event?.eventId;
+      if (eventId && result.updated > 0) {
+        try {
+          // Fetch MERGED results for each race that was updated
+          // CRITICAL: We broadcast the final merged state, not the raw input.
+          // This ensures clients always see the correct merged data (Feature #5).
+          const raceIds = [...new Set(results.map((r) => r.raceId))];
+
+          for (const raceId of raceIds) {
+            const race = await raceRepo.findByRaceId(raceId);
+            if (race) {
+              const dbResults = await resultRepo.findByRaceId(race.id);
+              const publicResults = dbResults.map((r) => ({
+                rnk: r.rnk,
+                bib: r.bib,
+                athleteId: r.athlete_id,
+                name: r.name,
+                club: r.club,
+                noc: r.noc,
+                catId: r.cat_id,
+                catRnk: r.cat_rnk,
+                time: r.time,
+                pen: r.pen,
+                total: r.total,
+                totalBehind: r.total_behind,
+                catTotalBehind: r.cat_total_behind,
+                status: r.status,
+              }));
+
+              wsManager.broadcastDiff(eventId, {
+                results: publicResults,
+                raceId,
+              });
+            }
+          }
+        } catch (broadcastError) {
+          // Log broadcast errors but don't fail the ingestion
+          request.log.error('Failed to broadcast result update:', broadcastError);
+          // FALLBACK: Send refresh signal if diff composition fails (FR-006)
+          try {
+            wsManager.broadcastRefresh(eventId);
+          } catch (refreshError) {
+            request.log.error('Failed to send refresh signal:', refreshError);
+          }
+        }
+      }
 
       return { updated: result.updated };
     }

@@ -1,0 +1,234 @@
+openapi: 3.0.3
+info:
+  title: Live Data Pipeline - WebSocket API
+  version: 1.0.0
+  description: |
+    WebSocket endpoint for live event updates.
+    Communication is unidirectional (server → client).
+    No authentication required (public spectator access).
+
+paths:
+  /api/v1/events/{eventId}/ws:
+    get:
+      summary: WebSocket connection for live event updates
+      description: |
+        Upgrades HTTP connection to WebSocket for receiving live updates
+        for a specific event. Server sends messages as data changes occur.
+
+        Connection flow:
+        1. Client sends HTTP GET with Upgrade: websocket header
+        2. Server validates event exists and is connectable (not draft/official)
+        3. Server checks connection limit (max 200 per event)
+        4. Server upgrades connection and sends initial `full` state message
+        5. Server sends `diff` messages as data changes
+        6. Server sends periodic ping frames (30s interval) for heartbeat
+
+        Message types (server → client):
+        - `full`: Complete event state (on connect, after XML import)
+        - `diff`: Changed entities only (result update, oncourse change, state transition)
+        - `refresh`: Signal to discard cache and re-fetch via REST API
+      operationId: websocketConnect
+      tags:
+        - WebSocket
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Timekeeper-assigned event identifier
+
+      responses:
+        '101':
+          description: WebSocket upgrade successful
+          headers:
+            Upgrade:
+              schema:
+                type: string
+                example: websocket
+            Connection:
+              schema:
+                type: string
+                example: Upgrade
+
+        '404':
+          description: Event not found or in draft state
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: EventNotFound
+                  message:
+                    type: string
+                    example: "Event not found or not publicly available"
+
+        '410':
+          description: Event is in official state (no more updates)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: EventOfficial
+                  message:
+                    type: string
+                    example: "Event results are official. No live updates available."
+
+        '503':
+          description: Connection limit reached for this event
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: ConnectionLimitReached
+                  message:
+                    type: string
+                    example: "Maximum number of concurrent connections reached for this event"
+                  maxConnections:
+                    type: integer
+                    example: 200
+
+components:
+  schemas:
+    WsMessageFull:
+      type: object
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          enum: [full]
+        data:
+          $ref: '#/components/schemas/WsFullPayload'
+      example:
+        type: full
+        data:
+          event:
+            eventId: "CZE2.2024062500"
+            mainTitle: "Czech Cup #1"
+            subTitle: null
+            location: "Prague - Troja"
+            startDate: "2024-06-25"
+            endDate: "2024-06-25"
+            discipline: "Slalom"
+            status: "running"
+            facility: "Vodácký kanál Troja"
+          classes:
+            - classId: "K1M"
+              name: "K1M"
+              longTitle: "Kayak Single Men"
+              categories:
+                - catId: "ZS"
+                  name: "Senior"
+                  firstYear: null
+                  lastYear: 2004
+          races:
+            - raceId: "K1M-BR1"
+              classId: "K1M"
+              raceType: "best-run-1"
+              raceOrder: 1
+              startTime: "2024-06-25T09:00:00"
+              raceStatus: 4
+          categories:
+            - catId: "ZS"
+              name: "Senior"
+              firstYear: null
+              lastYear: 2004
+              classIds: ["K1M", "C1M"]
+
+    WsMessageDiff:
+      type: object
+      required:
+        - type
+        - data
+      properties:
+        type:
+          type: string
+          enum: [diff]
+        data:
+          $ref: '#/components/schemas/WsDiffPayload'
+      example:
+        type: diff
+        data:
+          raceId: "K1M-BR1"
+          results:
+            - rnk: 1
+              bib: 42
+              athleteId: "CZE12345"
+              name: "Jan Novák"
+              club: "USK Praha"
+              noc: "CZE"
+              catId: "ZS"
+              catRnk: 1
+              time: 9523
+              pen: 200
+              total: 9723
+              totalBehind: null
+              catTotalBehind: null
+              status: null
+
+    WsMessageRefresh:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [refresh]
+      example:
+        type: refresh
+
+    WsFullPayload:
+      type: object
+      properties:
+        event:
+          description: Full event details (same as GET /api/v1/events/:eventId)
+          type: object
+        classes:
+          description: All classes with categories
+          type: array
+          items:
+            type: object
+        races:
+          description: All races with schedule
+          type: array
+          items:
+            type: object
+        categories:
+          description: Aggregated categories for filtering
+          type: array
+          items:
+            type: object
+
+    WsDiffPayload:
+      type: object
+      description: |
+        Contains only changed data sections. Each field is optional.
+        Frontend applies diffs by upserting entities matching composite key.
+      properties:
+        results:
+          description: Changed/new result objects (upsert by bib + raceId)
+          type: array
+          items:
+            type: object
+        raceId:
+          description: Which race the results belong to
+          type: string
+        oncourse:
+          description: Updated on-course entries (upsert by bib + raceId)
+          type: array
+          items:
+            type: object
+        status:
+          description: New event state (after lifecycle transition)
+          type: string
+          enum: [startlist, running, finished, official]

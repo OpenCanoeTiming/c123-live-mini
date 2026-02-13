@@ -7,10 +7,12 @@ import type { EventStatus } from '@c123-live-mini/shared';
 import { registerIngestRoutes } from '../../src/routes/ingest.js';
 import { registerConfigRoutes } from '../../src/routes/config.js';
 import { EventRepository } from '../../src/db/repositories/EventRepository.js';
+import { WebSocketManager } from '../../src/services/WebSocketManager.js';
 
 describe('Ingestion State Guards', () => {
   let app: FastifyInstance;
   let db: Kysely<DatabaseSchema>;
+  let wsManager: WebSocketManager;
   let eventRepo: EventRepository;
   let testApiKey: string;
   let testEventId: string;
@@ -92,7 +94,8 @@ describe('Ingestion State Guards', () => {
 
     // Create Fastify app and register routes
     app = Fastify();
-    registerIngestRoutes(app, db);
+    wsManager = new WebSocketManager();
+    registerIngestRoutes(app, db, wsManager);
     registerConfigRoutes(app, db);
 
     // Create test event
@@ -120,6 +123,7 @@ describe('Ingestion State Guards', () => {
   });
 
   afterEach(async () => {
+    wsManager.shutdown();
     await app.close();
     await db.destroy();
   });

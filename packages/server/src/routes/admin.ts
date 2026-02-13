@@ -1,13 +1,14 @@
 import type { FastifyInstance } from 'fastify';
 import type { Kysely } from 'kysely';
 import type { Database } from '../db/schema.js';
-import type { EventStatus } from '@c123-live-mini/shared';
+import type { EventStatus, PublicEventStatus } from '@c123-live-mini/shared';
 import { EventRepository } from '../db/repositories/EventRepository.js';
 import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
 import { EventLifecycleService } from '../services/EventLifecycleService.js';
 import { generateApiKey, isApiKeyValid } from '../utils/apiKey.js';
 import { createApiKeyAuth, type AuthenticatedRequest } from '../middleware/apiKeyAuth.js';
 import { createEventSchema, updateStatusSchema } from '../schemas/index.js';
+import type { WebSocketManager } from '../services/WebSocketManager.js';
 
 /**
  * Create event request body
@@ -41,7 +42,8 @@ interface CreateEventResponse {
  */
 export function registerAdminRoutes(
   app: FastifyInstance,
-  db: Kysely<Database>
+  db: Kysely<Database>,
+  wsManager: WebSocketManager
 ): void {
   const eventRepo = new EventRepository(db);
   const ingestRecordRepo = new IngestRecordRepository(db);
@@ -195,12 +197,20 @@ export function registerAdminRoutes(
         return;
       }
 
-      // TODO: WebSocket notification for state changes (FR-012)
-      // When WebSocket infrastructure is implemented, emit a 'diff' message here:
-      // webSocketService.emitToEvent(eventId, {
-      //   type: 'diff',
-      //   data: { status: targetStatus }
-      // });
+      // Broadcast state change to WebSocket clients
+      try {
+        wsManager.broadcastDiff(eventId, {
+          status: targetStatus as PublicEventStatus,
+        });
+
+        // If transitioning to official, close all WebSocket connections after grace period
+        if (targetStatus === 'official') {
+          wsManager.closeRoom(eventId, 1000, 'Event results are official');
+        }
+      } catch (broadcastError) {
+        // Log broadcast errors but don't fail the state transition
+        request.log.error('Failed to broadcast status change:', broadcastError);
+      }
 
       return {
         eventId,
