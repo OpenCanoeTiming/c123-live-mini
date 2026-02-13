@@ -40,6 +40,9 @@ export class WebSocketManager {
   /** Heartbeat interval timer */
   private heartbeatTimer: NodeJS.Timeout | null = null;
 
+  /** Pending room closure timers: eventId → timer reference */
+  private closeRoomTimers: Map<string, NodeJS.Timeout> = new Map();
+
   constructor() {
     this.startHeartbeat();
   }
@@ -199,9 +202,19 @@ export class WebSocketManager {
    * @param reason - Close reason message
    */
   closeRoom(eventId: string, code: number, reason: string): void {
-    setTimeout(() => {
+    // Cancel any existing close timer for this room
+    const existingTimer = this.closeRoomTimers.get(eventId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+
+    // Schedule room closure
+    const timer = setTimeout(() => {
       const room = this.rooms.get(eventId);
-      if (!room) return;
+      if (!room) {
+        this.closeRoomTimers.delete(eventId);
+        return;
+      }
 
       room.forEach((socket) => {
         if (socket.readyState === socket.OPEN) {
@@ -210,19 +223,28 @@ export class WebSocketManager {
       });
 
       this.rooms.delete(eventId);
+      this.closeRoomTimers.delete(eventId);
     }, this.officialGracePeriod);
+
+    this.closeRoomTimers.set(eventId, timer);
   }
 
   /**
    * Shutdown the WebSocket manager
    *
-   * Clears heartbeat timer and closes all connections.
+   * Clears heartbeat timer, pending close room timers, and closes all connections.
    */
   shutdown(): void {
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
     }
+
+    // Clear all pending close room timers
+    this.closeRoomTimers.forEach((timer) => {
+      clearTimeout(timer);
+    });
+    this.closeRoomTimers.clear();
 
     this.rooms.forEach((room, eventId) => {
       room.forEach((socket) => {

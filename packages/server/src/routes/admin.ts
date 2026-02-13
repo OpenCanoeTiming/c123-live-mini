@@ -209,7 +209,7 @@ export function registerAdminRoutes(
         }
       } catch (broadcastError) {
         // Log broadcast errors but don't fail the state transition
-        request.log.error('Failed to broadcast status change:', broadcastError);
+        request.log.error(broadcastError, 'Failed to broadcast status change');
       }
 
       return {

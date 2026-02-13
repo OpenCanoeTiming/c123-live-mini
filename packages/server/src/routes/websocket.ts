@@ -5,13 +5,8 @@ import type { WebSocketManager } from '../services/WebSocketManager.js';
 import { EventRepository } from '../db/repositories/EventRepository.js';
 import { ClassRepository } from '../db/repositories/ClassRepository.js';
 import { RaceRepository } from '../db/repositories/RaceRepository.js';
-import type {
-  PublicEventDetail,
-  PublicClass,
-  PublicRace,
-  PublicAggregatedCategory,
-  WsFullPayload,
-} from '@c123-live-mini/shared';
+import { composeFullStatePayload } from '../utils/composeFullStatePayload.js';
+import type { WsFullPayload } from '@c123-live-mini/shared';
 
 /**
  * Route params
@@ -84,7 +79,8 @@ export function registerWebSocketRoutes(
       },
     },
     async (connection, request) => {
-      const { socket } = connection;
+      // In @fastify/websocket, connection IS the socket
+      const socket = connection;
       const { eventId } = request.params;
 
       try {
@@ -93,60 +89,34 @@ export function registerWebSocketRoutes(
         // Join the event room
         wsManager.join(eventId, socket);
 
-        // Fetch event data for full state
-        const event = await eventRepo.findByEventId(eventId);
-        if (!event) {
+        // Compose full state payload
+        const fullPayload = await composeFullStatePayload(
+          eventId,
+          eventRepo,
+          classRepo,
+          raceRepo
+        );
+
+        if (!fullPayload) {
           // Should not happen due to preValidation, but handle defensively
           request.log.error(`Event not found after validation: ${eventId}`);
           socket.close(1002, 'Event not found');
           return;
         }
 
-        // Compose full state payload
-        const classes = await classRepo.findByEventId(event.id);
-        const races = await raceRepo.findByEventId(event.id);
-        const categories = await classRepo.getCategoriesForEvent(event.id);
-
-        request.log.info(`Fetched event data: classes=${classes.length}, races=${races.length}, categories=${categories.length}`);
-
-        const fullPayload: WsFullPayload = {
-          event: {
-            eventId: event.event_id,
-            mainTitle: event.main_title,
-            subTitle: event.sub_title,
-            location: event.location,
-            startDate: event.start_date,
-            endDate: event.end_date,
-            discipline: event.discipline,
-            status: event.status as PublicEventDetail['status'],
-            facility: event.facility,
-          },
-          classes: classes.map((cls) => ({
-            classId: cls.class_id,
-            name: cls.name,
-            longTitle: cls.long_title,
-            categories: cls.categories.map((cat) => ({
-              catId: cat.cat_id,
-              name: cat.name,
-              firstYear: cat.first_year,
-              lastYear: cat.last_year,
-            })),
-          })) as PublicClass[],
-          races: races.map((race) => ({
-            raceId: race.race_id,
-            classId: race.class_id,
-            raceType: race.race_type as PublicRace['raceType'],
-            raceOrder: race.race_order,
-            startTime: race.start_time,
-            raceStatus: race.race_status,
-          })),
-          categories: categories as PublicAggregatedCategory[],
-        };
+        request.log.info(
+          `Fetched event data: classes=${fullPayload.classes.length}, races=${fullPayload.races.length}, categories=${fullPayload.categories.length}`
+        );
 
         // Send initial full state
         const message = JSON.stringify({ type: 'full', data: fullPayload });
         request.log.info(`Sending full state message: ${message.length} bytes`);
         socket.send(message);
+
+        // Handle WebSocket errors
+        socket.on('error', (err) => {
+          request.log.error(err, 'WebSocket error');
+        });
 
         // Handle client disconnect
         socket.on('close', () => {

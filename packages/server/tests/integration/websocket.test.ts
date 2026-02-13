@@ -25,7 +25,7 @@ async function createWebSocketClient(url: string): Promise<WebSocket> {
 /**
  * Helper to wait for a WebSocket message
  */
-async function waitForMessage(ws: WebSocket, timeout = 1000): Promise<string> {
+async function waitForMessage(ws: WebSocket, timeout = 5000): Promise<string> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       ws.removeAllListeners('message');
@@ -99,6 +99,18 @@ describe('WebSocket Endpoint - GET /api/v1/events/:eventId/ws', () => {
       .addColumn('race_status', 'integer', (col) => col.notNull().defaultTo(1))
       .execute();
 
+    await db.schema
+      .createTable('categories')
+      .addColumn('id', 'integer', (col) => col.primaryKey().autoIncrement())
+      .addColumn('class_id', 'integer', (col) =>
+        col.notNull().references('classes.id').onDelete('cascade')
+      )
+      .addColumn('cat_id', 'text', (col) => col.notNull())
+      .addColumn('name', 'text', (col) => col.notNull())
+      .addColumn('first_year', 'integer')
+      .addColumn('last_year', 'integer')
+      .execute();
+
     // Create Fastify app with WebSocket support
     app = Fastify({ logger: false });
     await app.register(websocket);
@@ -131,10 +143,7 @@ describe('WebSocket Endpoint - GET /api/v1/events/:eventId/ws', () => {
   });
 
   describe('Connection and initial full state', () => {
-    // TODO: Fix integration test for message receiving
-    // The unit tests fully cover WebSocketManager functionality
-    // Manual E2E testing via quickstart.md recommended
-    it.skip('should connect and receive full state for running event', async () => {
+    it('should connect and receive full state for running event', async () => {
       // Create a running event
       const eventId = await eventRepo.insert({
         event_id: 'TEST.WS01',
@@ -171,13 +180,30 @@ describe('WebSocket Endpoint - GET /api/v1/events/:eventId/ws', () => {
         race_status: 4,
       });
 
-      // Connect WebSocket client
-      const ws = await createWebSocketClient(
-        `${serverAddress}/api/v1/events/TEST.WS01/ws`
-      );
+      // Connect WebSocket client and wait for message
+      const ws = new WebSocket(`${serverAddress}/api/v1/events/TEST.WS01/ws`);
+
+      // Setup message promise BEFORE connection opens to avoid race condition
+      const messagePromise = new Promise<string>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          ws.removeAllListeners('message');
+          reject(new Error('Timeout waiting for message'));
+        }, 5000);
+
+        ws.once('message', (data) => {
+          clearTimeout(timer);
+          resolve(data.toString());
+        });
+      });
+
+      // Wait for connection
+      await new Promise((resolve, reject) => {
+        ws.on('open', () => resolve(undefined));
+        ws.on('error', reject);
+      });
 
       // Wait for full state message
-      const message = await waitForMessage(ws);
+      const message = await messagePromise;
       const data = JSON.parse(message);
 
       expect(data.type).toBe('full');

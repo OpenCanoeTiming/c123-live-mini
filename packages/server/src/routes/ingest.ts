@@ -12,10 +12,6 @@ import { getOnCourseStore } from '../services/OnCourseStore.js';
 import type {
   OnCourseInput,
   EventStatus,
-  PublicEventDetail,
-  PublicClass,
-  PublicRace,
-  PublicAggregatedCategory,
   PublicOnCourseEntry,
 } from '@c123-live-mini/shared';
 import { ALLOWED_INGEST } from '@c123-live-mini/shared';
@@ -30,6 +26,7 @@ import { EventRepository } from '../db/repositories/EventRepository.js';
 import { ClassRepository } from '../db/repositories/ClassRepository.js';
 import { RaceRepository } from '../db/repositories/RaceRepository.js';
 import { ResultRepository } from '../db/repositories/ResultRepository.js';
+import { composeFullStatePayload } from '../utils/composeFullStatePayload.js';
 
 /**
  * XML ingest request body
@@ -141,52 +138,21 @@ export function registerIngestRoutes(
         // A diff would be massive, so sending complete state is more efficient.
         // The broadcasted state reflects the MERGED data from all sources.
         const eventId = authRequest.event?.eventId;
-        const eventDbId = authRequest.event?.id;
-        if (eventId && eventDbId) {
+        if (eventId) {
           try {
-            const event = await eventRepo.findByEventId(eventId);
-            if (event) {
-              const classes = await classRepo.findByEventId(event.id);
-              const races = await raceRepo.findByEventId(event.id);
-              const categories = await classRepo.getCategoriesForEvent(event.id);
+            const fullPayload = await composeFullStatePayload(
+              eventId,
+              eventRepo,
+              classRepo,
+              raceRepo
+            );
 
-              wsManager.broadcastFull(eventId, {
-                event: {
-                  eventId: event.event_id,
-                  mainTitle: event.main_title,
-                  subTitle: event.sub_title,
-                  location: event.location,
-                  startDate: event.start_date,
-                  endDate: event.end_date,
-                  discipline: event.discipline,
-                  status: event.status as PublicEventDetail['status'],
-                  facility: event.facility,
-                },
-                classes: classes.map((cls) => ({
-                  classId: cls.class_id,
-                  name: cls.name,
-                  longTitle: cls.long_title,
-                  categories: cls.categories.map((cat) => ({
-                    catId: cat.cat_id,
-                    name: cat.name,
-                    firstYear: cat.first_year,
-                    lastYear: cat.last_year,
-                  })),
-                })) as PublicClass[],
-                races: races.map((race) => ({
-                  raceId: race.race_id,
-                  classId: race.class_id,
-                  raceType: race.race_type as PublicRace['raceType'],
-                  raceOrder: race.race_order,
-                  startTime: race.start_time,
-                  raceStatus: race.race_status,
-                })),
-                categories: categories as PublicAggregatedCategory[],
-              });
+            if (fullPayload) {
+              wsManager.broadcastFull(eventId, fullPayload);
             }
           } catch (broadcastError) {
             // Log broadcast errors but don't fail the ingestion
-            request.log.error('Failed to broadcast XML import:', broadcastError);
+            request.log.error(broadcastError, 'Failed to broadcast XML import');
           }
         }
 
@@ -273,13 +239,37 @@ export function registerIngestRoutes(
 
       const onCourseStore = getOnCourseStore();
 
-      // Process each OnCourse entry
+      // Process each OnCourse entry and collect the added entries
+      const addedEntries: PublicOnCourseEntry[] = [];
       for (const entry of oncourse) {
         if (!entry.participantId || !entry.raceId || entry.bib === undefined) {
           continue; // Skip invalid entries
         }
 
-        onCourseStore.add(eventId, entry);
+        const addedEntry = onCourseStore.add(eventId, entry);
+
+        // Map to public format for broadcasting
+        addedEntries.push({
+          raceId: addedEntry.raceId,
+          bib: addedEntry.bib,
+          name: addedEntry.name,
+          club: addedEntry.club,
+          position: addedEntry.position,
+          gates: addedEntry.gates.map((penalty, index) => ({
+            number: index + 1,
+            type: 'normal' as const,
+            penalty,
+          })),
+          completed: addedEntry.completed,
+          dtStart: addedEntry.dtStart,
+          dtFinish: addedEntry.dtFinish,
+          time: addedEntry.time,
+          pen: addedEntry.pen,
+          total: addedEntry.total,
+          rank: addedEntry.rank,
+          ttbDiff: addedEntry.ttbDiff,
+          ttbName: addedEntry.ttbName,
+        });
       }
 
       // Cleanup finished competitors
@@ -301,12 +291,14 @@ export function registerIngestRoutes(
       // DECISION: Use `diff` message for oncourse updates (FR-004)
       // Rationale: OnCourse changes are incremental (1-3 entries at a time).
       // Sending only changed entries is ~100-500 bytes vs full state 5-50KB (SC-003).
-      try {
-        const publicOncourse = onCourseStore.getByEvent(eventId) as PublicOnCourseEntry[];
-        wsManager.broadcastDiff(eventId, { oncourse: publicOncourse });
-      } catch (broadcastError) {
-        // Log broadcast errors but don't fail the ingestion
-        request.log.error('Failed to broadcast oncourse update:', broadcastError);
+      // CRITICAL: Only broadcast the entries that were just ingested, not all entries.
+      if (addedEntries.length > 0) {
+        try {
+          wsManager.broadcastDiff(eventId, { oncourse: addedEntries });
+        } catch (broadcastError) {
+          // Log broadcast errors but don't fail the ingestion
+          request.log.error(broadcastError, 'Failed to broadcast oncourse update');
+        }
       }
 
       return { active };
@@ -425,12 +417,12 @@ export function registerIngestRoutes(
           }
         } catch (broadcastError) {
           // Log broadcast errors but don't fail the ingestion
-          request.log.error('Failed to broadcast result update:', broadcastError);
+          request.log.error(broadcastError, 'Failed to broadcast result update');
           // FALLBACK: Send refresh signal if diff composition fails (FR-006)
           try {
             wsManager.broadcastRefresh(eventId);
           } catch (refreshError) {
-            request.log.error('Failed to send refresh signal:', refreshError);
+            request.log.error(refreshError, 'Failed to send refresh signal');
           }
         }
       }
