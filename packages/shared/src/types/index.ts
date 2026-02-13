@@ -59,3 +59,14 @@ export type {
   PublicResultMultiRun,
   PublicOnCourseEntry,
 } from './publicApi.js';
+
+// WebSocket types (real-time server → client push)
+export type {
+  WsMessageType,
+  WsFullPayload,
+  WsDiffPayload,
+  WsMessageFull,
+  WsMessageDiff,
+  WsMessageRefresh,
+  WsMessage,
+} from './websocket.js';

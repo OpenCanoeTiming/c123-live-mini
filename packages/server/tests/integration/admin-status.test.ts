@@ -5,10 +5,12 @@ import Database from 'better-sqlite3';
 import type { Database as DatabaseSchema } from '../../src/db/schema.js';
 import { registerAdminRoutes } from '../../src/routes/admin.js';
 import { EventRepository } from '../../src/db/repositories/EventRepository.js';
+import { WebSocketManager } from '../../src/services/WebSocketManager.js';
 
 describe('Admin Status Endpoint - PATCH /api/v1/admin/events/:eventId/status', () => {
   let app: FastifyInstance;
   let db: Kysely<DatabaseSchema>;
+  let wsManager: WebSocketManager;
   let eventRepo: EventRepository;
   let testApiKey: string;
   let testEventId: string;
@@ -44,7 +46,8 @@ describe('Admin Status Endpoint - PATCH /api/v1/admin/events/:eventId/status', (
 
     // Create Fastify app and register routes
     app = Fastify();
-    registerAdminRoutes(app, db);
+    wsManager = new WebSocketManager();
+    registerAdminRoutes(app, db, wsManager);
 
     // Create test event
     eventRepo = new EventRepository(db);
@@ -75,6 +78,7 @@ describe('Admin Status Endpoint - PATCH /api/v1/admin/events/:eventId/status', (
   });
 
   afterEach(async () => {
+    wsManager.shutdown();
     await app.close();
     await db.destroy();
   });

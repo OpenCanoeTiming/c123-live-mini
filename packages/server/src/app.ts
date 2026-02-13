@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance, type FastifyError } from 'fastify';
+import websocket from '@fastify/websocket';
 import type { Kysely } from 'kysely';
 import type { Database } from './db/schema.js';
 import { registerEventsRoutes } from './routes/events.js';
@@ -9,7 +10,9 @@ import { registerAdminRoutes } from './routes/admin.js';
 import { registerOnCourseRoutes } from './routes/oncourse.js';
 import { registerCategoriesRoutes } from './routes/categories.js';
 import { registerConfigRoutes } from './routes/config.js';
+import { registerWebSocketRoutes } from './routes/websocket.js';
 import { AppError } from './utils/errors.js';
+import { WebSocketManager } from './services/WebSocketManager.js';
 
 /**
  * App configuration options
@@ -27,6 +30,15 @@ export function createApp(options: AppOptions): FastifyInstance {
 
   const app = Fastify({ logger });
 
+  // Register WebSocket plugin
+  app.register(websocket);
+
+  // Create WebSocket manager
+  const wsManager = new WebSocketManager();
+
+  // Store wsManager on app instance for access in routes
+  app.decorate('wsManager', wsManager);
+
   // Health check endpoint
   app.get('/health', async () => ({ status: 'ok' }));
 
@@ -34,11 +46,12 @@ export function createApp(options: AppOptions): FastifyInstance {
   registerEventsRoutes(app, db);
   registerResultsRoutes(app, db);
   registerStartlistRoutes(app, db);
-  registerIngestRoutes(app, db);
-  registerAdminRoutes(app, db);
+  registerIngestRoutes(app, db, wsManager);
+  registerAdminRoutes(app, db, wsManager);
   registerOnCourseRoutes(app, db);
   registerCategoriesRoutes(app, db);
   registerConfigRoutes(app, db);
+  registerWebSocketRoutes(app, db, wsManager);
 
   // Global error handler following contracts/api.md error format
   app.setErrorHandler(
@@ -84,6 +97,11 @@ export function createApp(options: AppOptions): FastifyInstance {
       });
     }
   );
+
+  // Shutdown hook for WebSocket cleanup
+  app.addHook('onClose', async () => {
+    wsManager.shutdown();
+  });
 
   return app;
 }
