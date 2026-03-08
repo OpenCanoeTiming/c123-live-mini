@@ -40,6 +40,11 @@ export async function composeFullStatePayload(
   const races = await raceRepo.findByEventId(event.id);
   const categories = await classRepo.getCategoriesForEvent(event.id);
 
+  // Build lookup: internal class DB id → public text class_id
+  const classIdMap = new Map<number, string>(
+    classes.map((cls) => [cls.id, cls.class_id])
+  );
+
   // Compose payload
   return {
     event: {
@@ -66,7 +71,7 @@ export async function composeFullStatePayload(
     })) as PublicClass[],
     races: races.map((race) => ({
       raceId: race.race_id,
-      classId: race.class_id,
+      classId: race.class_id != null ? (classIdMap.get(race.class_id) ?? null) : null,
       raceType: race.race_type as PublicRace['raceType'],
       raceOrder: race.race_order,
       startTime: race.start_time,

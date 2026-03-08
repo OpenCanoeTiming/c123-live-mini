@@ -125,8 +125,8 @@ export interface PublicAggregatedCategory extends PublicCategory {
 export interface PublicRace {
   /** Race identifier */
   raceId: string;
-  /** Parent class ID */
-  classId: string;
+  /** Parent class ID (null if race has no class) */
+  classId: string | null;
   /** Human-readable race type */
   raceType: PublicRaceType;
   /** Schedule position */

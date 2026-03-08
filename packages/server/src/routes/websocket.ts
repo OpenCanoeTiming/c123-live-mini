@@ -114,7 +114,7 @@ export function registerWebSocketRoutes(
         socket.send(message);
 
         // Handle WebSocket errors
-        socket.on('error', (err) => {
+        socket.on('error', (err: Error) => {
           request.log.error(err, 'WebSocket error');
         });
 

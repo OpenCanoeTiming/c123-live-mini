@@ -389,14 +389,14 @@ export function registerIngestRoutes(
           const raceIds = [...new Set(results.map((r) => r.raceId))];
 
           for (const raceId of raceIds) {
-            const race = await raceRepo.findByRaceId(raceId);
+            const race = await raceRepo.findByEventAndRaceId(eventDbId, raceId);
             if (race) {
-              const dbResults = await resultRepo.findByRaceId(race.id);
+              const dbResults = await resultRepo.findByRaceIdWithParticipant(race.id);
               const publicResults = dbResults.map((r) => ({
                 rnk: r.rnk,
                 bib: r.bib,
                 athleteId: r.athlete_id,
-                name: r.name,
+                name: r.given_name ? `${r.family_name} ${r.given_name}` : r.family_name,
                 club: r.club,
                 noc: r.noc,
                 catId: r.cat_id,
