@@ -257,7 +257,7 @@ export function registerResultsRoutes(
           total: primaryResult.total,
           totalBehind: primaryResult.total_behind,
           catTotalBehind: primaryResult.cat_total_behind,
-          status: primaryResult.status,
+          status: primaryResult.status || null,
           betterRunNr,
           totalTotal,
           prevTime: primaryResult.prev_time,
@@ -316,7 +316,7 @@ export function registerResultsRoutes(
           total: r.total,
           totalBehind: r.total_behind,
           catTotalBehind: r.cat_total_behind,
-          status: r.status,
+          status: r.status || null,
         };
 
         // Include multi-run fields for BR races

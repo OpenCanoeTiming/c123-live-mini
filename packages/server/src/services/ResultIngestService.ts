@@ -96,7 +96,7 @@ export class ResultIngestService {
         time: input.time ?? null,
         pen: input.pen ?? null,
         total: input.total ?? null,
-        status: input.status ?? null,
+        status: input.status || null,
         rnk: input.rnk ?? null,
         gates: gatesJson ?? null,
       });

@@ -407,7 +407,7 @@ export function registerIngestRoutes(
                 total: r.total,
                 totalBehind: r.total_behind,
                 catTotalBehind: r.cat_total_behind,
-                status: r.status,
+                status: r.status || null,
                 prevTime: r.prev_time,
                 prevPen: r.prev_pen,
                 prevTotal: r.prev_total,
