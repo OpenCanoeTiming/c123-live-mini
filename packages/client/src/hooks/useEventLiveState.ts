@@ -154,7 +154,9 @@ function eventLiveStateReducer(state: EventLiveState, action: EventLiveStateActi
         classes,
         races,
         categories,
-        resultsByRace: {}, // Clear cached results on full state replacement
+        // Keep resultsByRace — re-fetch will replace data.
+        // Clearing here causes a race condition where results flash to null
+        // between WS_FULL dispatch and re-fetch completion.
       };
     }
 
@@ -193,10 +195,10 @@ function eventLiveStateReducer(state: EventLiveState, action: EventLiveStateActi
     }
 
     case 'WS_REFRESH': {
-      // Clear all cached data, keep structure
+      // Clear oncourse and detailed cache, but keep resultsByRace
+      // to avoid flash of empty state. Re-fetch will replace data.
       return {
         ...state,
-        resultsByRace: {},
         oncourse: [],
         detailedCache: {},
       };

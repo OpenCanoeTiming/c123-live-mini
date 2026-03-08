@@ -54,7 +54,7 @@ const standardColumns: ColumnDef<ResultEntry>[] = [
     align: 'right',
     cell: (row) => (
       <span className={styles.monoText}>
-        {row.status === null ? formatPenalty(row.pen) : ''}
+        {!row.status ? formatPenalty(row.pen) : ''}
       </span>
     ),
   },
@@ -64,7 +64,7 @@ const standardColumns: ColumnDef<ResultEntry>[] = [
     align: 'right',
     cell: (row) => (
       <span className={styles.monoText}>
-        {row.status === null ? formatTime(row.total) : ''}
+        {!row.status ? formatTime(row.total) : ''}
       </span>
     ),
   },
@@ -147,7 +147,7 @@ const bestRunColumns: ColumnDef<ResultEntry>[] = [
     align: 'right',
     cell: (row) => (
       <span className={`${styles.monoText} ${styles.totalTotal}`}>
-        {row.status === null ? formatTime(row.totalTotal ?? null) : ''}
+        {!row.status ? formatTime(row.totalTotal ?? null) : ''}
       </span>
     ),
   },

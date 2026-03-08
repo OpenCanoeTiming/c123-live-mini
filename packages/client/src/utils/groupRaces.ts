@@ -42,9 +42,14 @@ export function groupRaces(races: RaceInfo[]): ClassGroup[] {
     groups.push({ classId, races: classRaces });
   }
 
-  groups.sort(
-    (a, b) => (a.races[0].raceOrder ?? 0) - (b.races[0].raceOrder ?? 0)
-  );
+  groups.sort((a, b) => {
+    // Push unassigned/other groups to the end
+    const aIsOther = a.classId === 'other' || a.classId === '';
+    const bIsOther = b.classId === 'other' || b.classId === '';
+    if (aIsOther && !bIsOther) return 1;
+    if (!aIsOther && bIsOther) return -1;
+    return (a.races[0].raceOrder ?? 0) - (b.races[0].raceOrder ?? 0);
+  });
 
   return groups;
 }

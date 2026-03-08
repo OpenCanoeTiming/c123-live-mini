@@ -477,16 +477,20 @@ export class ResultRepository extends BaseRepository {
       >
     >
   > {
-    // Extract class and day parts from race_id
-    const parts = raceId.split('_');
-    if (parts.length < 3) return new Map();
+    // Extract class prefix and suffix from race_id
+    // Format: {classId}_BR{N}_{suffix} where classId can contain underscores
+    // e.g. K1M_ST_BR1_6 → prefix="K1M_ST", suffix="6"
+    const br1Match = raceId.match(/^(.+)_BR1_(.+)$/);
+    const br2Match = raceId.match(/^(.+)_BR2_(.+)$/);
+    const match = br1Match ?? br2Match;
+    if (!match) return new Map();
 
-    const classIdPart = parts[0];
-    const dayPart = parts.slice(2).join('_');
+    const classPrefix = match[1];
+    const suffix = match[2];
 
-    // Find all BR races for this class and day (using race_id pattern)
-    const br1RaceId = `${classIdPart}_BR1_${dayPart}`;
-    const br2RaceId = `${classIdPart}_BR2_${dayPart}`;
+    // Find all BR races for this class and suffix
+    const br1RaceId = `${classPrefix}_BR1_${suffix}`;
+    const br2RaceId = `${classPrefix}_BR2_${suffix}`;
 
     const results = await this.db
       .selectFrom('results')

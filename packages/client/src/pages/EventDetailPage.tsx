@@ -104,16 +104,14 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             includeAllRuns: isBR || undefined,
           })
             .then((resultsData) => {
-              if (resultsData.results.length > 0) {
-                dispatch({
-                  type: 'SET_RESULTS',
-                  payload: {
-                    raceId: selectedRaceId,
-                    results: resultsData.results,
-                  },
-                });
-                setCurrentRaceInfo(resultsData.race);
-              }
+              dispatch({
+                type: 'SET_RESULTS',
+                payload: {
+                  raceId: selectedRaceId,
+                  results: resultsData.results,
+                },
+              });
+              setCurrentRaceInfo(resultsData.race);
             })
             .catch((err) => {
               console.error('[EventDetailPage] Failed to re-fetch results after WS_FULL:', err);
@@ -155,6 +153,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
                   results: resultsData.results,
                 },
               });
+              setCurrentRaceInfo(resultsData.race);
             })
             .catch((err) => {
               console.error('[EventDetailPage] Failed to re-fetch results:', err);
@@ -404,21 +403,18 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
         if (cancelled) return;
 
-        if (resultsData.results.length > 0) {
-          // Dispatch results to reducer
-          // Note: ResultEntry is compatible with PublicResult
-          dispatch({
-            type: 'SET_RESULTS',
-            payload: {
-              raceId,
-              results: resultsData.results,
-            },
-          });
-          // Store race metadata for ResultList
-          setCurrentRaceInfo(resultsData.race);
-          setResultsState('success');
-        } else {
-          // No results — try startlist
+        // Always dispatch results and set race info
+        dispatch({
+          type: 'SET_RESULTS',
+          payload: {
+            raceId,
+            results: resultsData.results,
+          },
+        });
+        setCurrentRaceInfo(resultsData.race);
+
+        if (resultsData.results.length === 0) {
+          // No results — try startlist as fallback
           try {
             const startlistData = await getStartlist(eventId, raceId);
             if (cancelled) return;
@@ -426,8 +422,8 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           } catch {
             // No startlist either — that's fine
           }
-          setResultsState('success');
         }
+        setResultsState('success');
       } catch {
         if (cancelled) return;
         // Results failed — try startlist as fallback
