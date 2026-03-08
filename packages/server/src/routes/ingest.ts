@@ -100,6 +100,7 @@ export function registerIngestRoutes(
     '/api/v1/ingest/xml',
     {
       schema: ingestXmlSchema,
+      bodyLimit: 10 * 1024 * 1024, // 10 MB - full event XML can be large
       preHandler: apiKeyAuth,
     },
     async (request, reply) => {
