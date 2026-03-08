@@ -28,6 +28,7 @@ export function createDatabase(dbPath?: string): Kysely<Database> {
 }
 
 // Default database instance (legacy support)
+mkdirSync(dirname(DEFAULT_DATABASE_PATH), { recursive: true });
 const dialect = new SqliteDialect({
   database: new SQLite(DEFAULT_DATABASE_PATH),
 });

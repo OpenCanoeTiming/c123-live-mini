@@ -11,6 +11,22 @@ node --version  # Should be v20.x.x or higher
 npm --version   # Should be 10.x.x or higher
 ```
 
+## GitHub Package Registry Authentication
+
+This project uses `@czechcanoe/rvp-design-system` from GitHub Package Registry.
+You need to authenticate **before** running `npm install`.
+
+1. Create a GitHub Personal Access Token with `read:packages` scope:
+   https://github.com/settings/tokens
+
+2. Create `.npmrc` in the project root:
+   ```
+   @czechcanoe:registry=https://npm.pkg.github.com
+   //npm.pkg.github.com/:_authToken=YOUR_GITHUB_TOKEN
+   ```
+
+> `.npmrc` is gitignored and must be created manually on each machine.
+
 ## Initial Setup
 
 ```bash
@@ -112,3 +128,8 @@ Restart your IDE's TypeScript server or run `npm run build -w @c123-live-mini/sh
 ### Port already in use
 
 Check for existing processes on ports 3000 (server) or 5173 (client) and terminate them.
+
+### "401 Unauthorized" during npm install
+
+You're missing `.npmrc` with GitHub Package Registry credentials.
+See **GitHub Package Registry Authentication** section above.
