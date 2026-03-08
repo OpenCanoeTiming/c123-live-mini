@@ -35,3 +35,4 @@ _logs/
 # Claude Code credentials (keep commands, ignore credentials)
 .claude/settings.json
 .claude/credentials.json
+.claude/settings.local.json
