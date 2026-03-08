@@ -94,6 +94,37 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           type: 'WS_FULL',
           payload: message.data,
         });
+        // Re-fetch results for the currently selected race after full state replacement
+        // (WS_FULL clears resultsByRace, so we need to reload to keep the UI populated)
+        if (selectedRaceId && eventId) {
+          getEventResults(eventId, selectedRaceId, {
+            catId: selectedCatId ?? undefined,
+          })
+            .then((resultsData) => {
+              if (resultsData.results.length > 0) {
+                dispatch({
+                  type: 'SET_RESULTS',
+                  payload: {
+                    raceId: selectedRaceId,
+                    results: resultsData.results,
+                  },
+                });
+                setCurrentRaceInfo(resultsData.race);
+              }
+            })
+            .catch((err) => {
+              console.error('[EventDetailPage] Failed to re-fetch results after WS_FULL:', err);
+            });
+        }
+        if (eventId) {
+          getOnCourse(eventId)
+            .then((oncourseData) => {
+              dispatch({ type: 'SET_ONCOURSE', payload: oncourseData });
+            })
+            .catch((err) => {
+              console.error('[EventDetailPage] Failed to re-fetch oncourse after WS_FULL:', err);
+            });
+        }
         break;
 
       case 'diff':

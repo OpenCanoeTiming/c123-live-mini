@@ -30,14 +30,19 @@ export function createApp(options: AppOptions): FastifyInstance {
 
   const app = Fastify({ logger });
 
-  // Register WebSocket plugin
-  app.register(websocket);
-
   // Create WebSocket manager
   const wsManager = new WebSocketManager();
 
   // Store wsManager on app instance for access in routes
   app.decorate('wsManager', wsManager);
+
+  // Register WebSocket plugin, then WS routes inside the plugin context
+  // (WS routes MUST be registered after @fastify/websocket loads,
+  // otherwise the onRoute hook that intercepts upgrades won't be active)
+  app.register(async (instance) => {
+    await instance.register(websocket);
+    registerWebSocketRoutes(instance, db, wsManager);
+  });
 
   // Health check endpoint
   app.get('/health', async () => ({ status: 'ok' }));
@@ -51,7 +56,6 @@ export function createApp(options: AppOptions): FastifyInstance {
   registerOnCourseRoutes(app, db);
   registerCategoriesRoutes(app, db);
   registerConfigRoutes(app, db);
-  registerWebSocketRoutes(app, db, wsManager);
 
   // Global error handler following contracts/api.md error format
   app.setErrorHandler(

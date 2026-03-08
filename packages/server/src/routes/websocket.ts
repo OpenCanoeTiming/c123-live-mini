@@ -6,7 +6,6 @@ import { EventRepository } from '../db/repositories/EventRepository.js';
 import { ClassRepository } from '../db/repositories/ClassRepository.js';
 import { RaceRepository } from '../db/repositories/RaceRepository.js';
 import { composeFullStatePayload } from '../utils/composeFullStatePayload.js';
-import type { WsFullPayload } from '@c123-live-mini/shared';
 
 /**
  * Route params
@@ -78,9 +77,7 @@ export function registerWebSocketRoutes(
         }
       },
     },
-    async (connection, request) => {
-      // In @fastify/websocket, connection IS the socket
-      const socket = connection;
+    async (socket, request) => {
       const { eventId } = request.params;
 
       try {
