@@ -50,6 +50,69 @@ function parseStatus(status: string | undefined): string | null {
 }
 
 /**
+ * Detect whether XML time values are in milliseconds or centiseconds.
+ *
+ * C123 XML declares TimeMode=Points100 but actual data may be in milliseconds:
+ * - Milliseconds: Time=76990 (76.990s), Pen=2 (2s), Total=78990 (76990+2*1000)
+ * - Centiseconds: Time=7699 (76.99s), Pen=200 (2s), Total=7899 (7699+200)
+ *
+ * Returns 'ms' if milliseconds detected, 'cs' if centiseconds, null if undetermined.
+ */
+export function detectTimeMode(results: ParsedResult[]): 'ms' | 'cs' | null {
+  // Strategy 1: Find a result with Time, Pen > 0, and Total all present
+  for (const r of results) {
+    if (r.time != null && r.pen != null && r.pen > 0 && r.total != null) {
+      // Check ms mode: Total === Time + Pen * 1000 (Pen is in whole seconds)
+      if (r.total === r.time + r.pen * 1000) {
+        return 'ms';
+      }
+      // Check cs mode: Total === Time + Pen (Pen already in centiseconds)
+      if (r.total === r.time + r.pen) {
+        return 'cs';
+      }
+    }
+  }
+
+  // Strategy 2: If no results with penalties, check magnitude
+  // Times > 100000 cs would mean > 1000 seconds, very unlikely in canoe slalom
+  for (const r of results) {
+    if (r.time != null && r.time > 0) {
+      if (r.time > 100000) {
+        return 'ms';
+      }
+      break; // Only check first non-zero time
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Normalize all time values in results to centiseconds.
+ * - ms mode: time/total fields ÷ 10, pen fields × 100
+ * - cs mode: no conversion needed
+ */
+export function normalizeTimesToCentiseconds(results: ParsedResult[]): ParsedResult[] {
+  const mode = detectTimeMode(results);
+
+  if (!mode || mode === 'cs') {
+    return results; // Already in centiseconds or undetermined
+  }
+
+  // ms mode: convert
+  return results.map((r) => ({
+    ...r,
+    time: r.time != null ? Math.round(r.time / 10) : null,
+    total: r.total != null ? Math.round(r.total / 10) : null,
+    pen: r.pen != null ? r.pen * 100 : null,
+    prevTime: r.prevTime != null ? Math.round(r.prevTime / 10) : null,
+    prevTotal: r.prevTotal != null ? Math.round(r.prevTotal / 10) : null,
+    prevPen: r.prevPen != null ? r.prevPen * 100 : null,
+    totalTotal: r.totalTotal != null ? Math.round(r.totalTotal / 10) : null,
+  }));
+}
+
+/**
  * Parse Results section from XML
  */
 export function parseResults(

@@ -408,6 +408,12 @@ export function registerIngestRoutes(
                 totalBehind: r.total_behind,
                 catTotalBehind: r.cat_total_behind,
                 status: r.status,
+                prevTime: r.prev_time,
+                prevPen: r.prev_pen,
+                prevTotal: r.prev_total,
+                prevRnk: r.prev_rnk,
+                totalTotal: r.total_total,
+                betterRunNr: r.better_run_nr,
               }));
 
               wsManager.broadcastDiff(eventId, {

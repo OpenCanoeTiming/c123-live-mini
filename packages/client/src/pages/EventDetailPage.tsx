@@ -97,8 +97,11 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         // Re-fetch results for the currently selected race after full state replacement
         // (WS_FULL clears resultsByRace, so we need to reload to keep the UI populated)
         if (selectedRaceId && eventId) {
+          const selectedRace = racesRef.current.find((r) => r.raceId === selectedRaceId);
+          const isBR = selectedRace ? isBestRunRace(selectedRace.raceType) : false;
           getEventResults(eventId, selectedRaceId, {
             catId: selectedCatId ?? undefined,
+            includeAllRuns: isBR || undefined,
           })
             .then((resultsData) => {
               if (resultsData.results.length > 0) {
@@ -138,8 +141,11 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         dispatch({ type: 'WS_REFRESH' });
         // Trigger REST re-fetch of current race and oncourse
         if (selectedRaceId && eventId) {
+          const selectedRace = racesRef.current.find((r) => r.raceId === selectedRaceId);
+          const isBR = selectedRace ? isBestRunRace(selectedRace.raceType) : false;
           getEventResults(eventId, selectedRaceId, {
             catId: selectedCatId ?? undefined,
+            includeAllRuns: isBR || undefined,
           })
             .then((resultsData) => {
               dispatch({

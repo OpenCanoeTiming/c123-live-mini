@@ -12,6 +12,7 @@ import {
   validateParsedData,
   type ParsedC123Data,
 } from './xml/index.js';
+import { normalizeTimesToCentiseconds } from './xml/parseResults.js';
 import { mapDisIdToRaceType } from '../utils/raceTypes.js';
 import { transformGates, gatesToJson } from '../utils/gateTransform.js';
 
@@ -131,14 +132,17 @@ export class IngestService {
     const courseConfigMap = await this.importCourses(event.id, parsed);
     result.imported.courses = parsed.courses.length;
 
-    // 5. Import results (needs race, participant IDs, and course configs)
+    // 5. Normalize time units (auto-detect ms vs cs from XML)
+    parsed.results = normalizeTimesToCentiseconds(parsed.results);
+
+    // 6. Import results (needs race, participant IDs, and course configs)
     await this.importResults(event.id, parsed, raceIdMap, participantIdMap, courseConfigMap);
     result.imported.results = parsed.results.length;
 
-    // 6. Set has_xml_data flag (enables JSON/TCP ingestion)
+    // 7. Set has_xml_data flag (enables JSON/TCP ingestion)
     await this.eventRepo.setHasXmlData(event.id);
 
-    // 7. Log successful ingestion
+    // 8. Log successful ingestion
     const totalItems =
       result.imported.classes +
       result.imported.participants +

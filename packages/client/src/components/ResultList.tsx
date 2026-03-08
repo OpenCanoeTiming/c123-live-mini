@@ -115,7 +115,7 @@ const bestRunColumns: ColumnDef<ResultEntry>[] = [
       // Server always uses BR2 as primary (contains prev_ fields):
       //   total = Run 2 result, prevTotal = Run 1 result
       // When only BR1 exists: total = Run 1, prevTotal = null
-      const run1Total = row.prevTotal ?? (row.prevTotal === undefined ? row.total : null);
+      const run1Total = row.prevTotal != null ? row.prevTotal : row.total;
       const isBetter = row.betterRunNr === 1;
       return (
         <span className={isBetter ? `${styles.monoText} ${styles.betterRun}` : styles.monoText}>
