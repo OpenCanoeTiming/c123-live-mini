@@ -27,6 +27,7 @@ import { ClassRepository } from '../db/repositories/ClassRepository.js';
 import { RaceRepository } from '../db/repositories/RaceRepository.js';
 import { ResultRepository } from '../db/repositories/ResultRepository.js';
 import { composeFullStatePayload } from '../utils/composeFullStatePayload.js';
+import { BrCombinedService } from '../services/BrCombinedService.js';
 
 /**
  * XML ingest request body
@@ -88,6 +89,7 @@ export function registerIngestRoutes(
   const classRepo = new ClassRepository(db);
   const raceRepo = new RaceRepository(db);
   const resultRepo = new ResultRepository(db);
+  const brCombinedService = new BrCombinedService(resultRepo);
 
   /**
    * POST /api/v1/ingest/xml
@@ -391,7 +393,36 @@ export function registerIngestRoutes(
 
           for (const raceId of raceIds) {
             const race = await raceRepo.findByEventAndRaceId(eventDbId, raceId);
-            if (race) {
+            if (!race) continue;
+
+            const isBr = race.race_type === 'best-run-1' || race.race_type === 'best-run-2';
+
+            if (isBr) {
+              // BR race: compute combined results and broadcast for both BR1/BR2
+              const combinedResults = await brCombinedService.computeCombined(eventDbId, race.race_id);
+
+              // Derive both BR1 and BR2 raceIds from current race
+              const br1RaceId = race.race_id.replace(/_BR2_/, '_BR1_');
+              const br2RaceId = race.race_id.replace(/_BR1_/, '_BR2_');
+
+              // Broadcast combined data for both BR1 and BR2 raceIds
+              // so clients viewing either run get correct combined data
+              wsManager.broadcastDiff(eventId, {
+                results: combinedResults,
+                raceId: br1RaceId,
+              });
+              if (br1RaceId !== br2RaceId) {
+                wsManager.broadcastDiff(eventId, {
+                  results: combinedResults,
+                  raceId: br2RaceId,
+                });
+              }
+            } else {
+              // Standard race: recalculate ranking fields before broadcasting
+              // TCP ingest only writes time/pen/total/status/rnk/gates — behind values
+              // and category ranks stay stale unless we recompute them here.
+              await resultRepo.recalculateRankingFields(race.id);
+
               const dbResults = await resultRepo.findByRaceIdWithParticipant(race.id);
               const publicResults = dbResults.map((r) => ({
                 rnk: r.rnk,
