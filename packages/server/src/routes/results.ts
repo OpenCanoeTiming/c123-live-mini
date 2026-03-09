@@ -276,6 +276,17 @@ export function registerResultsRoutes(
         return a.totalTotal - b.totalTotal;
       });
 
+      // Recalculate totalBehind from totalTotal (stored per-run behind is not valid for combined ranking)
+      const leaderTotal = multiRunResults.find((r) => r.totalTotal != null)?.totalTotal ?? null;
+      for (const r of multiRunResults) {
+        if (leaderTotal == null || r.totalTotal == null) {
+          r.totalBehind = null;
+        } else {
+          const diff = r.totalTotal - leaderTotal;
+          r.totalBehind = diff === 0 ? '0.00' : `+${(diff / 100).toFixed(2)}`;
+        }
+      }
+
       return {
         race: {
           raceId: race.race_id,
