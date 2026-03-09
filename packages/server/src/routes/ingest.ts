@@ -401,9 +401,10 @@ export function registerIngestRoutes(
               // BR race: compute combined results and broadcast for both BR1/BR2
               const combinedResults = await brCombinedService.computeCombined(eventDbId, race.race_id);
 
-              // Derive both BR1 and BR2 raceIds from current race
-              const br1RaceId = race.race_id.replace(/_BR2_/, '_BR1_');
-              const br2RaceId = race.race_id.replace(/_BR1_/, '_BR2_');
+              // Derive both BR1 and BR2 raceIds using regex (classId may contain underscores)
+              const brMatch = race.race_id.match(/^(.+)_(BR[12])_(.+)$/);
+              const br1RaceId = brMatch ? `${brMatch[1]}_BR1_${brMatch[3]}` : race.race_id;
+              const br2RaceId = brMatch ? `${brMatch[1]}_BR2_${brMatch[3]}` : race.race_id;
 
               // Broadcast combined data for both BR1 and BR2 raceIds
               // so clients viewing either run get correct combined data

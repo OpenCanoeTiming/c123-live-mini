@@ -27,8 +27,5 @@
     "type": "git",
     "url": "https://github.com/OpenCanoeTiming/c123-live-mini.git"
   },
-  "license": "MIT",
-  "dependencies": {
-    "playwright": "^1.58.2"
-  }
+  "license": "MIT"
 }
