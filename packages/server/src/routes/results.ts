@@ -239,31 +239,37 @@ export function registerResultsRoutes(
           betterRunNr = 2;
         }
 
-        // Use BR2 result data if available (contains prev_ fields), else BR1
-        const primaryResult = br2 ?? br1;
-        if (!primaryResult) continue;
+        // Build combined result from actual BR1/BR2 data.
+        // Don't rely on DB prev_ fields — TCP ingest doesn't populate them,
+        // so they may be null even when both runs exist.
+        const hasBothRuns = br1 != null && br2 != null;
+        // Use BR2 for participant info when available, else BR1
+        const infoSource = br2 ?? br1;
+        if (!infoSource) continue;
 
         multiRunResults.push({
-          rnk: primaryResult.rnk,
-          bib: primaryResult.bib,
-          athleteId: primaryResult.athlete_id,
-          name: formatName(primaryResult.family_name, primaryResult.given_name),
-          club: primaryResult.club,
-          noc: primaryResult.noc,
-          catId: primaryResult.cat_id,
-          catRnk: primaryResult.cat_rnk,
-          time: primaryResult.time,
-          pen: primaryResult.pen,
-          total: primaryResult.total,
-          totalBehind: primaryResult.total_behind,
-          catTotalBehind: primaryResult.cat_total_behind,
-          status: primaryResult.status || null,
+          rnk: infoSource.rnk,
+          bib: infoSource.bib,
+          athleteId: infoSource.athlete_id,
+          name: formatName(infoSource.family_name, infoSource.given_name),
+          club: infoSource.club,
+          noc: infoSource.noc,
+          catId: infoSource.cat_id,
+          catRnk: infoSource.cat_rnk,
+          // Primary run: BR2 when both exist, else BR1
+          time: hasBothRuns ? (br2!.time ?? null) : (br1?.time ?? null),
+          pen: hasBothRuns ? (br2!.pen ?? null) : (br1?.pen ?? null),
+          total: hasBothRuns ? (br2!.total ?? null) : (br1?.total ?? null),
+          totalBehind: infoSource.total_behind,
+          catTotalBehind: infoSource.cat_total_behind,
+          status: infoSource.status || null,
           betterRunNr,
           totalTotal,
-          prevTime: primaryResult.prev_time,
-          prevPen: primaryResult.prev_pen,
-          prevTotal: primaryResult.prev_total,
-          prevRnk: primaryResult.prev_rnk,
+          // Previous run: BR1 data when both exist, null when only one run
+          prevTime: hasBothRuns ? (br1!.time ?? null) : null,
+          prevPen: hasBothRuns ? (br1!.pen ?? null) : null,
+          prevTotal: hasBothRuns ? (br1!.total ?? null) : null,
+          prevRnk: hasBothRuns ? (br1!.rnk ?? null) : null,
           runs: runsArray,
         });
       }
