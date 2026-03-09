@@ -128,12 +128,50 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         }
         break;
 
-      case 'diff':
+      case 'diff': {
+        const diffPayload = message.data;
+        const diffRaceId = diffPayload.raceId;
+
+        // For BR (best-run) races, the WS diff contains single-race data without
+        // prev_ fields needed for the combined multi-run view. If the diff affects
+        // a BR race in the same class as the currently viewed BR race, re-fetch
+        // combined results via REST (?includeAllRuns=true) instead of upserting.
+        if (diffRaceId && selectedRaceId && eventId) {
+          const diffRace = racesRef.current.find((r) => r.raceId === diffRaceId);
+          const selectedRace = racesRef.current.find((r) => r.raceId === selectedRaceId);
+          const isDiffBR = diffRace ? isBestRunRace(diffRace.raceType) : false;
+          const isSelectedBR = selectedRace ? isBestRunRace(selectedRace.raceType) : false;
+
+          if (isDiffBR && isSelectedBR && diffRace?.classId === selectedRace?.classId) {
+            // Re-fetch combined results for the currently selected race
+            getEventResults(eventId, selectedRaceId, {
+              catId: selectedCatId ?? undefined,
+              includeAllRuns: true,
+            })
+              .then((resultsData) => {
+                dispatch({
+                  type: 'SET_RESULTS',
+                  payload: {
+                    raceId: selectedRaceId,
+                    results: resultsData.results,
+                  },
+                });
+                setCurrentRaceInfo(resultsData.race);
+              })
+              .catch((err) => {
+                console.error('[EventDetailPage] Failed to re-fetch BR combined results:', err);
+              });
+            break;
+          }
+        }
+
+        // Non-BR diff: apply directly via upsert
         dispatch({
           type: 'WS_DIFF',
-          payload: message.data,
+          payload: diffPayload,
         });
         break;
+      }
 
       case 'refresh':
         dispatch({ type: 'WS_REFRESH' });

@@ -389,22 +389,9 @@ export function registerIngestRoutes(
           // This ensures clients always see the correct merged data (Feature #5).
           const raceIds = [...new Set(results.map((r) => r.raceId))];
 
-          let brRefreshSent = false;
-
           for (const raceId of raceIds) {
             const race = await raceRepo.findByEventAndRaceId(eventDbId, raceId);
             if (race) {
-              // BR races: WS diff would contain single-race data without prev_ fields,
-              // which corrupts the combined multi-run view on the client.
-              // Send refresh instead so clients re-fetch via ?includeAllRuns=true.
-              if (race.race_type === 'best-run-1' || race.race_type === 'best-run-2') {
-                if (!brRefreshSent) {
-                  wsManager.broadcastRefresh(eventId);
-                  brRefreshSent = true;
-                }
-                continue;
-              }
-
               const dbResults = await resultRepo.findByRaceIdWithParticipant(race.id);
               const publicResults = dbResults.map((r) => ({
                 rnk: r.rnk,
