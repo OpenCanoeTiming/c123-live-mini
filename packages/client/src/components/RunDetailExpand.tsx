@@ -30,7 +30,13 @@ interface RunDetailExpandProps {
 function formatTimestamp(isoString: string | null): string {
   if (!isoString) return '-';
 
+  // Values are stored as 'HH:MM:SS.mmm' — return as-is, strip milliseconds if desired
   const date = new Date(isoString);
+  if (isNaN(date.getTime())) {
+    // Already a plain time string (HH:MM:SS.mmm)
+    return isoString;
+  }
+
   const hours = date.getHours().toString().padStart(2, '0');
   const minutes = date.getMinutes().toString().padStart(2, '0');
   const seconds = date.getSeconds().toString().padStart(2, '0');
