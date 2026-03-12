@@ -586,10 +586,10 @@ export class ResultRepository extends BaseRepository {
     const rows = await this.db
       .selectFrom('results')
       .select([
-        'id',
-        'total',
-        'status',
-        'participant_id',
+        'results.id',
+        'results.total',
+        'results.status',
+        'results.participant_id',
       ])
       .innerJoin('participants', 'participants.id', 'results.participant_id')
       .select(['participants.cat_id'])
