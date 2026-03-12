@@ -150,12 +150,11 @@ export async function getEventDetails(
 export async function getEventResults(
   eventId: string,
   raceId: string,
-  options?: { catId?: string; detailed?: boolean; includeAllRuns?: boolean }
+  options?: { catId?: string; detailed?: boolean }
 ): Promise<ResultsResponse> {
   const params = new URLSearchParams();
   if (options?.catId) params.set('catId', options.catId);
   if (options?.detailed) params.set('detailed', 'true');
-  if (options?.includeAllRuns) params.set('includeAllRuns', 'true');
 
   const queryString = params.toString();
   const endpoint = `/events/${eventId}/results/${raceId}${queryString ? `?${queryString}` : ''}`;

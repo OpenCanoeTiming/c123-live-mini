@@ -8,6 +8,7 @@ import { ResultRepository } from '../db/repositories/ResultRepository.js';
 import { ClassRepository } from '../db/repositories/ClassRepository.js';
 import { CourseRepository } from '../db/repositories/CourseRepository.js';
 import { resultsSchema } from '../schemas/index.js';
+import { BrCombinedService } from '../services/BrCombinedService.js';
 
 /**
  * Result entry in response
@@ -88,7 +89,6 @@ interface ResultsParams {
 interface ResultsQuery {
   catId?: string;
   detailed?: string;
-  includeAllRuns?: string;
 }
 
 /**
@@ -111,6 +111,7 @@ export function registerResultsRoutes(
   const resultRepo = new ResultRepository(db);
   const classRepo = new ClassRepository(db);
   const courseRepo = new CourseRepository(db);
+  const brCombinedService = new BrCombinedService(resultRepo);
 
   /**
    * GET /api/v1/events/:eventId/results/:raceId
@@ -125,9 +126,8 @@ export function registerResultsRoutes(
     { schema: resultsSchema },
     async (request, reply) => {
     const { eventId, raceId } = request.params;
-    const { catId, detailed, includeAllRuns } = request.query;
+    const { catId, detailed } = request.query;
     const includeGates = detailed === 'true' || detailed === '1';
-    const showAllRuns = includeAllRuns === 'true' || includeAllRuns === '1';
 
     // Find event - return 404 for non-existent or draft events
     const event = await eventRepo.findByEventId(eventId);
@@ -166,135 +166,15 @@ export function registerResultsRoutes(
       classIdStr = cls?.class_id ?? null;
     }
 
-    // Check if this is a BR race and includeAllRuns is requested
+    // Detect BR race — auto-enable combined mode
+    // Server is the single authority on BR combined computation
     const isBrRace = race.race_type === 'best-run-1' || race.race_type === 'best-run-2';
 
-    if (showAllRuns && isBrRace) {
-      // Multi-run mode: get linked BR1/BR2 results
-      const linkedResults = await resultRepo.getLinkedBrResults(
-        event.id,
-        race.race_id
+    if (isBrRace) {
+      // Always return combined data for BR races (no includeAllRuns needed)
+      const combinedResults = await brCombinedService.computeCombined(
+        event.id, race.race_id, catId, includeGates
       );
-
-      // Build multi-run response sorted by best total
-      const multiRunResults: MultiRunResultEntry[] = [];
-
-      for (const [, runs] of linkedResults) {
-        if (runs.length === 0) continue;
-
-        // Use first run for participant info
-        const firstRun = runs[0];
-
-        // Filter by category if requested
-        if (catId && firstRun.cat_id !== catId) continue;
-
-        // Build runs array
-        const runsArray: RunEntry[] = runs.map((r) => {
-          const runEntry: RunEntry = {
-            runNr: r.race_type === 'best-run-1' ? 1 : 2,
-            raceId: r.race_id_str,
-            time: r.time,
-            pen: r.pen,
-            total: r.total,
-            rnk: r.rnk,
-          };
-
-          if (includeGates && r.gates) {
-            try {
-              runEntry.gates = JSON.parse(r.gates);
-            } catch {
-              // Invalid JSON, skip gates
-            }
-          }
-
-          return runEntry;
-        });
-
-        // Calculate totalTotal and betterRunNr if both runs exist
-        let totalTotal: number | null = null;
-        let betterRunNr: number | null = null;
-
-        const br1 = runs.find((r) => r.race_type === 'best-run-1');
-        const br2 = runs.find((r) => r.race_type === 'best-run-2');
-
-        if (
-          br1?.total != null &&
-          br2?.total != null &&
-          !br1.status &&
-          !br2.status
-        ) {
-          // Both runs completed successfully
-          if (br1.total <= br2.total) {
-            totalTotal = br1.total;
-            betterRunNr = 1;
-          } else {
-            totalTotal = br2.total;
-            betterRunNr = 2;
-          }
-        } else if (br1?.total != null && !br1.status) {
-          totalTotal = br1.total;
-          betterRunNr = 1;
-        } else if (br2?.total != null && !br2.status) {
-          totalTotal = br2.total;
-          betterRunNr = 2;
-        }
-
-        // Build combined result from actual BR1/BR2 data.
-        // Don't rely on DB prev_ fields — TCP ingest doesn't populate them,
-        // so they may be null even when both runs exist.
-        const hasBothRuns = br1 != null && br2 != null;
-        // Use BR2 for participant info when available, else BR1
-        const infoSource = br2 ?? br1;
-        if (!infoSource) continue;
-
-        multiRunResults.push({
-          rnk: infoSource.rnk,
-          bib: infoSource.bib,
-          athleteId: infoSource.athlete_id,
-          name: formatName(infoSource.family_name, infoSource.given_name),
-          club: infoSource.club,
-          noc: infoSource.noc,
-          catId: infoSource.cat_id,
-          catRnk: infoSource.cat_rnk,
-          // Primary run: BR2 when both exist, else BR1
-          time: hasBothRuns ? (br2!.time ?? null) : (br1?.time ?? null),
-          pen: hasBothRuns ? (br2!.pen ?? null) : (br1?.pen ?? null),
-          total: hasBothRuns ? (br2!.total ?? null) : (br1?.total ?? null),
-          totalBehind: infoSource.total_behind,
-          catTotalBehind: infoSource.cat_total_behind,
-          status: infoSource.status || null,
-          betterRunNr,
-          totalTotal,
-          // Previous run: BR1 data when both exist, null when only one run
-          prevTime: hasBothRuns ? (br1!.time ?? null) : null,
-          prevPen: hasBothRuns ? (br1!.pen ?? null) : null,
-          prevTotal: hasBothRuns ? (br1!.total ?? null) : null,
-          prevRnk: hasBothRuns ? (br1!.rnk ?? null) : null,
-          runs: runsArray,
-        });
-      }
-
-      // Sort by totalTotal (best time first), then by rnk
-      multiRunResults.sort((a, b) => {
-        if (a.totalTotal == null && b.totalTotal == null) return 0;
-        if (a.totalTotal == null) return 1;
-        if (b.totalTotal == null) return -1;
-        return a.totalTotal - b.totalTotal;
-      });
-
-      // Recalculate totalBehind and rnk from sorted position (stored per-run values are not valid for combined ranking)
-      const leaderTotal = multiRunResults.find((r) => r.totalTotal != null)?.totalTotal ?? null;
-      let rank = 1;
-      for (const r of multiRunResults) {
-        if (leaderTotal == null || r.totalTotal == null) {
-          r.totalBehind = null;
-          r.rnk = null;
-        } else {
-          const diff = r.totalTotal - leaderTotal;
-          r.totalBehind = diff === 0 ? '0.00' : `+${(diff / 100).toFixed(2)}`;
-          r.rnk = rank++;
-        }
-      }
 
       return {
         race: {
@@ -303,7 +183,39 @@ export function registerResultsRoutes(
           raceType: (race.race_type ?? 'unknown') as PublicRaceType,
           raceStatus: race.race_status,
         },
-        results: multiRunResults,
+        results: combinedResults.map((r) => {
+          const entry: ResultEntry = {
+            rnk: r.rnk,
+            bib: r.bib,
+            athleteId: r.athleteId,
+            name: r.name,
+            club: r.club,
+            noc: r.noc,
+            catId: r.catId,
+            catRnk: r.catRnk,
+            time: r.time,
+            pen: r.pen,
+            total: r.total,
+            totalBehind: r.totalBehind,
+            catTotalBehind: r.catTotalBehind,
+            status: r.status,
+            betterRunNr: r.betterRunNr,
+            totalTotal: r.totalTotal,
+            prevTime: r.prevTime,
+            prevPen: r.prevPen,
+            prevTotal: r.prevTotal,
+            prevRnk: r.prevRnk,
+          };
+
+          if (includeGates) {
+            entry.dtStart = r.dtStart ?? null;
+            entry.dtFinish = r.dtFinish ?? null;
+            entry.courseGateCount = courseGateCount;
+            entry.gates = r.gates ?? null;
+          }
+
+          return entry;
+        }),
       };
     }
 
@@ -338,16 +250,6 @@ export function registerResultsRoutes(
           catTotalBehind: r.cat_total_behind,
           status: r.status || null,
         };
-
-        // Include multi-run fields for BR races
-        if (isBrRace) {
-          entry.betterRunNr = r.better_run_nr;
-          entry.totalTotal = r.total_total;
-          entry.prevTime = r.prev_time;
-          entry.prevPen = r.prev_pen;
-          entry.prevTotal = r.prev_total;
-          entry.prevRnk = r.prev_rnk;
-        }
 
         // Detailed mode fields
         if (includeGates) {

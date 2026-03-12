@@ -73,15 +73,30 @@ export function detectTimeMode(results: ParsedResult[]): 'ms' | 'cs' | null {
     }
   }
 
-  // Strategy 2: If no results with penalties, check magnitude
-  // Times > 100000 cs would mean > 1000 seconds, very unlikely in canoe slalom
+  // Strategy 2: If no results with penalties, check magnitude across all timed results.
+  //
+  // Slalom time ranges:
+  //   centiseconds: 6000–15000 cs  (60s–150s, including DSQ/slow runs)
+  //   milliseconds: 60000–200000 ms (60s–200s)
+  //
+  // Threshold of 20000 cleanly separates the two ranges with a large gap.
+  // A legitimate cs value above 20000 would mean >200 seconds — impossible in slalom.
+  // A legitimate ms value below 20000 would mean <20 seconds — also impossible.
+  //
+  // Check all timed results and require consensus: if ANY time exceeds the threshold,
+  // report ms. If we have at least one result below the threshold, report cs.
+  let hasTimedResult = false;
   for (const r of results) {
     if (r.time != null && r.time > 0) {
-      if (r.time > 100000) {
+      hasTimedResult = true;
+      if (r.time > 20000) {
         return 'ms';
       }
-      break; // Only check first non-zero time
     }
+  }
+
+  if (hasTimedResult) {
+    return 'cs';
   }
 
   return null;

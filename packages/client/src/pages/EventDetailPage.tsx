@@ -97,11 +97,8 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         // Re-fetch results for the currently selected race after full state replacement
         // (WS_FULL clears resultsByRace, so we need to reload to keep the UI populated)
         if (selectedRaceId && eventId) {
-          const selectedRace = racesRef.current.find((r) => r.raceId === selectedRaceId);
-          const isBR = selectedRace ? isBestRunRace(selectedRace.raceType) : false;
           getEventResults(eventId, selectedRaceId, {
             catId: selectedCatId ?? undefined,
-            includeAllRuns: isBR || undefined,
           })
             .then((resultsData) => {
               dispatch({
@@ -128,60 +125,19 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         }
         break;
 
-      case 'diff': {
-        const diffPayload = message.data;
-        const diffRaceId = diffPayload.raceId;
-
-        // For BR (best-run) races, the WS diff contains single-race data without
-        // prev_ fields needed for the combined multi-run view. If the diff affects
-        // a BR race in the same class as the currently viewed BR race, re-fetch
-        // combined results via REST (?includeAllRuns=true) instead of upserting.
-        if (diffRaceId && selectedRaceId && eventId) {
-          const diffRace = racesRef.current.find((r) => r.raceId === diffRaceId);
-          const selectedRace = racesRef.current.find((r) => r.raceId === selectedRaceId);
-          const isDiffBR = diffRace ? isBestRunRace(diffRace.raceType) : false;
-          const isSelectedBR = selectedRace ? isBestRunRace(selectedRace.raceType) : false;
-
-          if (isDiffBR && isSelectedBR && diffRace?.classId === selectedRace?.classId) {
-            // Re-fetch combined results for the currently selected race
-            getEventResults(eventId, selectedRaceId, {
-              catId: selectedCatId ?? undefined,
-              includeAllRuns: true,
-            })
-              .then((resultsData) => {
-                dispatch({
-                  type: 'SET_RESULTS',
-                  payload: {
-                    raceId: selectedRaceId,
-                    results: resultsData.results,
-                  },
-                });
-                setCurrentRaceInfo(resultsData.race);
-              })
-              .catch((err) => {
-                console.error('[EventDetailPage] Failed to re-fetch BR combined results:', err);
-              });
-            break;
-          }
-        }
-
-        // Non-BR diff: apply directly via upsert
+      case 'diff':
         dispatch({
           type: 'WS_DIFF',
-          payload: diffPayload,
+          payload: message.data,
         });
         break;
-      }
 
       case 'refresh':
         dispatch({ type: 'WS_REFRESH' });
         // Trigger REST re-fetch of current race and oncourse
         if (selectedRaceId && eventId) {
-          const selectedRace = racesRef.current.find((r) => r.raceId === selectedRaceId);
-          const isBR = selectedRace ? isBestRunRace(selectedRace.raceType) : false;
           getEventResults(eventId, selectedRaceId, {
             catId: selectedCatId ?? undefined,
-            includeAllRuns: isBR || undefined,
           })
             .then((resultsData) => {
               dispatch({
@@ -430,13 +386,9 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       setCurrentRaceInfo(null);
       setStartlist(null);
 
-      const selectedRace = racesRef.current.find((r) => r.raceId === raceId);
-      const isBR = selectedRace ? isBestRunRace(selectedRace.raceType) : false;
-
       try {
         const resultsData = await getEventResults(eventId, raceId, {
           catId: selectedCatId ?? undefined,
-          includeAllRuns: isBR || undefined,
         });
 
         if (cancelled) return;
