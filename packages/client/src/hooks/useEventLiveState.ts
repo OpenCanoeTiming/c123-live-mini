@@ -87,16 +87,16 @@ export type EventLiveStateAction =
 function upsertResults(existing: PublicResult[], updates: PublicResult[]): PublicResult[] {
   const resultMap = new Map<number, PublicResult>();
 
-  // Add existing results
+  // Add existing results — skip entries without a valid bib
   existing.forEach((result) => {
-    if (result.bib !== null) {
+    if (result.bib != null) {
       resultMap.set(result.bib, result);
     }
   });
 
-  // Upsert updates
+  // Upsert updates — skip entries without a valid bib
   updates.forEach((result) => {
-    if (result.bib !== null) {
+    if (result.bib != null) {
       resultMap.set(result.bib, result);
     }
   });
@@ -154,9 +154,12 @@ function eventLiveStateReducer(state: EventLiveState, action: EventLiveStateActi
         classes,
         races,
         categories,
-        // Keep resultsByRace — re-fetch will replace data.
-        // Clearing here causes a race condition where results flash to null
-        // between WS_FULL dispatch and re-fetch completion.
+        // Clear resultsByRace on full refresh — data from a previous import
+        // would otherwise remain stale for races not currently selected.
+        // EventDetailPage re-fetches the selected race immediately after
+        // dispatching WS_FULL, so the brief flash is acceptable.
+        resultsByRace: {},
+        detailedCache: {},
       };
     }
 

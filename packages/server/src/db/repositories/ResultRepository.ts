@@ -423,26 +423,19 @@ export class ResultRepository extends BaseRepository {
     eventId: number,
     raceId: string
   ): Promise<{ id: number; race_id: string; race_type: string | null } | undefined> {
-    // Extract class part and day from race_id (e.g., K1M-ZS_BR1_25 -> K1M-ZS, 25)
-    const parts = raceId.split('_');
-    if (parts.length < 3) return undefined;
+    // Use regex to handle classId with underscores (e.g., K1M_ST_BR1_6 -> classPrefix=K1M_ST, runCode=BR1, suffix=6)
+    const match = raceId.match(/^(.+)_(BR[12])_(.+)$/);
+    if (!match) return undefined;
 
-    const classIdPart = parts[0];
-    const runCode = parts[1];
-    const dayPart = parts.slice(2).join('_');
+    const classPrefix = match[1];
+    const runCode = match[2];
+    const suffix = match[3];
 
     // Determine paired run code from race_id pattern
-    let pairedRunCode: string;
-    if (runCode === 'BR1') {
-      pairedRunCode = 'BR2';
-    } else if (runCode === 'BR2') {
-      pairedRunCode = 'BR1';
-    } else {
-      return undefined; // Not a BR race
-    }
+    const pairedRunCode = runCode === 'BR1' ? 'BR2' : 'BR1';
 
     // Build paired race_id
-    const pairedRaceId = `${classIdPart}_${pairedRunCode}_${dayPart}`;
+    const pairedRaceId = `${classPrefix}_${pairedRunCode}_${suffix}`;
 
     return this.db
       .selectFrom('races')
@@ -572,6 +565,126 @@ export class ResultRepository extends BaseRepository {
     }
 
     return grouped;
+  }
+
+  /**
+   * Recalculate ranking fields for all results in a standard (non-BR) race.
+   *
+   * Updates in-place (DB write per row):
+   *   - rnk           — overall rank (1-based, null for DNS/DNF/DSQ/CAP or no total)
+   *   - rnk_order     — tie-breaking order (position in sorted list, null for unranked)
+   *   - total_behind  — gap to leader: "0.00" for leader, "+X.XX" for others (seconds, 2 dp)
+   *   - cat_rnk       — rank within category group
+   *   - cat_rnk_order — tie-breaking order within category
+   *   - cat_total_behind — gap to category leader
+   *
+   * Times are stored in centiseconds. Behind = diff_cs / 100 → formatted string.
+   * Athletes with a non-null/non-empty status or null total receive null ranks/behind.
+   */
+  async recalculateRankingFields(raceId: number): Promise<void> {
+    // Fetch all current results for this race
+    const rows = await this.db
+      .selectFrom('results')
+      .select([
+        'results.id',
+        'results.total',
+        'results.status',
+        'results.participant_id',
+      ])
+      .innerJoin('participants', 'participants.id', 'results.participant_id')
+      .select(['participants.cat_id'])
+      .where('results.race_id', '=', raceId)
+      .execute();
+
+    // Determine which athletes are rankable (have a total and no disqualifying status)
+    type RowShape = (typeof rows)[number];
+    const isRankable = (r: RowShape) => r.total != null && !r.status;
+
+    // Sort rankable athletes by total ascending; non-rankable go to the end
+    const sorted = [...rows].sort((a, b) => {
+      const aRankable = isRankable(a);
+      const bRankable = isRankable(b);
+      if (aRankable && bRankable) return (a.total as number) - (b.total as number);
+      if (aRankable) return -1;
+      if (bRankable) return 1;
+      return 0;
+    });
+
+    // Overall ranking pass
+    const leaderTotal = sorted.find(isRankable)?.total ?? null;
+    let rank = 1;
+    let rnkOrder = 1;
+
+    // Maps id → computed fields for batch update
+    const rankData = new Map<number, {
+      rnk: number | null;
+      rnk_order: number | null;
+      total_behind: string | null;
+    }>();
+
+    for (const r of sorted) {
+      if (!isRankable(r)) {
+        rankData.set(r.id, { rnk: null, rnk_order: null, total_behind: null });
+        continue;
+      }
+      const diff = (r.total as number) - (leaderTotal as number);
+      const behind = diff === 0 ? '0.00' : `+${(diff / 100).toFixed(2)}`;
+      rankData.set(r.id, { rnk: rank++, rnk_order: rnkOrder++, total_behind: behind });
+    }
+
+    // Category ranking pass — group rankable athletes by cat_id
+    const catGroups = new Map<string, RowShape[]>();
+    for (const r of sorted) {
+      if (!isRankable(r) || !r.cat_id) continue;
+      const group = catGroups.get(r.cat_id) ?? [];
+      group.push(r);
+      catGroups.set(r.cat_id, group);
+    }
+
+    const catRankData = new Map<number, {
+      cat_rnk: number | null;
+      cat_rnk_order: number | null;
+      cat_total_behind: string | null;
+    }>();
+
+    // Default: null for everyone
+    for (const r of rows) {
+      catRankData.set(r.id, { cat_rnk: null, cat_rnk_order: null, cat_total_behind: null });
+    }
+
+    for (const [, catRows] of catGroups) {
+      // catRows already sorted by total ascending (inherited from global sort)
+      const catLeaderTotal = catRows[0]?.total ?? null;
+      let catRank = 1;
+      let catRnkOrder = 1;
+      for (const r of catRows) {
+        const diff = (r.total as number) - (catLeaderTotal as number);
+        const behind = diff === 0 ? '0.00' : `+${(diff / 100).toFixed(2)}`;
+        catRankData.set(r.id, {
+          cat_rnk: catRank++,
+          cat_rnk_order: catRnkOrder++,
+          cat_total_behind: behind,
+        });
+      }
+    }
+
+    // Write all updates to DB
+    for (const r of rows) {
+      const rank_ = rankData.get(r.id);
+      const cat_ = catRankData.get(r.id);
+      await this.db
+        .updateTable('results')
+        .set({
+          rnk: rank_?.rnk ?? null,
+          rnk_order: rank_?.rnk_order ?? null,
+          total_behind: rank_?.total_behind ?? null,
+          cat_rnk: cat_?.cat_rnk ?? null,
+          cat_rnk_order: cat_?.cat_rnk_order ?? null,
+          cat_total_behind: cat_?.cat_total_behind ?? null,
+        })
+        .where('id', '=', r.id)
+        .execute();
+    }
   }
 
   /**
