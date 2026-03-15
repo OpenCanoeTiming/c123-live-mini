@@ -243,6 +243,12 @@ export interface PublicResultMultiRun extends PublicResult {
   prevTotal: number | null;
   /** Other run rank */
   prevRnk: number | null;
+  /** Other run start timestamp */
+  prevDtStart: string | null;
+  /** Other run finish timestamp */
+  prevDtFinish: string | null;
+  /** Other run gate penalties */
+  prevGates: PublicGate[] | null;
 }
 
 /**

@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   SkeletonCard,
   Card,
   EmptyState,
   Button,
+  Tabs,
+  SearchInput,
+  type TabItem,
 } from '@czechcanoe/rvp-design-system';
 import { useLocation } from 'wouter';
 import styles from './EventDetailPage.module.css';
@@ -28,10 +31,10 @@ import { CategoryFilter } from '../components/CategoryFilter';
 import { ResultList } from '../components/ResultList';
 import { StartlistTable } from '../components/StartlistTable';
 import { OnCoursePanel } from '../components/OnCoursePanel';
+import { ScheduleView } from '../components/ScheduleView';
 import { ViewModeToggle, type ViewMode } from '../components/ViewModeToggle';
 import { useEventLiveState } from '../hooks/useEventLiveState';
 import { useEventWebSocket } from '../hooks/useEventWebSocket';
-import { ConnectionStatus } from '../components/ConnectionStatus';
 import { getOnCourse } from '../services/api';
 import type { WsMessage } from '@c123-live-mini/shared';
 
@@ -76,6 +79,17 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const [startlist, setStartlist] = useState<StartlistEntry[] | null>(null);
   const [resultsState, setResultsState] = useState<LoadingState>('idle');
   const [currentRaceInfo, setCurrentRaceInfo] = useState<ResultsResponse['race'] | null>(null);
+
+  // Data view toggle: results vs startlist vs schedule
+  type DataView = 'results' | 'startlist' | 'schedule';
+  const [dataView, setDataView] = useState<DataView>('results');
+
+  // Search/filter state
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Updated bibs tracking for animation (Phase 9)
+  const [updatedBibs, setUpdatedBibs] = useState<Set<number>>(new Set());
+  const updatedBibsTimerRef = useRef<number | null>(null);
 
   // Get results from reducer for selected race and construct ResultsResponse
   const results: ResultsResponse | null = selectedRaceId && liveState.resultsByRace[selectedRaceId] && currentRaceInfo
@@ -129,6 +143,18 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           type: 'WS_DIFF',
           payload: message.data,
         });
+        // Track updated bibs for animation highlight
+        if (message.data.results) {
+          const bibs = new Set(message.data.results.filter(r => r.bib != null).map(r => r.bib!));
+          if (bibs.size > 0) {
+            setUpdatedBibs(bibs);
+            if (updatedBibsTimerRef.current) clearTimeout(updatedBibsTimerRef.current);
+            updatedBibsTimerRef.current = window.setTimeout(() => {
+              setUpdatedBibs(new Set());
+              updatedBibsTimerRef.current = null;
+            }, 2500);
+          }
+        }
         break;
 
       case 'refresh':
@@ -275,6 +301,9 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
                       dtFinish: result.dtFinish ?? null,
                       courseGateCount: result.courseGateCount ?? null,
                       gates: result.gates ?? null,
+                      prevDtStart: result.prevDtStart ?? null,
+                      prevDtFinish: result.prevDtFinish ?? null,
+                      prevGates: result.prevGates ?? null,
                     },
                   },
                 });
@@ -384,13 +413,16 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       setStartlist(null);
 
       try {
-        const resultsData = await getEventResults(eventId, raceId, {
-          catId: selectedCatId ?? undefined,
-        });
+        // Always fetch both results and startlist in parallel
+        const [resultsData, startlistData] = await Promise.all([
+          getEventResults(eventId, raceId, {
+            catId: selectedCatId ?? undefined,
+          }),
+          getStartlist(eventId, raceId).catch(() => [] as StartlistEntry[]),
+        ]);
 
         if (cancelled) return;
 
-        // Always dispatch results and set race info
         dispatch({
           type: 'SET_RESULTS',
           payload: {
@@ -399,17 +431,15 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           },
         });
         setCurrentRaceInfo(resultsData.race);
+        setStartlist(startlistData.length > 0 ? startlistData : null);
 
-        if (resultsData.results.length === 0) {
-          // No results — try startlist as fallback
-          try {
-            const startlistData = await getStartlist(eventId, raceId);
-            if (cancelled) return;
-            setStartlist(startlistData);
-          } catch {
-            // No startlist either — that's fine
-          }
+        // Default to results view when results exist, startlist otherwise
+        if (resultsData.results.length > 0) {
+          setDataView('results');
+        } else if (startlistData.length > 0) {
+          setDataView('startlist');
         }
+
         setResultsState('success');
       } catch {
         if (cancelled) return;
@@ -418,6 +448,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           const startlistData = await getStartlist(eventId, raceId);
           if (cancelled) return;
           setStartlist(startlistData);
+          setDataView('startlist');
           setResultsState('success');
         } catch {
           if (cancelled) return;
@@ -496,6 +527,9 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
                       dtFinish: result.dtFinish ?? null,
                       courseGateCount: result.courseGateCount ?? null,
                       gates: result.gates ?? null,
+                      prevDtStart: result.prevDtStart ?? null,
+                      prevDtFinish: result.prevDtFinish ?? null,
+                      prevGates: result.prevGates ?? null,
                     },
                   },
                 });
@@ -555,6 +589,58 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     );
   }
 
+  // Build human-readable class name map from liveState.classes
+  const classNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const cls of liveState.classes) {
+      map[cls.classId] = cls.name;
+    }
+    return map;
+  }, [liveState.classes]);
+
+  // Search filter for results and startlist
+  const filteredResults: ResultsResponse | null = useMemo(() => {
+    if (!results) return null;
+    if (!searchQuery.trim()) return results;
+    const q = searchQuery.trim().toLowerCase();
+    const filtered = results.results.filter((r) =>
+      r.name.toLowerCase().includes(q) ||
+      (r.club && r.club.toLowerCase().includes(q)) ||
+      (r.bib != null && String(r.bib).includes(q))
+    );
+    return { ...results, results: filtered };
+  }, [results, searchQuery]);
+
+  const filteredStartlist = useMemo(() => {
+    if (!startlist) return null;
+    if (!searchQuery.trim()) return startlist;
+    const q = searchQuery.trim().toLowerCase();
+    return startlist.filter((s) =>
+      s.name.toLowerCase().includes(q) ||
+      (s.club && s.club.toLowerCase().includes(q)) ||
+      (s.bib != null && String(s.bib).includes(q))
+    );
+  }, [startlist, searchQuery]);
+
+  // Data view tabs
+  const hasResults = results && results.results.length > 0;
+  const hasStartlist = startlist && startlist.length > 0;
+  const dataViewTabs: TabItem[] = useMemo(() => {
+    const tabs: TabItem[] = [];
+    if (hasResults) tabs.push({ id: 'results', label: 'Výsledky', content: null });
+    if (hasStartlist) tabs.push({ id: 'startlist', label: 'Startovka', content: null });
+    tabs.push({ id: 'schedule', label: 'Program', content: null });
+    return tabs;
+  }, [hasResults, hasStartlist]);
+
+  // Search results count
+  const searchResultsCount = useMemo(() => {
+    if (!searchQuery.trim()) return undefined;
+    if (dataView === 'results') return filteredResults?.results.length;
+    if (dataView === 'startlist') return filteredStartlist?.length;
+    return undefined;
+  }, [searchQuery, dataView, filteredResults, filteredStartlist]);
+
   // Find races for selected class
   const selectedGroup = classGroups.find((g) => g.classId === selectedClassId);
   const selectedRace = races.find((r) => r.raceId === selectedRaceId);
@@ -570,13 +656,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   return (
     <section>
       {eventDetail && (
-        <EventHeader event={eventDetail} />
-      )}
-
-      {shouldConnect && (
-        <div className={styles.connectionStatus}>
-          <ConnectionStatus connectionState={connectionState} />
-        </div>
+        <EventHeader event={eventDetail} connectionState={shouldConnect ? connectionState : undefined} />
       )}
 
       <OnCoursePanel
@@ -590,6 +670,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           classGroups={classGroups}
           selectedClassId={selectedClassId}
           onClassChange={handleClassChange}
+          classNameMap={classNameMap}
         />
       )}
 
@@ -610,9 +691,36 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         />
       )}
 
-      <div className={styles.viewModeToggle}>
-        <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-      </div>
+      {resultsState === 'success' && (
+        <div className={styles.dataViewTabs}>
+          <Tabs
+            tabs={dataViewTabs}
+            activeTab={dataView}
+            onChange={(id) => setDataView(id as DataView)}
+            variant="pills"
+            size="sm"
+          />
+        </div>
+      )}
+
+      {dataView !== 'schedule' && (
+        <div className={styles.viewModeToggle}>
+          <div className={styles.toolbarRow}>
+            {dataView === 'results' && (
+              <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+            )}
+            <SearchInput
+              size="sm"
+              placeholder="Hledat závodníka..."
+              value={searchQuery}
+              onChange={setSearchQuery}
+              debounceMs={300}
+              resultsCount={searchResultsCount}
+              fullWidth
+            />
+          </div>
+        </div>
+      )}
 
       {resultsState === 'loading' && <SkeletonCard />}
 
@@ -625,7 +733,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         </Card>
       )}
 
-      {resultsState === 'success' && results && results.results.length === 0 && selectedCatId && (
+      {resultsState === 'success' && dataView === 'results' && filteredResults && filteredResults.results.length === 0 && selectedCatId && (
         <Card>
           <EmptyState
             title="V této kategorii nejsou žádní závodníci v tomto závodě"
@@ -634,9 +742,9 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         </Card>
       )}
 
-      {resultsState === 'success' && results && (results.results.length > 0 || !selectedCatId) && (
+      {resultsState === 'success' && dataView === 'results' && filteredResults && (filteredResults.results.length > 0 || !selectedCatId) && (
         <ResultList
-          data={results}
+          data={filteredResults}
           isBestRun={isBR}
           selectedCatId={selectedCatId}
           expandedRows={expandedRows}
@@ -644,14 +752,44 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           detailedCache={liveState.detailedCache}
           detailedLoading={detailedLoading}
           viewMode={viewMode}
+          updatedBibs={updatedBibs}
         />
       )}
 
-      {resultsState === 'success' && !results && startlist && startlist.length > 0 && (
-        <StartlistTable entries={startlist} />
+      {resultsState === 'success' && dataView === 'startlist' && filteredStartlist && filteredStartlist.length > 0 && (
+        <StartlistTable entries={filteredStartlist} />
       )}
 
-      {resultsState === 'success' && !results && (!startlist || startlist.length === 0) && (
+      {resultsState === 'success' && dataView === 'startlist' && (!filteredStartlist || filteredStartlist.length === 0) && (
+        <Card>
+          <EmptyState
+            title="Startovní listina není k dispozici"
+            description="Startovní listina pro tento závod zatím nebyla zveřejněna."
+          />
+        </Card>
+      )}
+
+      {resultsState === 'success' && dataView === 'schedule' && (
+        <ScheduleView
+          races={races}
+          classNameMap={classNameMap}
+          currentRaceId={selectedRaceId}
+          onRaceClick={(raceId) => {
+            const race = races.find((r) => r.raceId === raceId);
+            if (race) {
+              const classId = race.classId || selectedClassId;
+              if (classId && classId !== selectedClassId) {
+                setSelectedClassId(classId);
+              }
+              setSelectedRaceId(raceId);
+              setDataView('results');
+              navigate(`/events/${eventId}/race/${raceId}`);
+            }
+          }}
+        />
+      )}
+
+      {resultsState === 'success' && dataView === 'results' && !results && (!startlist || startlist.length === 0) && (
         <Card>
           <EmptyState
             title="Zatím nejsou k dispozici žádná data"

@@ -56,6 +56,17 @@
 
 /* ── Athlete entry card ──────────────────────────────────────────────────── */
 
+@keyframes fadeSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .entry {
   padding: 0.75rem;
   background-color: var(--csk-color-bg-secondary, #f5f5f5);
@@ -65,6 +76,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  animation: fadeSlideIn 0.3s ease-out;
 }
 
 /* ── Athlete identity row ────────────────────────────────────────────────── */

@@ -26,6 +26,9 @@ export interface CombinedBrResult {
   dtStart?: string | null;
   dtFinish?: string | null;
   gates?: PublicGate[] | null;
+  prevDtStart?: string | null;
+  prevDtFinish?: string | null;
+  prevGates?: PublicGate[] | null;
 }
 
 /**
@@ -133,6 +136,12 @@ export class BrCombinedService {
         entry.dtStart = betterRun?.dt_start ?? null;
         entry.dtFinish = betterRun?.dt_finish ?? null;
         entry.gates = parseGates(betterRun?.gates);
+
+        // Attach gate data from the non-better (previous) run
+        const prevRun = betterRunNr === 2 ? br1 : (betterRunNr === 1 ? br2 : null);
+        entry.prevDtStart = prevRun?.dt_start ?? null;
+        entry.prevDtFinish = prevRun?.dt_finish ?? null;
+        entry.prevGates = parseGates(prevRun?.gates);
       }
 
       results.push(entry);

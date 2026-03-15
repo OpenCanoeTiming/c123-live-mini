@@ -40,6 +40,10 @@ interface ResultEntry {
   prevPen?: number | null;
   prevTotal?: number | null;
   prevRnk?: number | null;
+  // Previous run detailed fields (BR with detailed=true)
+  prevDtStart?: string | null;
+  prevDtFinish?: string | null;
+  prevGates?: PublicGate[] | null;
 }
 
 /**
@@ -212,6 +216,9 @@ export function registerResultsRoutes(
             entry.dtFinish = r.dtFinish ?? null;
             entry.courseGateCount = courseGateCount;
             entry.gates = r.gates ?? null;
+            entry.prevDtStart = r.prevDtStart ?? null;
+            entry.prevDtFinish = r.prevDtFinish ?? null;
+            entry.prevGates = r.prevGates ?? null;
           }
 
           return entry;

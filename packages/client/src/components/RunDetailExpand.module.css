@@ -66,3 +66,51 @@
   color: var(--csk-color-text-tertiary, #9ca3af);
   font-style: italic;
 }
+
+/* --- BR two-run layout --- */
+.runsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+@media (max-width: 640px) {
+  .runsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.runSection {
+  padding: 0.5rem;
+  border-radius: var(--csk-radius-sm, 4px);
+  border: 1px solid var(--csk-color-border-secondary, #e5e7eb);
+  background: var(--csk-color-bg-primary, #fff);
+}
+
+.runSectionBetter {
+  border-color: var(--csk-color-primary, #2563eb);
+  background: rgba(37, 99, 235, 0.04);
+}
+
+.runSectionLabel {
+  font-size: var(--csk-font-size-xs, 0.75rem);
+  font-weight: 600;
+  color: var(--csk-color-text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.375rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.betterBadge {
+  font-size: 0.625rem;
+  font-weight: 500;
+  color: var(--csk-color-primary, #2563eb);
+  background: rgba(37, 99, 235, 0.1);
+  padding: 0.0625rem 0.375rem;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

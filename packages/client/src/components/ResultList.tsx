@@ -16,6 +16,7 @@ interface Column {
   align?: 'left' | 'center' | 'right';
   width?: string;
   hideOnMobile?: boolean;
+  mobileOnly?: boolean;
   render: (row: ResultEntry, index: number) => React.ReactNode;
 }
 
@@ -94,6 +95,37 @@ function buildStandardColumns(selectedCatId: string | null): Column[] {
   ];
 }
 
+/** Mobile-only cell showing both BR runs stacked */
+function BrRunsCell({ row }: { row: ResultEntry }) {
+  if (row.status) return <StatusBadge status={row.status} />;
+
+  const run1Total = row.prevTotal != null ? row.prevTotal : row.total;
+  const run2Total = row.prevTotal != null ? row.total : null;
+  const isBetter1 = row.betterRunNr === 1;
+  const isBetter2 = row.betterRunNr === 2;
+
+  return (
+    <div className={styles.brRunsStacked}>
+      <div className={`${styles.brRunLine} ${isBetter1 ? styles.betterRun : ''}`}>
+        <span className={styles.brRunLabel}>1.</span>
+        <span className={styles.monoText}>{formatTime(run1Total ?? null)}</span>
+        {row.prevPen != null && row.prevPen > 0 && (
+          <span className={styles.brRunPen}>({formatPenalty(row.prevTotal != null ? row.prevPen : row.pen)})</span>
+        )}
+      </div>
+      {run2Total !== null && (
+        <div className={`${styles.brRunLine} ${isBetter2 ? styles.betterRun : ''}`}>
+          <span className={styles.brRunLabel}>2.</span>
+          <span className={styles.monoText}>{formatTime(run2Total)}</span>
+          {row.pen != null && row.pen > 0 && (
+            <span className={styles.brRunPen}>({formatPenalty(row.prevTotal != null ? row.pen : null)})</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function buildBestRunColumns(selectedCatId: string | null): Column[] {
   const useCategory = Boolean(selectedCatId);
   return [
@@ -125,9 +157,17 @@ function buildBestRunColumns(selectedCatId: string | null): Column[] {
       ),
     },
     {
+      key: 'brRuns',
+      header: 'Jízdy',
+      align: 'right',
+      mobileOnly: true,
+      render: (row) => <BrRunsCell row={row} />,
+    },
+    {
       key: 'run1',
       header: '1. jízda',
       align: 'right',
+      hideOnMobile: true,
       render: (row) => {
         if (row.status) return <StatusBadge status={row.status} />;
         const run1Total = row.prevTotal != null ? row.prevTotal : row.total;
@@ -143,6 +183,7 @@ function buildBestRunColumns(selectedCatId: string | null): Column[] {
       key: 'run2',
       header: '2. jízda',
       align: 'right',
+      hideOnMobile: true,
       render: (row) => {
         if (row.status) return null;
         const run2Total = row.prevTotal != null ? row.total : null;
@@ -218,6 +259,7 @@ interface ResultListProps {
   detailedCache?: Record<string, RunDetailData>;
   detailedLoading?: Set<string>;
   viewMode?: 'simple' | 'detailed';
+  updatedBibs?: Set<number>;
 }
 
 export function ResultList({
@@ -229,6 +271,7 @@ export function ResultList({
   detailedCache = {},
   detailedLoading = new Set(),
   viewMode = 'simple',
+  updatedBibs = new Set(),
 }: ResultListProps) {
   const { results, race } = data;
 
@@ -267,7 +310,7 @@ export function ResultList({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`${styles.headerCell} ${getAlignClass(col.align)} ${col.hideOnMobile ? styles.hideOnMobile : ''}`}
+                  className={`${styles.headerCell} ${getAlignClass(col.align)} ${col.hideOnMobile ? styles.hideOnMobile : ''} ${col.mobileOnly ? styles.mobileOnly : ''}`}
                   style={col.width ? { width: col.width } : undefined}
                 >
                   {col.header}
@@ -282,12 +325,13 @@ export function ResultList({
               const isLoading = detailedLoading.has(rowKey);
               const detail = detailedCache[rowKey] ?? null;
               const podiumClass = getRowPodiumClass(row.rnk, row.status);
+              const isUpdated = updatedBibs.has(row.bib ?? -1);
 
               return (
                 <Fragment key={rowKey}>
                   <tr
                     onClick={onToggleExpand ? () => onToggleExpand(rowKey) : undefined}
-                    className={`${styles.dataRow} ${podiumClass} ${index % 2 === 1 ? styles.stripedRow : ''} ${onToggleExpand ? styles.clickable : ''} ${isExpanded ? styles.expandedDataRow : ''}`}
+                    className={`${styles.dataRow} ${podiumClass} ${index % 2 === 1 ? styles.stripedRow : ''} ${onToggleExpand ? styles.clickable : ''} ${isExpanded ? styles.expandedDataRow : ''} ${isUpdated ? styles.rowUpdated : ''}`}
                   >
                     {onToggleExpand && (
                       <td className={`${styles.cell} ${styles.expandCol}`}>
@@ -299,7 +343,7 @@ export function ResultList({
                     {columns.map((col) => (
                       <td
                         key={col.key}
-                        className={`${styles.cell} ${getAlignClass(col.align)} ${col.hideOnMobile ? styles.hideOnMobile : ''}`}
+                        className={`${styles.cell} ${getAlignClass(col.align)} ${col.hideOnMobile ? styles.hideOnMobile : ''} ${col.mobileOnly ? styles.mobileOnly : ''}`}
                       >
                         {col.render(row, index)}
                       </td>
@@ -313,6 +357,7 @@ export function ResultList({
                           isLoading={isLoading}
                           isBestRun={isBestRun}
                           athleteName={row.name}
+                          betterRunNr={row.betterRunNr}
                         />
                       </td>
                     </tr>

@@ -1,0 +1,69 @@
+/**
+ * ScheduleView styles
+ */
+
+.scheduleList {
+  display: flex;
+  flex-direction: column;
+}
+
+.scheduleItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-bottom: 1px solid var(--csk-color-border-secondary, #e5e7eb);
+  transition: background-color 0.15s ease;
+}
+
+.scheduleItem:last-child {
+  border-bottom: none;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  background-color: var(--csk-color-bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.currentRace {
+  background: rgba(37, 99, 235, 0.06);
+  border-left: 3px solid var(--csk-color-primary, #2563eb);
+}
+
+.timeCol {
+  flex-shrink: 0;
+  width: 3rem;
+}
+
+.startTime {
+  font-family: var(--csk-font-mono, monospace);
+  font-size: var(--csk-font-size-sm, 0.875rem);
+  font-weight: 500;
+  color: var(--csk-color-text-secondary, #6b7280);
+}
+
+.infoCol {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.0625rem;
+}
+
+.raceName {
+  font-weight: 500;
+  font-size: var(--csk-font-size-sm, 0.875rem);
+  color: var(--csk-color-text-primary, #111827);
+}
+
+.raceType {
+  font-size: var(--csk-font-size-xs, 0.75rem);
+  color: var(--csk-color-text-tertiary, #9ca3af);
+}
+
+.statusCol {
+  flex-shrink: 0;
+}

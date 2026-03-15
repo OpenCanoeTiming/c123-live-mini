@@ -74,6 +74,10 @@ export interface ResultEntry extends PublicResult {
   dtFinish?: string | null;
   gates?: import('@c123-live-mini/shared').PublicGate[] | null;
   courseGateCount?: number | null;
+  // Previous run detailed fields (BR races with detailed=true)
+  prevDtStart?: string | null;
+  prevDtFinish?: string | null;
+  prevGates?: import('@c123-live-mini/shared').PublicGate[] | null;
 }
 
 /**

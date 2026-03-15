@@ -206,10 +206,64 @@
   font-size: var(--csk-font-size-xs, 0.75rem);
 }
 
+/* --- Mobile-only BR runs stacked --- */
+.brRunsStacked {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.brRunLine {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  font-size: var(--csk-font-size-xs, 0.75rem);
+}
+
+.brRunLabel {
+  color: var(--csk-color-text-tertiary, #9ca3af);
+  font-size: 0.6875rem;
+  min-width: 1rem;
+}
+
+.brRunPen {
+  font-size: 0.6875rem;
+  color: var(--csk-color-warning, #d97706);
+}
+
+/* Mobile-only columns (hidden on desktop, shown on mobile) */
+.mobileOnly {
+  display: none;
+}
+
+/* --- Live animations --- */
+@keyframes resultHighlight {
+  0% { background-color: rgba(37, 99, 235, 0.15); }
+  100% { background-color: transparent; }
+}
+
+@keyframes positionPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+.rowUpdated {
+  animation: resultHighlight 2s ease-out;
+}
+
+.rankChanged {
+  animation: positionPop 0.4s ease-out;
+}
+
 /* --- Responsive --- */
 @media (max-width: 640px) {
   .hideOnMobile {
     display: none;
+  }
+
+  .mobileOnly {
+    display: table-cell;
   }
 
   .headerCell {

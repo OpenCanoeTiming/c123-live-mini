@@ -41,6 +41,10 @@ export interface RunDetailData {
   dtFinish: string | null;
   courseGateCount: number | null;
   gates: PublicResultDetailed['gates'];
+  // Previous run detail (for BR races)
+  prevDtStart?: string | null;
+  prevDtFinish?: string | null;
+  prevGates?: PublicResultDetailed['gates'];
 }
 
 /**

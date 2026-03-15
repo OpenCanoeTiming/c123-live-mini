@@ -24,7 +24,7 @@ export function groupRaces(races: RaceInfo[]): ClassGroup[] {
   const groupMap = new Map<string, RaceInfo[]>();
 
   for (const race of races) {
-    const key = race.classId ?? 'other';
+    const key = race.classId || 'other';
     const group = groupMap.get(key);
     if (group) {
       group.push(race);
@@ -69,5 +69,28 @@ function getDisplayRaces(races: RaceInfo[]): RaceInfo[] {
   const hasBr2 = races.some((r) => r.raceType === 'best-run-2');
   if (!hasBr2) return races;
 
-  return races.filter((r) => r.raceType !== 'best-run-1');
+  const filtered = races.filter((r) => r.raceType !== 'best-run-1');
+
+  // Deduplicate BR2 races: keep only the one with the highest suffix per class.
+  // raceId format: {classId}_BR{N}_{suffix} — classId may contain underscores,
+  // so we must use regex, not split.
+  const br2Races = filtered.filter((r) => r.raceType === 'best-run-2');
+  if (br2Races.length <= 1) return filtered;
+
+  const br2Pattern = /^(.+)_BR[12]_(.+)$/;
+  let bestBr2: RaceInfo | null = null;
+  let bestSuffix = -1;
+
+  for (const r of br2Races) {
+    const match = r.raceId.match(br2Pattern);
+    const suffix = match ? parseInt(match[2], 10) : 0;
+    if (suffix > bestSuffix) {
+      bestSuffix = suffix;
+      bestBr2 = r;
+    }
+  }
+
+  return filtered.filter(
+    (r) => r.raceType !== 'best-run-2' || r === bestBr2
+  );
 }
