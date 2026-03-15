@@ -43,6 +43,7 @@ function buildStandardColumns(selectedCatId: string | null): Column[] {
     {
       key: 'name',
       header: 'Jméno',
+      width: '100%',
       render: (row) => (
         <div>
           <div className={styles.athleteName}>{row.name}</div>
@@ -161,6 +162,7 @@ function buildBestRunColumns(selectedCatId: string | null): Column[] {
     {
       key: 'name',
       header: 'Jméno',
+      width: '100%',
       render: (row) => (
         <div>
           <div className={styles.athleteName}>{row.name}</div>

@@ -36,6 +36,7 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   white-space: nowrap;
+  text-align: left;
   position: sticky;
   top: 0;
   background: var(--csk-color-bg-secondary, #f8f9fa);
