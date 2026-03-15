@@ -98,19 +98,19 @@
 .inlineTime {
   font-family: var(--csk-font-mono, ui-monospace, monospace);
   font-size: var(--csk-font-size-sm, 0.875rem);
-  color: var(--csk-color-warning, #ea580c);
+  color: var(--csk-color-on-surface, #171717);
   font-weight: var(--csk-font-weight-medium, 500);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
 .inlinePen {
-  color: var(--color-error-600, #dc2626);
+  color: var(--csk-color-on-surface, #171717);
 }
 
 .inlineTotal {
   font-weight: var(--csk-font-weight-semibold, 600);
-  color: var(--csk-color-on-surface, #171717);
+  color: var(--csk-color-warning, #ea580c);
 }
 
 .rankBadge {
