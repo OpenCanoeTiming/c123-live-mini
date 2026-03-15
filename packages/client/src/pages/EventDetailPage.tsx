@@ -622,6 +622,32 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     return undefined;
   }, [searchQuery, dataView, filteredResults, filteredStartlist]);
 
+  // Filter classGroups by selected day
+  const filteredClassGroups = useMemo(() => {
+    if (!selectedDay) return classGroups;
+    const dayInfo = days.find((d) => d.date === selectedDay);
+    if (!dayInfo) return classGroups;
+    return classGroups.filter((g) =>
+      g.races.some((r) => dayInfo.raceIds.has(r.raceId))
+    );
+  }, [classGroups, selectedDay, days]);
+
+  // Day selector tabs
+  const dayTabs: TabItem[] = useMemo(() => {
+    return days.map((d) => ({ id: d.date, label: d.label, content: null }));
+  }, [days]);
+
+  // Breadcrumb items
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
+    const items: BreadcrumbItem[] = [
+      { id: 'home', label: 'ČSK Live', href: '#/' },
+    ];
+    if (eventDetail) {
+      items.push({ id: 'event', label: eventDetail.mainTitle });
+    }
+    return items;
+  }, [eventDetail]);
+
   // 404 / error with back link
   if (eventState === 'error') {
     return (
@@ -652,32 +678,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       </section>
     );
   }
-
-  // Filter classGroups by selected day
-  const filteredClassGroups = useMemo(() => {
-    if (!selectedDay) return classGroups;
-    const dayInfo = days.find((d) => d.date === selectedDay);
-    if (!dayInfo) return classGroups;
-    return classGroups.filter((g) =>
-      g.races.some((r) => dayInfo.raceIds.has(r.raceId))
-    );
-  }, [classGroups, selectedDay, days]);
-
-  // Day selector tabs
-  const dayTabs: TabItem[] = useMemo(() => {
-    return days.map((d) => ({ id: d.date, label: d.label, content: null }));
-  }, [days]);
-
-  // Breadcrumb items
-  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
-    const items: BreadcrumbItem[] = [
-      { id: 'home', label: 'ČSK Live', href: '#/' },
-    ];
-    if (eventDetail) {
-      items.push({ id: 'event', label: eventDetail.mainTitle });
-    }
-    return items;
-  }, [eventDetail]);
 
   // Find races for selected class
   const selectedGroup = filteredClassGroups.find((g) => g.classId === selectedClassId);
