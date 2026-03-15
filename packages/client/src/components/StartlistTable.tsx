@@ -1,7 +1,21 @@
-import { Card, Table, EmptyState, type ColumnDef } from '@czechcanoe/rvp-design-system';
+import {
+  Card,
+  Table,
+  EmptyState,
+  SectionHeader,
+  type ColumnDef,
+} from '@czechcanoe/rvp-design-system';
 import type { StartlistEntry } from '../services/api';
+import styles from './StartlistTable.module.css';
 
 const columns: ColumnDef<StartlistEntry>[] = [
+  {
+    key: 'startOrder',
+    header: 'Pořadí',
+    width: '60px',
+    align: 'center',
+    cell: (row, rowIndex) => row.startOrder ?? rowIndex + 1,
+  },
   {
     key: 'bib',
     header: 'St.č.',
@@ -14,16 +28,9 @@ const columns: ColumnDef<StartlistEntry>[] = [
     header: 'Jméno',
     cell: (row) => (
       <div>
-        <div style={{ fontWeight: 500 }}>{row.name}</div>
+        <div className={styles.athleteName}>{row.name}</div>
         {row.club && (
-          <div
-            style={{
-              fontSize: '0.75rem',
-              color: 'var(--csk-color-text-tertiary)',
-            }}
-          >
-            {row.club}
-          </div>
+          <div className={styles.athleteClub}>{row.club}</div>
         )}
       </div>
     ),
@@ -32,7 +39,12 @@ const columns: ColumnDef<StartlistEntry>[] = [
     key: 'catId',
     header: 'Kategorie',
     width: '80px',
-    cell: (row) => row.catId ?? '',
+    cell: (row) =>
+      row.catId ? (
+        <span className={styles.categoryBadge}>{row.catId}</span>
+      ) : (
+        ''
+      ),
   },
 ];
 
@@ -54,12 +66,14 @@ export function StartlistTable({ entries }: StartlistTableProps) {
 
   return (
     <Card>
+      <SectionHeader title="Startovní listina" />
       <Table
         columns={columns}
         data={entries}
         rowKey="athleteId"
         size="sm"
         hoverable
+        variant="striped"
       />
     </Card>
   );

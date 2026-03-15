@@ -8,6 +8,8 @@ import type { RaceInfo } from '../services/api';
 export interface ClassGroup {
   classId: string;
   races: RaceInfo[];
+  /** Races filtered for tab display (BR1 hidden when BR2 exists) */
+  displayRaces: RaceInfo[];
 }
 
 /**
@@ -39,7 +41,11 @@ export function groupRaces(races: RaceInfo[]): ClassGroup[] {
   // Convert to array and sort classes by first race's raceOrder
   const groups: ClassGroup[] = [];
   for (const [classId, classRaces] of groupMap) {
-    groups.push({ classId, races: classRaces });
+    groups.push({
+      classId,
+      races: classRaces,
+      displayRaces: getDisplayRaces(classRaces),
+    });
   }
 
   groups.sort((a, b) => {
@@ -52,4 +58,16 @@ export function groupRaces(races: RaceInfo[]): ClassGroup[] {
   });
 
   return groups;
+}
+
+/**
+ * Filter races for tab display:
+ * - When both best-run-1 and best-run-2 exist, hide BR1 (BR2 has combined data)
+ * - Keeps all other race types
+ */
+function getDisplayRaces(races: RaceInfo[]): RaceInfo[] {
+  const hasBr2 = races.some((r) => r.raceType === 'best-run-2');
+  if (!hasBr2) return races;
+
+  return races.filter((r) => r.raceType !== 'best-run-1');
 }

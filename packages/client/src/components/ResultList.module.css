@@ -1,93 +1,226 @@
 /**
- * Layout styles for ResultList
- * Uses DS CSS variables for colors and spacing tokens
+ * ResultList styles
+ * Uses DS CSS variables for all visual properties.
+ * Features: podium highlights, striped rows, sticky header, responsive hiding.
  */
 
-.athleteName {
-  font-weight: 500;
-}
-
-.athleteClub {
-  font-size: 0.75rem;
-  color: var(--csk-color-text-tertiary);
-}
-
-.statusText {
-  font-family: var(--csk-font-mono);
-  color: var(--csk-color-error);
-  font-weight: 600;
-}
-
-.monoText {
-  font-family: var(--csk-font-mono);
-}
-
-.secondaryText {
-  color: var(--csk-color-text-secondary);
-}
-
-.betterRun {
-  font-weight: 700;
-}
-
-.totalTotal {
-  font-weight: 600;
-}
-
-/* Custom table styles (for expandable rows) */
-.customTable {
-  width: 100%;
-  font-size: 0.875rem;
-}
-
-.tableHeader {
-  border-bottom: 1px solid var(--csk-color-border-secondary);
-}
-
-.tableHeaderCell {
-  padding: 0.5rem;
-  font-weight: 600;
-  color: var(--csk-color-text-secondary);
-}
-
-.tableHeaderCellCenter {
-  text-align: center;
-}
-
-.tableHeaderCellRight {
-  text-align: right;
-}
-
-.tableRow {
-  cursor: pointer;
-  border-bottom: 1px solid var(--csk-color-border-secondary);
-}
-
-.tableRow:hover {
-  background-color: var(--csk-color-bg-hover);
-}
-
-.tableCell {
-  padding: 0.5rem;
-}
-
-.tableCellCenter {
-  text-align: center;
-}
-
-.tableCellRight {
-  text-align: right;
-}
-
-.chevronCell {
-  width: 24px;
-  font-size: 0.75rem;
-}
-
-.expandedRow td {
-  padding: 0;
+/* Card wrapper — remove default padding for edge-to-edge table */
+.resultsCard {
+  overflow: hidden;
 }
 
 .tableWrapper {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Table base */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--csk-font-size-sm, 0.875rem);
+  line-height: 1.4;
+}
+
+/* Header */
+.headerRow {
+  background: var(--csk-color-bg-secondary, #f8f9fa);
+  border-bottom: 2px solid var(--csk-color-primary, #2563eb);
+}
+
+.headerCell {
+  padding: 0.625rem 0.5rem;
+  font-weight: 600;
+  font-size: var(--csk-font-size-xs, 0.75rem);
+  color: var(--csk-color-text-secondary, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  background: var(--csk-color-bg-secondary, #f8f9fa);
+  z-index: 1;
+}
+
+/* Data rows */
+.dataRow {
+  border-bottom: 1px solid var(--csk-color-border-secondary, #e5e7eb);
+  transition: background-color 0.15s ease;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  background-color: var(--csk-color-bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.stripedRow {
+  background-color: var(--csk-color-bg-secondary, rgba(0, 0, 0, 0.02));
+}
+
+.stripedRow:hover {
+  background-color: var(--csk-color-bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.expandedDataRow {
+  background-color: var(--csk-color-bg-hover, rgba(0, 0, 0, 0.04));
+  border-bottom: none;
+}
+
+/* Cells */
+.cell {
+  padding: 0.5rem;
+  vertical-align: middle;
+}
+
+.alignCenter {
+  text-align: center;
+}
+
+.alignRight {
+  text-align: right;
+}
+
+/* Expand column */
+.expandCol {
+  width: 28px;
+  padding: 0.5rem 0.25rem;
+  text-align: center;
+}
+
+.chevron {
+  display: inline-block;
+  font-size: 1rem;
+  color: var(--csk-color-text-tertiary, #9ca3af);
+  transition: transform 0.2s ease;
+  transform: rotate(0deg);
+}
+
+.chevronOpen {
+  transform: rotate(90deg);
+  color: var(--csk-color-primary, #2563eb);
+}
+
+/* Detail expansion row */
+.detailRow td {
+  padding: 0;
+  border-bottom: 1px solid var(--csk-color-border-secondary, #e5e7eb);
+}
+
+/* --- Podium highlights --- */
+.rowGold {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.12) 0%, transparent 60%);
+  border-left: 3px solid #fbbf24;
+}
+
+.rowSilver {
+  background: linear-gradient(90deg, rgba(192, 192, 192, 0.1) 0%, transparent 60%);
+  border-left: 3px solid #9ca3af;
+}
+
+.rowBronze {
+  background: linear-gradient(90deg, rgba(205, 127, 50, 0.1) 0%, transparent 60%);
+  border-left: 3px solid #d97706;
+}
+
+/* --- Rank styling --- */
+.rankPodium {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.8125rem;
+}
+
+.rankGold {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  color: #92400e;
+}
+
+.rankSilver {
+  background: linear-gradient(135deg, #f3f4f6, #d1d5db);
+  color: #374151;
+}
+
+.rankBronze {
+  background: linear-gradient(135deg, #fef3c7, #fed7aa);
+  color: #9a3412;
+}
+
+.rankText {
+  font-weight: 500;
+  color: var(--csk-color-text-secondary, #6b7280);
+}
+
+.rankDash {
+  color: var(--csk-color-text-tertiary, #9ca3af);
+}
+
+/* --- Typography --- */
+.bibText {
+  font-weight: 500;
+  color: var(--csk-color-text-secondary, #6b7280);
+}
+
+.athleteName {
+  font-weight: 500;
+  color: var(--csk-color-text-primary, #111827);
+}
+
+.athleteClub {
+  font-size: var(--csk-font-size-xs, 0.75rem);
+  color: var(--csk-color-text-tertiary, #9ca3af);
+  margin-top: 0.0625rem;
+}
+
+.monoText {
+  font-family: var(--csk-font-mono, 'JetBrains Mono', 'Fira Code', monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.totalText {
+  font-weight: 600;
+}
+
+.penaltyText {
+  font-family: var(--csk-font-mono, 'JetBrains Mono', 'Fira Code', monospace);
+  font-variant-numeric: tabular-nums;
+  color: var(--csk-color-warning, #d97706);
+  font-weight: 600;
+}
+
+.betterRun {
+  font-weight: 700;
+  color: var(--csk-color-primary, #2563eb);
+}
+
+.behindText {
+  font-family: var(--csk-font-mono, 'JetBrains Mono', 'Fira Code', monospace);
+  font-variant-numeric: tabular-nums;
+  color: var(--csk-color-text-tertiary, #9ca3af);
+  font-size: var(--csk-font-size-xs, 0.75rem);
+}
+
+/* --- Responsive --- */
+@media (max-width: 640px) {
+  .hideOnMobile {
+    display: none;
+  }
+
+  .headerCell {
+    padding: 0.5rem 0.375rem;
+  }
+
+  .cell {
+    padding: 0.375rem;
+  }
+
+  .table {
+    font-size: 0.8125rem;
+  }
 }

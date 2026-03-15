@@ -20,8 +20,10 @@ const BEST_RUN_TYPES = new Set(['best-run-1', 'best-run-2']);
 
 /**
  * Get Czech label for a race type.
+ * When isMergedBR is true, BR2 is labeled as "Závod" (combined view of both runs).
  */
-export function getRaceTypeLabel(raceType: string): string {
+export function getRaceTypeLabel(raceType: string, isMergedBR?: boolean): string {
+  if (isMergedBR && raceType === 'best-run-2') return 'Závod';
   return RACE_TYPE_LABELS[raceType] ?? raceType;
 }
 

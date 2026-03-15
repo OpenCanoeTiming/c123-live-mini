@@ -33,7 +33,7 @@ import { useEventLiveState } from '../hooks/useEventLiveState';
 import { useEventWebSocket } from '../hooks/useEventWebSocket';
 import { ConnectionStatus } from '../components/ConnectionStatus';
 import { getOnCourse } from '../services/api';
-import type { PublicClass, PublicRace, WsMessage } from '@c123-live-mini/shared';
+import type { WsMessage } from '@c123-live-mini/shared';
 
 type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 
@@ -53,7 +53,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const races = liveState.races;
   const categories = liveState.categories;
 
-  const racesRef = useRef<PublicRace[]>([]);
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
   const [eventState, setEventState] = useState<LoadingState>('idle');
   const [eventError, setEventError] = useState<string | null>(null);
@@ -315,8 +314,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           },
         });
 
-        racesRef.current = eventData.races;
-
         const groups = groupRaces(eventData.races);
         setClassGroups(groups);
 
@@ -334,9 +331,9 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             return;
           }
         } else if (groups.length > 0) {
-          // Auto-select first class and first race
+          // Auto-select first class and first display race (BR1 filtered out)
           setSelectedClassId(groups[0].classId);
-          setSelectedRaceId(groups[0].races[0].raceId);
+          setSelectedRaceId(groups[0].displayRaces[0].raceId);
         }
 
         setEventState('success');
@@ -433,13 +430,13 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     return () => { cancelled = true; };
   }, [eventId, selectedRaceId, selectedCatId, eventState]);
 
-  // Handle class change
+  // Handle class change — auto-select first display race (BR1 filtered out)
   const handleClassChange = useCallback(
     (classId: string) => {
       setSelectedClassId(classId);
       const group = classGroups.find((g) => g.classId === classId);
-      if (group && group.races.length > 0) {
-        const newRaceId = group.races[0].raceId;
+      if (group && group.displayRaces.length > 0) {
+        const newRaceId = group.displayRaces[0].raceId;
         setSelectedRaceId(newRaceId);
         navigate(`/events/${eventId}/race/${newRaceId}`);
       }
@@ -489,8 +486,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             // Cache detailed data for all results in the race
             resultsData.results.forEach((result) => {
               if (result.bib !== null) {
-                const resultKey = `${selectedRaceId}-${result.bib}`;
-                // Detailed results include extra optional fields
                 dispatch({
                   type: 'CACHE_DETAILED',
                   payload: {
@@ -564,7 +559,12 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const selectedGroup = classGroups.find((g) => g.classId === selectedClassId);
   const selectedRace = races.find((r) => r.raceId === selectedRaceId);
   const showClassTabs = classGroups.length > 1;
-  const showRoundTabs = selectedGroup ? selectedGroup.races.length > 1 : false;
+  // Use displayRaces for tabs (BR1 hidden when BR2 exists)
+  const displayRaces = selectedGroup?.displayRaces ?? [];
+  const showRoundTabs = displayRaces.length > 1;
+  const hasMergedBR = selectedGroup
+    ? selectedGroup.races.length !== selectedGroup.displayRaces.length
+    : false;
   const isBR = selectedRace ? isBestRunRace(selectedRace.raceType) : false;
 
   return (
@@ -593,11 +593,12 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         />
       )}
 
-      {showRoundTabs && selectedGroup && (
+      {showRoundTabs && (
         <RoundTabs
-          races={selectedGroup.races}
+          races={displayRaces}
           selectedRaceId={selectedRaceId}
           onRaceChange={handleRaceChange}
+          hasMergedBR={hasMergedBR}
         />
       )}
 

@@ -1,0 +1,32 @@
+/**
+ * EventHeader styles
+ * Uses DS CSS variables for colors, typography, and spacing
+ */
+
+.wrapper {
+  margin-bottom: var(--csk-spacing-4, 1rem);
+}
+
+.meta {
+  margin-top: calc(-1 * var(--csk-spacing-2, 0.5rem));
+  margin-bottom: var(--csk-spacing-3, 0.75rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.25rem;
+}
+
+.subtitle {
+  font-size: var(--csk-font-size-sm, 0.875rem);
+  color: var(--csk-color-text-secondary, #4b5563);
+}
+
+.separator {
+  font-size: var(--csk-font-size-sm, 0.875rem);
+  color: var(--csk-color-text-secondary, #4b5563);
+}
+
+.dates {
+  font-size: var(--csk-font-size-xs, 0.75rem);
+  color: var(--csk-color-text-tertiary, #9ca3af);
+}

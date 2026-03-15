@@ -1,31 +1,68 @@
 /**
- * Layout styles for RunDetailExpand
- * Uses DS CSS variables for colors and spacing tokens
+ * RunDetailExpand styles
+ * Clean detail panel with clear visual hierarchy.
  */
 
-.loadingContainer {
-  padding: 0.75rem;
+.container {
+  padding: 0.75rem 0.75rem 0.75rem 2rem;
+  background-color: var(--csk-color-bg-secondary, #f9fafb);
+  border-left: 3px solid var(--csk-color-primary, #2563eb);
 }
 
-.container {
-  padding: 0.75rem;
-  background-color: var(--csk-color-bg-secondary);
-  border-top: 1px solid var(--csk-color-border-secondary);
+.detailHeader {
+  font-weight: 600;
+  font-size: var(--csk-font-size-sm, 0.875rem);
+  color: var(--csk-color-text-primary, #111827);
+  margin-bottom: 0.5rem;
+}
+
+.runLabel {
+  font-weight: 400;
+  color: var(--csk-color-text-tertiary, #9ca3af);
 }
 
 .timestamps {
   display: flex;
-  gap: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
   margin-bottom: 0.75rem;
-  font-size: 0.875rem;
+}
+
+.timestampItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
 }
 
 .timestampLabel {
-  color: var(--csk-color-text-tertiary);
+  font-size: var(--csk-font-size-xs, 0.75rem);
+  color: var(--csk-color-text-tertiary, #9ca3af);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 500;
+}
+
+.timestampValue {
+  font-family: var(--csk-font-mono, monospace);
+  font-size: var(--csk-font-size-sm, 0.875rem);
+  color: var(--csk-color-text-primary, #111827);
+}
+
+.gatesSection {
+  margin-top: 0.25rem;
 }
 
 .gatesLabel {
-  font-size: 0.75rem;
-  color: var(--csk-color-text-tertiary);
-  margin-bottom: 0.25rem;
+  font-size: var(--csk-font-size-xs, 0.75rem);
+  color: var(--csk-color-text-tertiary, #9ca3af);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-weight: 500;
+  margin-bottom: 0.375rem;
+}
+
+.noData {
+  font-size: var(--csk-font-size-sm, 0.875rem);
+  color: var(--csk-color-text-tertiary, #9ca3af);
+  font-style: italic;
 }

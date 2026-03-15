@@ -1,9 +1,8 @@
 import { Fragment } from 'react';
 import {
   Card,
-  Table,
+  Badge,
   EmptyState,
-  type ColumnDef,
 } from '@czechcanoe/rvp-design-system';
 import type { ResultEntry, ResultsResponse } from '../services/api';
 import type { RunDetailData } from '../hooks/useEventLiveState';
@@ -11,179 +10,203 @@ import { formatTime, formatPenalty } from '../utils/formatTime';
 import { RunDetailExpand } from './RunDetailExpand';
 import styles from './ResultList.module.css';
 
-// Standard result columns with Czech headers
-const standardColumns: ColumnDef<ResultEntry>[] = [
-  {
-    key: 'rnk',
-    header: 'Poř.',
-    width: '50px',
-    align: 'center',
-    cell: (row) => row.rnk ?? '-',
-  },
-  {
-    key: 'bib',
-    header: 'St.č.',
-    width: '55px',
-    align: 'center',
-    cell: (row) => row.bib ?? '-',
-  },
-  {
-    key: 'name',
-    header: 'Jméno',
-    cell: (row) => (
-      <div>
-        <div className={styles.athleteName}>{row.name}</div>
-        {row.club && <div className={styles.athleteClub}>{row.club}</div>}
-      </div>
-    ),
-  },
-  {
-    key: 'time',
-    header: 'Čas',
-    align: 'right',
-    cell: (row) => {
-      if (row.status) {
-        return <span className={styles.statusText}>{row.status}</span>;
-      }
-      return <span className={styles.monoText}>{formatTime(row.time)}</span>;
-    },
-  },
-  {
-    key: 'pen',
-    header: 'Trest',
-    align: 'right',
-    cell: (row) => (
-      <span className={styles.monoText}>
-        {!row.status ? formatPenalty(row.pen) : ''}
-      </span>
-    ),
-  },
-  {
-    key: 'total',
-    header: 'Výsledek',
-    align: 'right',
-    cell: (row) => (
-      <span className={styles.monoText}>
-        {!row.status ? formatTime(row.total) : ''}
-      </span>
-    ),
-  },
-  {
-    key: 'behind',
-    header: 'Ztráta',
-    align: 'right',
-    cell: (row) => (
-      <span className={styles.secondaryText}>{row.totalBehind ?? ''}</span>
-    ),
-  },
-];
+interface Column {
+  key: string;
+  header: string;
+  align?: 'left' | 'center' | 'right';
+  width?: string;
+  hideOnMobile?: boolean;
+  render: (row: ResultEntry, index: number) => React.ReactNode;
+}
 
-// Best-run result columns
-const bestRunColumns: ColumnDef<ResultEntry>[] = [
-  {
-    key: 'rnk',
-    header: 'Poř.',
-    width: '50px',
-    align: 'center',
-    cell: (row) => row.rnk ?? '-',
-  },
-  {
-    key: 'bib',
-    header: 'St.č.',
-    width: '55px',
-    align: 'center',
-    cell: (row) => row.bib ?? '-',
-  },
-  {
-    key: 'name',
-    header: 'Jméno',
-    cell: (row) => (
-      <div>
-        <div className={styles.athleteName}>{row.name}</div>
-        {row.club && <div className={styles.athleteClub}>{row.club}</div>}
-      </div>
-    ),
-  },
-  {
-    key: 'run1',
-    header: '1. jízda',
-    align: 'right',
-    cell: (row) => {
-      if (row.status) {
-        return <span className={styles.statusText}>{row.status}</span>;
-      }
-      // Server always uses BR2 as primary (contains prev_ fields):
-      //   total = Run 2 result, prevTotal = Run 1 result
-      // When only BR1 exists: total = Run 1, prevTotal = null
-      const run1Total = row.prevTotal != null ? row.prevTotal : row.total;
-      const isBetter = row.betterRunNr === 1;
-      return (
-        <span className={isBetter ? `${styles.monoText} ${styles.betterRun}` : styles.monoText}>
-          {formatTime(run1Total ?? null)}
-        </span>
-      );
+function buildStandardColumns(selectedCatId: string | null): Column[] {
+  const useCategory = Boolean(selectedCatId);
+  return [
+    {
+      key: 'rnk',
+      header: 'Poř.',
+      width: '44px',
+      align: 'center',
+      render: (row) => {
+        const rank = useCategory ? (row.catRnk ?? row.rnk) : row.rnk;
+        return <RankCell rank={rank} status={row.status} />;
+      },
     },
-  },
-  {
-    key: 'run2',
-    header: '2. jízda',
-    align: 'right',
-    cell: (row) => {
-      if (row.status) return '';
-      // When BR2 exists: total = Run 2 result
-      // When only BR1: prevTotal is null → Run 2 doesn't exist
-      const run2Total = row.prevTotal != null ? row.total : null;
-      const isBetter = row.betterRunNr === 2;
-      return (
-        <span className={isBetter ? `${styles.monoText} ${styles.betterRun}` : styles.monoText}>
-          {formatTime(run2Total ?? null)}
-        </span>
-      );
+    {
+      key: 'bib',
+      header: 'St.č.',
+      width: '48px',
+      align: 'center',
+      render: (row) => <span className={styles.bibText}>{row.bib ?? '-'}</span>,
     },
-  },
-  {
-    key: 'totalTotal',
-    header: 'Výsledek',
-    align: 'right',
-    cell: (row) => (
-      <span className={`${styles.monoText} ${styles.totalTotal}`}>
-        {!row.status ? formatTime(row.totalTotal ?? null) : ''}
-      </span>
-    ),
-  },
-  {
-    key: 'behind',
-    header: 'Ztráta',
-    align: 'right',
-    cell: (row) => (
-      <span className={styles.secondaryText}>{row.totalBehind ?? ''}</span>
-    ),
-  },
-];
+    {
+      key: 'name',
+      header: 'Jméno',
+      render: (row) => (
+        <div>
+          <div className={styles.athleteName}>{row.name}</div>
+          {row.club && <div className={styles.athleteClub}>{row.club}</div>}
+        </div>
+      ),
+    },
+    {
+      key: 'time',
+      header: 'Čas',
+      align: 'right',
+      hideOnMobile: true,
+      render: (row) => {
+        if (row.status) return <StatusBadge status={row.status} />;
+        return <span className={styles.monoText}>{formatTime(row.time)}</span>;
+      },
+    },
+    {
+      key: 'pen',
+      header: 'Trest',
+      align: 'right',
+      width: '52px',
+      hideOnMobile: true,
+      render: (row) => {
+        if (row.status) return null;
+        const val = formatPenalty(row.pen);
+        if (!val) return null;
+        return <span className={styles.penaltyText}>{val}</span>;
+      },
+    },
+    {
+      key: 'total',
+      header: 'Výsledek',
+      align: 'right',
+      render: (row) => {
+        if (row.status) return <StatusBadge status={row.status} />;
+        return <span className={`${styles.monoText} ${styles.totalText}`}>{formatTime(row.total)}</span>;
+      },
+    },
+    {
+      key: 'behind',
+      header: 'Ztráta',
+      align: 'right',
+      hideOnMobile: true,
+      render: (row) => {
+        const behind = useCategory ? (row.catTotalBehind ?? row.totalBehind) : row.totalBehind;
+        return <span className={styles.behindText}>{behind ?? ''}</span>;
+      },
+    },
+  ];
+}
 
-// Category-aware columns: replace rnk/behind with catRnk/catTotalBehind
-function getCategoryColumns(
-  baseColumns: ColumnDef<ResultEntry>[]
-): ColumnDef<ResultEntry>[] {
-  return baseColumns.map((col) => {
-    if (col.key === 'rnk') {
-      return {
-        ...col,
-        cell: (row: ResultEntry) => row.catRnk ?? row.rnk ?? '-',
-      };
-    }
-    if (col.key === 'behind') {
-      return {
-        ...col,
-        cell: (row: ResultEntry) => (
-          <span className={styles.secondaryText}>
-            {row.catTotalBehind ?? row.totalBehind ?? ''}
+function buildBestRunColumns(selectedCatId: string | null): Column[] {
+  const useCategory = Boolean(selectedCatId);
+  return [
+    {
+      key: 'rnk',
+      header: 'Poř.',
+      width: '44px',
+      align: 'center',
+      render: (row) => {
+        const rank = useCategory ? (row.catRnk ?? row.rnk) : row.rnk;
+        return <RankCell rank={rank} status={row.status} />;
+      },
+    },
+    {
+      key: 'bib',
+      header: 'St.č.',
+      width: '48px',
+      align: 'center',
+      render: (row) => <span className={styles.bibText}>{row.bib ?? '-'}</span>,
+    },
+    {
+      key: 'name',
+      header: 'Jméno',
+      render: (row) => (
+        <div>
+          <div className={styles.athleteName}>{row.name}</div>
+          {row.club && <div className={styles.athleteClub}>{row.club}</div>}
+        </div>
+      ),
+    },
+    {
+      key: 'run1',
+      header: '1. jízda',
+      align: 'right',
+      render: (row) => {
+        if (row.status) return <StatusBadge status={row.status} />;
+        const run1Total = row.prevTotal != null ? row.prevTotal : row.total;
+        const isBetter = row.betterRunNr === 1;
+        return (
+          <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
+            {formatTime(run1Total ?? null)}
           </span>
-        ),
-      };
-    }
-    return col;
-  });
+        );
+      },
+    },
+    {
+      key: 'run2',
+      header: '2. jízda',
+      align: 'right',
+      render: (row) => {
+        if (row.status) return null;
+        const run2Total = row.prevTotal != null ? row.total : null;
+        const isBetter = row.betterRunNr === 2;
+        if (run2Total === null) return <span className={styles.monoText}>-</span>;
+        return (
+          <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
+            {formatTime(run2Total)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'totalTotal',
+      header: 'Výsledek',
+      align: 'right',
+      render: (row) => {
+        if (row.status) return null;
+        return (
+          <span className={`${styles.monoText} ${styles.totalText}`}>
+            {formatTime(row.totalTotal ?? null)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'behind',
+      header: 'Ztráta',
+      align: 'right',
+      hideOnMobile: true,
+      render: (row) => {
+        const behind = useCategory ? (row.catTotalBehind ?? row.totalBehind) : row.totalBehind;
+        return <span className={styles.behindText}>{behind ?? ''}</span>;
+      },
+    },
+  ];
+}
+
+/** Rank display with podium styling */
+function RankCell({ rank, status }: { rank: number | null; status: string | null }) {
+  if (status) return <span className={styles.rankDash}>-</span>;
+  if (rank === null) return <span className={styles.rankDash}>-</span>;
+  if (rank <= 3) {
+    const podiumClass = rank === 1 ? styles.rankGold : rank === 2 ? styles.rankSilver : styles.rankBronze;
+    return <span className={`${styles.rankPodium} ${podiumClass}`}>{rank}</span>;
+  }
+  return <span className={styles.rankText}>{rank}</span>;
+}
+
+/** Status badge for DNS/DNF/DSQ */
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <Badge variant="error" size="sm">
+      {status}
+    </Badge>
+  );
+}
+
+function getRowPodiumClass(rank: number | null, status: string | null): string {
+  if (status || rank === null) return '';
+  if (rank === 1) return styles.rowGold;
+  if (rank === 2) return styles.rowSilver;
+  if (rank === 3) return styles.rowBronze;
+  return '';
 }
 
 interface ResultListProps {
@@ -197,9 +220,6 @@ interface ResultListProps {
   viewMode?: 'simple' | 'detailed';
 }
 
-/**
- * Display race results in a table using DS components
- */
 export function ResultList({
   data,
   isBestRun,
@@ -212,7 +232,6 @@ export function ResultList({
 }: ResultListProps) {
   const { results, race } = data;
 
-  // In detailed mode, all rows are expanded
   const effectiveExpandedRows = viewMode === 'detailed'
     ? new Set(results.map((r) => `${race.raceId}-${r.bib}`))
     : expandedRows;
@@ -228,45 +247,27 @@ export function ResultList({
     );
   }
 
-  // Sort: ranked athletes first (by rnk), then status athletes at bottom
   const sorted = [...results].sort((a, b) => {
     if (a.status && !b.status) return 1;
     if (!a.status && b.status) return -1;
     return 0;
   });
 
-  const baseColumns = isBestRun ? bestRunColumns : standardColumns;
-  const columns = selectedCatId
-    ? getCategoryColumns(baseColumns)
-    : baseColumns;
+  const columns = isBestRun
+    ? buildBestRunColumns(selectedCatId ?? null)
+    : buildStandardColumns(selectedCatId ?? null);
 
-  // If no expand handler provided, use standard Table
-  if (!onToggleExpand) {
-    return (
-      <Card>
-        <Table
-          columns={columns}
-          data={sorted}
-          rowKey={(row, index) => row.athleteId ?? `row-${index}`}
-          size="sm"
-          hoverable
-        />
-      </Card>
-    );
-  }
-
-  // Custom table with expandable rows
   return (
-    <Card>
+    <Card className={styles.resultsCard}>
       <div className={styles.tableWrapper}>
-        <table className={styles.customTable}>
-          <thead className={styles.tableHeader}>
-            <tr>
-              <th className={styles.chevronCell}></th>
+        <table className={styles.table}>
+          <thead>
+            <tr className={styles.headerRow}>
+              {onToggleExpand && <th className={styles.expandCol}></th>}
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`${styles.tableHeaderCell} ${col.align === 'center' ? styles.tableHeaderCellCenter : col.align === 'right' ? styles.tableHeaderCellRight : ''}`}
+                  className={`${styles.headerCell} ${getAlignClass(col.align)} ${col.hideOnMobile ? styles.hideOnMobile : ''}`}
                   style={col.width ? { width: col.width } : undefined}
                 >
                   {col.header}
@@ -280,29 +281,39 @@ export function ResultList({
               const isExpanded = effectiveExpandedRows.has(rowKey);
               const isLoading = detailedLoading.has(rowKey);
               const detail = detailedCache[rowKey] ?? null;
+              const podiumClass = getRowPodiumClass(row.rnk, row.status);
 
               return (
                 <Fragment key={rowKey}>
                   <tr
-                    onClick={() => onToggleExpand(rowKey)}
-                    className={styles.tableRow}
+                    onClick={onToggleExpand ? () => onToggleExpand(rowKey) : undefined}
+                    className={`${styles.dataRow} ${podiumClass} ${index % 2 === 1 ? styles.stripedRow : ''} ${onToggleExpand ? styles.clickable : ''} ${isExpanded ? styles.expandedDataRow : ''}`}
                   >
-                    <td className={`${styles.tableCell} ${styles.tableCellCenter} ${styles.chevronCell}`}>
-                      {isExpanded ? '▼' : '▶'}
-                    </td>
+                    {onToggleExpand && (
+                      <td className={`${styles.cell} ${styles.expandCol}`}>
+                        <span className={`${styles.chevron} ${isExpanded ? styles.chevronOpen : ''}`}>
+                          ›
+                        </span>
+                      </td>
+                    )}
                     {columns.map((col) => (
                       <td
                         key={col.key}
-                        className={`${styles.tableCell} ${col.align === 'center' ? styles.tableCellCenter : col.align === 'right' ? styles.tableCellRight : ''}`}
+                        className={`${styles.cell} ${getAlignClass(col.align)} ${col.hideOnMobile ? styles.hideOnMobile : ''}`}
                       >
-                        {col.cell?.(row, index) ?? null}
+                        {col.render(row, index)}
                       </td>
                     ))}
                   </tr>
-                  {isExpanded && (
-                    <tr className={styles.expandedRow}>
+                  {isExpanded && onToggleExpand && (
+                    <tr className={styles.detailRow}>
                       <td colSpan={columns.length + 1}>
-                        <RunDetailExpand detail={detail} isLoading={isLoading} />
+                        <RunDetailExpand
+                          detail={detail}
+                          isLoading={isLoading}
+                          isBestRun={isBestRun}
+                          athleteName={row.name}
+                        />
                       </td>
                     </tr>
                   )}
@@ -314,4 +325,10 @@ export function ResultList({
       </div>
     </Card>
   );
+}
+
+function getAlignClass(align?: 'left' | 'center' | 'right'): string {
+  if (align === 'center') return styles.alignCenter;
+  if (align === 'right') return styles.alignRight;
+  return '';
 }

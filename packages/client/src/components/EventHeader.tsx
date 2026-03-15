@@ -1,13 +1,27 @@
-import { SectionHeader, LiveIndicator } from '@czechcanoe/rvp-design-system';
+import { SectionHeader, LiveIndicator, Badge } from '@czechcanoe/rvp-design-system';
 import type { EventDetail } from '../services/api';
+import styles from './EventHeader.module.css';
 
 interface EventHeaderProps {
   event: EventDetail;
 }
 
-export function EventHeader({ event }: EventHeaderProps) {
-  const isLive = event.status === 'running';
+function StatusIndicator({ status }: { status: EventDetail['status'] }) {
+  switch (status) {
+    case 'running':
+      return <LiveIndicator>Live</LiveIndicator>;
+    case 'finished':
+      return <Badge variant="default">Dokončeno</Badge>;
+    case 'official':
+      return <Badge variant="success">Oficiální výsledky</Badge>;
+    case 'startlist':
+      return <Badge variant="info">Startovní listina</Badge>;
+    default:
+      return null;
+  }
+}
 
+export function EventHeader({ event }: EventHeaderProps) {
   const subtitle = [event.subTitle, event.location, event.discipline]
     .filter(Boolean)
     .join(' · ');
@@ -17,23 +31,16 @@ export function EventHeader({ event }: EventHeaderProps) {
     .join(' – ');
 
   return (
-    <div style={{ marginBottom: '1rem' }}>
+    <div className={styles.wrapper}>
       <SectionHeader
         title={event.mainTitle}
-        action={isLive ? <LiveIndicator>Live</LiveIndicator> : undefined}
+        action={<StatusIndicator status={event.status} />}
       />
       {(subtitle || dates) && (
-        <div
-          style={{
-            fontSize: '0.875rem',
-            color: 'var(--csk-color-text-secondary)',
-            marginTop: '-0.5rem',
-            marginBottom: '0.75rem',
-          }}
-        >
-          {subtitle}
-          {subtitle && dates && ' · '}
-          {dates}
+        <div className={styles.meta}>
+          {subtitle && <span className={styles.subtitle}>{subtitle}</span>}
+          {subtitle && dates && <span className={styles.separator}>·</span>}
+          {dates && <span className={styles.dates}>{dates}</span>}
         </div>
       )}
     </div>

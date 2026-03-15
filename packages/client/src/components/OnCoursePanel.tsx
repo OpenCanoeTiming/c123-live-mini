@@ -5,15 +5,16 @@
  * Displays gate progress, penalties, time-to-beat comparison, and provisional rank.
  *
  * Features:
- * - Collapse/expand toggle
+ * - Collapse/expand toggle with chevron icon
  * - Sorted by position (1 = closest to finish)
  * - Shows gate-by-gate penalties via GatePenalties component
  * - Displays accumulated time, penalty, provisional rank
- * - Time-to-beat comparison (ahead/behind reference athlete)
+ * - Time-to-beat comparison (ahead/behind reference athlete) with color coding
+ * - LiveIndicator in header to signal live nature
  * - Hides when no athletes are on course
  */
 
-import { Card, SectionHeader, Button } from '@czechcanoe/rvp-design-system';
+import { Card, SectionHeader, Badge, LiveIndicator } from '@czechcanoe/rvp-design-system';
 import type { PublicOnCourseEntry } from '@c123-live-mini/shared';
 import { GatePenalties } from './GatePenalties';
 import { formatTime, formatPenalty } from '../utils/formatTime';
@@ -34,11 +35,24 @@ export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps
   return (
     <Card>
       <SectionHeader
-        title={`Na trati (${oncourse.length})`}
+        title="Na trati"
+        badge={
+          <span className={styles.headerBadges}>
+            <LiveIndicator variant="live" color="success" size="sm" pulse />
+            <Badge variant="info" size="sm" pill>
+              {oncourse.length}
+            </Badge>
+          </span>
+        }
         action={
-          <Button variant="ghost" size="sm" onClick={onToggle}>
-            {isOpen ? 'Sbalit' : 'Rozbalit'}
-          </Button>
+          <button
+            className={styles.toggleButton}
+            onClick={onToggle}
+            aria-label={isOpen ? 'Sbalit panel' : 'Rozbalit panel'}
+            aria-expanded={isOpen}
+          >
+            <span className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}>›</span>
+          </button>
         }
       />
 
@@ -46,48 +60,66 @@ export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps
         <div className={styles.panelContent}>
           {oncourse.map((entry) => (
             <div key={`${entry.raceId}-${entry.bib}`} className={styles.entry}>
-              {/* Athlete info */}
+              {/* Athlete info row */}
               <div className={styles.athleteInfo}>
-                <div>
-                  <div className={styles.athleteName}>
-                    {entry.name} <span className={styles.athleteBib}>({entry.bib})</span>
-                  </div>
-                  <div className={styles.athleteClub}>{entry.club}</div>
+                <div className={styles.athleteIdentity}>
+                  <Badge variant="default" size="sm" pill>
+                    {entry.bib}
+                  </Badge>
+                  <span className={styles.athleteName}>{entry.name}</span>
                 </div>
-                <div className={styles.rankInfo}>
-                  {entry.rank !== null && (
-                    <div className={styles.rankText}>Průběžně #{entry.rank}</div>
-                  )}
-                </div>
+                {entry.rank !== null && (
+                  <Badge variant="primary" size="sm">
+                    #{entry.rank}
+                  </Badge>
+                )}
               </div>
+
+              {/* Club */}
+              {entry.club && (
+                <div className={styles.athleteClub}>{entry.club}</div>
+              )}
 
               {/* Gate progress */}
               <div className={styles.gateProgress}>
                 <GatePenalties gates={entry.gates} />
               </div>
 
-              {/* Time and penalty */}
-              <div className={styles.timeInfo}>
-                <div>
-                  <span className={styles.timeLabel}>Čas:</span>{' '}
-                  {entry.time !== null ? formatTime(entry.time) : '-'}
+              {/* Time / penalty / total row */}
+              <div className={styles.timeRow}>
+                <div className={styles.timeCell}>
+                  <span className={styles.timeLabel}>Čas</span>
+                  <span className={styles.timeValue}>
+                    {entry.time !== null ? formatTime(entry.time) : '—'}
+                  </span>
                 </div>
-                <div>
-                  <span className={styles.timeLabel}>Trest:</span>{' '}
-                  {formatPenalty(entry.pen)}
+                <div className={styles.timeDivider} />
+                <div className={styles.timeCell}>
+                  <span className={styles.timeLabel}>Trest</span>
+                  <span className={styles.timeValue}>{formatPenalty(entry.pen)}</span>
                 </div>
-                <div>
-                  <span className={styles.timeLabel}>Celkem:</span>{' '}
-                  {entry.total !== null ? formatTime(entry.total) : '-'}
+                <div className={styles.timeDivider} />
+                <div className={styles.timeCell}>
+                  <span className={styles.timeLabel}>Celkem</span>
+                  <span className={`${styles.timeValue} ${styles.timeValueTotal}`}>
+                    {entry.total !== null ? formatTime(entry.total) : '—'}
+                  </span>
                 </div>
               </div>
 
               {/* Time-to-beat comparison */}
               {entry.ttbDiff && entry.ttbName && (
-                <div className={styles.ttbDiff}>
-                  {entry.ttbDiff.startsWith('+')
-                    ? `${entry.ttbDiff} za ${entry.ttbName}`
-                    : `${entry.ttbDiff} před ${entry.ttbName}`}
+                <div
+                  className={`${styles.ttbRow} ${
+                    entry.ttbDiff.startsWith('+') ? styles.ttbBehind : styles.ttbAhead
+                  }`}
+                >
+                  <span className={styles.ttbDiff}>{entry.ttbDiff}</span>
+                  <span className={styles.ttbLabel}>
+                    {entry.ttbDiff.startsWith('+')
+                      ? `za ${entry.ttbName}`
+                      : `před ${entry.ttbName}`}
+                  </span>
                 </div>
               )}
             </div>

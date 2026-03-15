@@ -1,21 +1,24 @@
 import { Tabs, type TabItem } from '@czechcanoe/rvp-design-system';
 import type { RaceInfo } from '../services/api';
-import { getRaceTypeLabel } from '../utils/raceTypeLabels';
+import { getRaceTypeLabel, isBestRunRace } from '../utils/raceTypeLabels';
 
 interface RoundTabsProps {
   races: RaceInfo[];
   selectedRaceId: string | null;
   onRaceChange: (raceId: string) => void;
+  /** When true, BR2 is labeled as "Závod" (both BR1+BR2 merged) */
+  hasMergedBR?: boolean;
 }
 
 export function RoundTabs({
   races,
   selectedRaceId,
   onRaceChange,
+  hasMergedBR = false,
 }: RoundTabsProps) {
   const tabs: TabItem[] = races.map((race) => ({
     id: race.raceId,
-    label: getRaceTypeLabel(race.raceType),
+    label: getRaceTypeLabel(race.raceType, hasMergedBR && isBestRunRace(race.raceType)),
     content: null,
   }));
 
