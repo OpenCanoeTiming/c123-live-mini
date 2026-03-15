@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, startTransition } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, useDeferredValue } from 'react';
 import {
   SkeletonCard,
   Card,
@@ -6,11 +6,9 @@ import {
   Button,
   Tabs,
   SearchInput,
-  Breadcrumbs,
   type TabItem,
-  type BreadcrumbItem,
 } from '@czechcanoe/rvp-design-system';
-import { useLocation, Link } from 'wouter';
+import { useLocation } from 'wouter';
 import styles from './EventDetailPage.module.css';
 import {
   getEventDetails,
@@ -86,11 +84,9 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   type DataView = 'results' | 'startlist' | 'schedule';
   const [dataView, setDataView] = useState<DataView>('results');
 
-  // Search/filter state
+  // Search/filter state — useDeferredValue keeps input responsive while filtering defers
   const [searchQuery, setSearchQuery] = useState('');
-  const handleSearchChange = useCallback((value: string) => {
-    startTransition(() => setSearchQuery(value));
-  }, []);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   // Day selector state
   const [days, setDays] = useState<DayInfo[]>([]);
@@ -579,29 +575,29 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     return map;
   }, [liveState.classes]);
 
-  // Search filter for results and startlist
+  // Search filter for results and startlist (uses deferred query for responsiveness)
   const filteredResults: ResultsResponse | null = useMemo(() => {
     if (!results) return null;
-    if (!searchQuery.trim()) return results;
-    const q = searchQuery.trim().toLowerCase();
+    if (!deferredSearchQuery.trim()) return results;
+    const q = deferredSearchQuery.trim().toLowerCase();
     const filtered = results.results.filter((r) =>
       r.name.toLowerCase().includes(q) ||
       (r.club && r.club.toLowerCase().includes(q)) ||
       (r.bib != null && String(r.bib).includes(q))
     );
     return { ...results, results: filtered };
-  }, [results, searchQuery]);
+  }, [results, deferredSearchQuery]);
 
   const filteredStartlist = useMemo(() => {
     if (!startlist) return null;
-    if (!searchQuery.trim()) return startlist;
-    const q = searchQuery.trim().toLowerCase();
+    if (!deferredSearchQuery.trim()) return startlist;
+    const q = deferredSearchQuery.trim().toLowerCase();
     return startlist.filter((s) =>
       s.name.toLowerCase().includes(q) ||
       (s.club && s.club.toLowerCase().includes(q)) ||
       (s.bib != null && String(s.bib).includes(q))
     );
-  }, [startlist, searchQuery]);
+  }, [startlist, deferredSearchQuery]);
 
   // Data view tabs
   const hasResults = results && results.results.length > 0;
@@ -636,17 +632,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const dayTabs: TabItem[] = useMemo(() => {
     return days.map((d) => ({ id: d.date, label: d.label, content: null }));
   }, [days]);
-
-  // Breadcrumb items
-  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
-    const items: BreadcrumbItem[] = [
-      { id: 'home', label: 'ČSK Live', href: '#/' },
-    ];
-    if (eventDetail) {
-      items.push({ id: 'event', label: eventDetail.mainTitle });
-    }
-    return items;
-  }, [eventDetail]);
 
   // 404 / error with back link
   if (eventState === 'error') {
@@ -697,25 +682,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         <EventHeader event={eventDetail} connectionState={shouldConnect ? connectionState : undefined} />
       )}
 
-      {/* Sub-header: breadcrumbs + DataView tabs */}
-      <div className={styles.subHeader}>
-        <Breadcrumbs
-          items={breadcrumbItems}
-          renderLink={(item, children) =>
-            item.href ? <Link href={item.href.replace('#', '')}>{children}</Link> : <>{children}</>
-          }
-        />
-        {resultsState === 'success' && (
-          <Tabs
-            tabs={dataViewTabs}
-            activeTab={dataView}
-            onChange={(id) => setDataView(id as DataView)}
-            variant="pills"
-            size="sm"
-          />
-        )}
-      </div>
-
       <OnCoursePanel
         oncourse={liveState.oncourse}
         isOpen={oncoursePanelOpen}
@@ -765,6 +731,18 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         </>
       )}
 
+      {resultsState === 'success' && (
+        <div className={styles.dataViewTabs}>
+          <Tabs
+            tabs={dataViewTabs}
+            activeTab={dataView}
+            onChange={(id) => setDataView(id as DataView)}
+            variant="pills"
+            size="sm"
+          />
+        </div>
+      )}
+
       {dataView !== 'schedule' && (
         <div className={styles.viewModeToggle}>
           <div className={styles.toolbarRow}>
@@ -775,7 +753,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
               size="sm"
               placeholder="Hledat závodníka..."
               value={searchQuery}
-              onChange={handleSearchChange}
+              onChange={setSearchQuery}
               debounceMs={300}
               resultsCount={searchResultsCount}
               fullWidth

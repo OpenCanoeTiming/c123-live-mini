@@ -64,11 +64,11 @@
   animation: fadeSlideIn 0.3s ease-out;
 }
 
+/* Desktop: single row */
 .mainRow {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  flex-wrap: wrap;
   min-width: 0;
 }
 
@@ -78,16 +78,21 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .athleteClub {
   font-size: var(--csk-font-size-xs, 0.75rem);
   color: var(--csk-color-text-tertiary, #a3a3a3);
   white-space: nowrap;
+  flex-shrink: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .spacer {
   flex: 1;
+  min-width: 0.25rem;
 }
 
 .inlineTime {
@@ -96,6 +101,7 @@
   color: var(--csk-color-warning, #ea580c);
   font-weight: var(--csk-font-weight-medium, 500);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .inlinePen {
@@ -107,7 +113,34 @@
   color: var(--csk-color-on-surface, #171717);
 }
 
+.rankBadge {
+  flex-shrink: 0;
+}
+
 .gateRow {
-  padding-left: 2rem;
+  padding-left: 0.25rem;
   min-width: 0;
+  overflow-x: auto;
+}
+
+/* Mobile: stack name+club row and times row */
+@media (max-width: 640px) {
+  .mainRow {
+    flex-wrap: wrap;
+  }
+
+  .athleteClub {
+    display: none;
+  }
+
+  .spacer {
+    display: none;
+  }
+
+  /* Force times + rank to a new line on mobile */
+  .inlineTime {
+    order: 10;
+    width: 100%;
+    margin-top: 0.125rem;
+  }
 }

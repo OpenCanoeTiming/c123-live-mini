@@ -47,7 +47,7 @@ afterEach(() => {
 describe('App', () => {
   it('renders the app title in header', () => {
     render(<App />);
-    expect(screen.getByText('c123-live-mini')).toBeTruthy();
+    expect(screen.getByText('ČSK Live')).toBeTruthy();
   });
 
   it('shows shared package version in footer', () => {

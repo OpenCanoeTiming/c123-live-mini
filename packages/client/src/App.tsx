@@ -7,7 +7,7 @@ import { EventDetailPage } from './pages/EventDetailPage';
 
 function App() {
   const headerContent = (
-    <Header variant="satellite" appName="c123-live-mini" />
+    <Header variant="satellite" appName="ČSK Live" />
   );
 
   const footerContent = (
