@@ -127,7 +127,7 @@ export class OnCourseStore {
     const entries: OnCourseEntry[] = [];
     for (const key of eventKeys) {
       const entry = this.entries.get(key);
-      if (entry && !entry.completed) {
+      if (entry) {
         entries.push(entry);
       }
     }

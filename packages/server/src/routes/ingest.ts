@@ -254,11 +254,10 @@ export function registerIngestRoutes(
         onCourseStore.add(eventId, entry);
       }
 
-      // Expire entries not refreshed within TTL (handles removed riders & stopped feed)
+      // Expire entries not refreshed within TTL (handles removed riders & stopped feed).
+      // Finished riders are NOT removed immediately — they stay visible with their
+      // final result until TTL expires (C123 stops sending them after finish).
       onCourseStore.expireStale(eventId, ONCOURSE_TTL_MS);
-
-      // Cleanup finished competitors
-      onCourseStore.cleanupFinished(eventId);
 
       // Build full snapshot of all active entries for broadcast
       const allActive = onCourseStore.getAll(eventId);
@@ -312,7 +311,6 @@ export function registerIngestRoutes(
           oncourseTimers.delete(eventId);
           const store = getOnCourseStore();
           store.expireStale(eventId, ONCOURSE_TTL_MS);
-          store.cleanupFinished(eventId);
           const remaining = store.getAll(eventId);
           try {
             wsManager.broadcastDiff(eventId, {
