@@ -5,7 +5,7 @@
  * Compact layout: single-row with inline times, gate penalties below.
  */
 
-import { Card, SectionHeader, Badge, LiveIndicator } from '@czechcanoe/rvp-design-system';
+import { Card, SectionHeader, Badge } from '@czechcanoe/rvp-design-system';
 import type { PublicOnCourseEntry } from '@c123-live-mini/shared';
 import { GatePenalties } from './GatePenalties';
 import { formatTime, formatPenalty } from '../utils/formatTime';
@@ -26,14 +26,6 @@ export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps
     <Card>
       <SectionHeader
         title="Na trati"
-        badge={
-          <span className={styles.headerBadges}>
-            <LiveIndicator variant="live" color="success" size="sm" pulse />
-            <Badge variant="info" size="sm" pill>
-              {oncourse.length}
-            </Badge>
-          </span>
-        }
         action={
           <button
             className={styles.toggleButton}
