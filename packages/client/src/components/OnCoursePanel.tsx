@@ -50,7 +50,7 @@ export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps
         <div className={styles.panelContent}>
           {oncourse.map((entry) => (
             <div key={`${entry.raceId}-${entry.bib}`} className={styles.entry}>
-              {/* Line 1: bib, name (club), time + pen = total, #rank */}
+              {/* Line 1: bib, name (club) ... time +pen = total #rank */}
               <div className={styles.mainRow}>
                 <Badge variant="default" size="sm" pill>
                   {entry.bib}
@@ -61,12 +61,14 @@ export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps
                 )}
                 <span className={styles.spacer} />
                 <span className={styles.inlineTime}>
-                  {entry.time !== null ? formatTime(entry.time) : '—'}
-                  {entry.pen != null && entry.pen > 0 && (
-                    <span className={styles.inlinePen}> +{formatPenalty(entry.pen)}</span>
-                  )}
-                  {entry.total !== null && (
-                    <span className={styles.inlineTotal}> = {formatTime(entry.total)}</span>
+                  {entry.pen != null && entry.pen > 0 ? (
+                    <>
+                      {formatTime(entry.time)}
+                      <span className={styles.inlinePen}> +{formatPenalty(entry.pen)}</span>
+                      <span className={styles.inlineTotal}> = {formatTime(entry.total)}</span>
+                    </>
+                  ) : (
+                    <span className={styles.inlineTotal}>{entry.total !== null ? formatTime(entry.total) : '—'}</span>
                   )}
                 </span>
                 {entry.rank !== null && (

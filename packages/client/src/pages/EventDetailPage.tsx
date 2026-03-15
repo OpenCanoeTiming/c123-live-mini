@@ -628,6 +628,21 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     );
   }, [classGroups, selectedDay, days]);
 
+  // When day changes, auto-select first class from filtered groups if current is not visible
+  useEffect(() => {
+    if (filteredClassGroups.length === 0) return;
+    const currentVisible = filteredClassGroups.some((g) => g.classId === selectedClassId);
+    if (!currentVisible) {
+      const firstGroup = filteredClassGroups[0];
+      setSelectedClassId(firstGroup.classId);
+      if (firstGroup.displayRaces.length > 0) {
+        const newRaceId = firstGroup.displayRaces[0].raceId;
+        setSelectedRaceId(newRaceId);
+        navigate(`/events/${eventId}/race/${newRaceId}`);
+      }
+    }
+  }, [filteredClassGroups, selectedClassId, eventId, navigate]);
+
   // Day selector tabs
   const dayTabs: TabItem[] = useMemo(() => {
     return days.map((d) => ({ id: d.date, label: d.label, content: null }));
@@ -752,9 +767,8 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             <SearchInput
               size="sm"
               placeholder="Hledat závodníka..."
-              value={searchQuery}
               onChange={setSearchQuery}
-              debounceMs={300}
+              debounceMs={200}
               resultsCount={searchResultsCount}
               fullWidth
             />
