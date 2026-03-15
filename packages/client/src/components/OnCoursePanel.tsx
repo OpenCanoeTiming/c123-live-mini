@@ -5,7 +5,7 @@
  * Compact layout: single-row with inline times, gate penalties below.
  */
 
-import { Card, SectionHeader, Badge } from '@czechcanoe/rvp-design-system';
+import { Card, LiveIndicator, Badge } from '@czechcanoe/rvp-design-system';
 import type { PublicOnCourseEntry } from '@c123-live-mini/shared';
 import { GatePenalties } from './GatePenalties';
 import { formatTime, formatPenalty } from '../utils/formatTime';
@@ -23,20 +23,21 @@ export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps
   }
 
   return (
-    <Card>
-      <SectionHeader
-        title="Na trati"
-        action={
-          <button
-            className={styles.toggleButton}
-            onClick={onToggle}
-            aria-label={isOpen ? 'Sbalit panel' : 'Rozbalit panel'}
-            aria-expanded={isOpen}
-          >
-            <span className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}>›</span>
-          </button>
-        }
-      />
+    <Card variant="aesthetic">
+      <div className={styles.header}>
+        <span className={styles.label}>Na trati</span>
+        <LiveIndicator variant="live" size="sm" energyGlow />
+        <Badge variant="default" size="sm">{oncourse.length}</Badge>
+        <span className={styles.spacer} />
+        <button
+          className={styles.toggleButton}
+          onClick={onToggle}
+          aria-label={isOpen ? 'Sbalit panel' : 'Rozbalit panel'}
+          aria-expanded={isOpen}
+        >
+          <span className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}>›</span>
+        </button>
+      </div>
 
       {isOpen && (
         <div className={styles.panelContent}>

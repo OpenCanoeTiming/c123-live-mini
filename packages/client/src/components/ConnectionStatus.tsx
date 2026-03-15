@@ -23,7 +23,7 @@ export function ConnectionStatus({ connectionState }: ConnectionStatusProps) {
   if (connectionState === 'connected') {
     return (
       <div className={styles.liveContainer}>
-        <LiveIndicator variant="live" color="success" size="sm" />
+        <LiveIndicator variant="live" size="sm" energyGlow />
         <span className={styles.liveText}>Live</span>
       </div>
     );
