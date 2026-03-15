@@ -242,6 +242,10 @@ export function registerIngestRoutes(
 
       const onCourseStore = getOnCourseStore();
 
+      // Treat each POST as a full snapshot: clear existing entries, then add current ones.
+      // This ensures riders removed from the feed (or an empty feed) are cleaned up.
+      onCourseStore.clearEvent(eventId);
+
       // Process each OnCourse entry and collect the added entries
       const addedEntries: PublicOnCourseEntry[] = [];
       for (const entry of oncourse) {
@@ -290,18 +294,13 @@ export function registerIngestRoutes(
         itemsProcessed: oncourse.length,
       });
 
-      // Broadcast oncourse updates to WebSocket clients
-      // DECISION: Use `diff` message for oncourse updates (FR-004)
-      // Rationale: OnCourse changes are incremental (1-3 entries at a time).
-      // Sending only changed entries is ~100-500 bytes vs full state 5-50KB (SC-003).
-      // CRITICAL: Only broadcast the entries that were just ingested, not all entries.
-      if (addedEntries.length > 0) {
-        try {
-          wsManager.broadcastDiff(eventId, { oncourse: addedEntries });
-        } catch (broadcastError) {
-          // Log broadcast errors but don't fail the ingestion
-          request.log.error(broadcastError, 'Failed to broadcast oncourse update');
-        }
+      // Broadcast full oncourse snapshot to WebSocket clients
+      // Each POST is a full snapshot, so we always broadcast (even empty = clear panel)
+      try {
+        wsManager.broadcastDiff(eventId, { oncourse: addedEntries });
+      } catch (broadcastError) {
+        // Log broadcast errors but don't fail the ingestion
+        request.log.error(broadcastError, 'Failed to broadcast oncourse update');
       }
 
       return { active };

@@ -114,27 +114,6 @@ function upsertResults(existing: PublicResult[], updates: PublicResult[]): Publi
 }
 
 /**
- * Upsert oncourse entries by bib+raceId composite key
- */
-function upsertOncourse(existing: PublicOnCourseEntry[], updates: PublicOnCourseEntry[]): PublicOnCourseEntry[] {
-  const entryMap = new Map<string, PublicOnCourseEntry>();
-
-  // Add existing entries
-  existing.forEach((entry) => {
-    const key = `${entry.raceId}-${entry.bib}`;
-    entryMap.set(key, entry);
-  });
-
-  // Upsert updates
-  updates.forEach((entry) => {
-    const key = `${entry.raceId}-${entry.bib}`;
-    entryMap.set(key, entry);
-  });
-
-  return Array.from(entryMap.values());
-}
-
-/**
  * Reducer for event live state
  */
 function eventLiveStateReducer(state: EventLiveState, action: EventLiveStateAction): EventLiveState {
@@ -180,9 +159,9 @@ function eventLiveStateReducer(state: EventLiveState, action: EventLiveStateActi
         };
       }
 
-      // Upsert oncourse entries by bib+raceId composite key
+      // Replace oncourse entries with the full snapshot from server
       if (oncourse) {
-        newState.oncourse = upsertOncourse(newState.oncourse, oncourse);
+        newState.oncourse = oncourse;
       }
 
       // Update event status
