@@ -558,37 +558,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     ]
   );
 
-  // 404 / error with back link
-  if (eventState === 'error') {
-    return (
-      <section>
-        <Card>
-          <EmptyState
-            title={eventError ?? 'Chyba'}
-            description={
-              eventError === 'Závod nenalezen'
-                ? 'Požadovaný závod nebyl nalezen.'
-                : (eventError ?? 'Neznámá chyba')
-            }
-            action={
-              <Button onClick={() => navigate('/')}>
-                Zpět na přehled závodů
-              </Button>
-            }
-          />
-        </Card>
-      </section>
-    );
-  }
-
-  if (eventState === 'loading' || eventState === 'idle') {
-    return (
-      <section>
-        <SkeletonCard />
-      </section>
-    );
-  }
-
   // Build human-readable class name map from liveState.classes
   const classNameMap = useMemo(() => {
     const map: Record<string, string> = {};
@@ -640,6 +609,37 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     if (dataView === 'startlist') return filteredStartlist?.length;
     return undefined;
   }, [searchQuery, dataView, filteredResults, filteredStartlist]);
+
+  // 404 / error with back link
+  if (eventState === 'error') {
+    return (
+      <section>
+        <Card>
+          <EmptyState
+            title={eventError ?? 'Chyba'}
+            description={
+              eventError === 'Závod nenalezen'
+                ? 'Požadovaný závod nebyl nalezen.'
+                : (eventError ?? 'Neznámá chyba')
+            }
+            action={
+              <Button onClick={() => navigate('/')}>
+                Zpět na přehled závodů
+              </Button>
+            }
+          />
+        </Card>
+      </section>
+    );
+  }
+
+  if (eventState === 'loading' || eventState === 'idle') {
+    return (
+      <section>
+        <SkeletonCard />
+      </section>
+    );
+  }
 
   // Find races for selected class
   const selectedGroup = classGroups.find((g) => g.classId === selectedClassId);
