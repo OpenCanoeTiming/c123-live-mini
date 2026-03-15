@@ -12,6 +12,12 @@
   color: var(--csk-color-text-tertiary, #9ca3af);
 }
 
+.startTime {
+  font-family: var(--csk-font-mono, monospace);
+  font-size: var(--csk-font-size-sm, 0.875rem);
+  color: var(--csk-color-text-secondary, #6b7280);
+}
+
 .categoryBadge {
   font-size: var(--csk-font-size-xs, 0.75rem);
   color: var(--csk-color-text-secondary, #6b7280);

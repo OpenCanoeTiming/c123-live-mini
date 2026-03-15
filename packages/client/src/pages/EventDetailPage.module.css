@@ -3,8 +3,36 @@
  * Uses DS CSS variables for colors and spacing tokens
  */
 
+.pageWrapper {
+  padding: 0 1rem;
+  max-width: 960px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.subHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--csk-color-bg-primary, #fff);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--csk-color-border-secondary, #e5e5e5);
+  margin-bottom: 0;
+}
+
+.daySelector {
+  margin-bottom: 0;
+}
+
 .viewModeToggle {
-  margin-bottom: 1rem;
+  margin-bottom: 0;
 }
 
 .toolbarRow {
@@ -15,5 +43,5 @@
 }
 
 .dataViewTabs {
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
 }

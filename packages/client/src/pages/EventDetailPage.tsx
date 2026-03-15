@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, startTransition } from 'react';
 import {
   SkeletonCard,
   Card,
@@ -6,9 +6,11 @@ import {
   Button,
   Tabs,
   SearchInput,
+  Breadcrumbs,
   type TabItem,
+  type BreadcrumbItem,
 } from '@czechcanoe/rvp-design-system';
-import { useLocation } from 'wouter';
+import { useLocation, Link } from 'wouter';
 import styles from './EventDetailPage.module.css';
 import {
   getEventDetails,
@@ -22,7 +24,7 @@ import {
   type CategoryInfo,
   type StartlistEntry,
 } from '../services/api';
-import { groupRaces, type ClassGroup } from '../utils/groupRaces';
+import { groupRaces, extractDays, type ClassGroup, type DayInfo } from '../utils/groupRaces';
 import { isBestRunRace } from '../utils/raceTypeLabels';
 import { EventHeader } from '../components/EventHeader';
 import { ClassTabs } from '../components/ClassTabs';
@@ -86,6 +88,13 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
   // Search/filter state
   const [searchQuery, setSearchQuery] = useState('');
+  const handleSearchChange = useCallback((value: string) => {
+    startTransition(() => setSearchQuery(value));
+  }, []);
+
+  // Day selector state
+  const [days, setDays] = useState<DayInfo[]>([]);
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
   // Updated bibs tracking for animation (Phase 9)
   const [updatedBibs, setUpdatedBibs] = useState<Set<number>>(new Set());
@@ -345,6 +354,9 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
         const groups = groupRaces(eventData.races);
         setClassGroups(groups);
+
+        const dayInfos = extractDays(eventData.races);
+        setDays(dayInfos);
 
         // Handle deep link with raceId from URL
         if (urlRaceId) {
@@ -641,10 +653,36 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     );
   }
 
+  // Filter classGroups by selected day
+  const filteredClassGroups = useMemo(() => {
+    if (!selectedDay) return classGroups;
+    const dayInfo = days.find((d) => d.date === selectedDay);
+    if (!dayInfo) return classGroups;
+    return classGroups.filter((g) =>
+      g.races.some((r) => dayInfo.raceIds.has(r.raceId))
+    );
+  }, [classGroups, selectedDay, days]);
+
+  // Day selector tabs
+  const dayTabs: TabItem[] = useMemo(() => {
+    return days.map((d) => ({ id: d.date, label: d.label, content: null }));
+  }, [days]);
+
+  // Breadcrumb items
+  const breadcrumbItems: BreadcrumbItem[] = useMemo(() => {
+    const items: BreadcrumbItem[] = [
+      { id: 'home', label: 'ČSK Live', href: '#/' },
+    ];
+    if (eventDetail) {
+      items.push({ id: 'event', label: eventDetail.mainTitle });
+    }
+    return items;
+  }, [eventDetail]);
+
   // Find races for selected class
-  const selectedGroup = classGroups.find((g) => g.classId === selectedClassId);
+  const selectedGroup = filteredClassGroups.find((g) => g.classId === selectedClassId);
   const selectedRace = races.find((r) => r.raceId === selectedRaceId);
-  const showClassTabs = classGroups.length > 1;
+  const showClassTabs = filteredClassGroups.length > 1;
   // Use displayRaces for tabs (BR1 hidden when BR2 exists)
   const displayRaces = selectedGroup?.displayRaces ?? [];
   const showRoundTabs = displayRaces.length > 1;
@@ -654,45 +692,20 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const isBR = selectedRace ? isBestRunRace(selectedRace.raceType) : false;
 
   return (
-    <section>
+    <section className={styles.pageWrapper}>
       {eventDetail && (
         <EventHeader event={eventDetail} connectionState={shouldConnect ? connectionState : undefined} />
       )}
 
-      <OnCoursePanel
-        oncourse={liveState.oncourse}
-        isOpen={oncoursePanelOpen}
-        onToggle={() => setOncoursePanelOpen(!oncoursePanelOpen)}
-      />
-
-      {showClassTabs && (
-        <ClassTabs
-          classGroups={classGroups}
-          selectedClassId={selectedClassId}
-          onClassChange={handleClassChange}
-          classNameMap={classNameMap}
+      {/* Sub-header: breadcrumbs + DataView tabs */}
+      <div className={styles.subHeader}>
+        <Breadcrumbs
+          items={breadcrumbItems}
+          renderLink={(item, children) =>
+            item.href ? <Link href={item.href.replace('#', '')}>{children}</Link> : <>{children}</>
+          }
         />
-      )}
-
-      {showRoundTabs && (
-        <RoundTabs
-          races={displayRaces}
-          selectedRaceId={selectedRaceId}
-          onRaceChange={handleRaceChange}
-          hasMergedBR={hasMergedBR}
-        />
-      )}
-
-      {categories.length > 0 && (
-        <CategoryFilter
-          categories={categories}
-          selectedCatId={selectedCatId}
-          onCategoryChange={handleCategoryChange}
-        />
-      )}
-
-      {resultsState === 'success' && (
-        <div className={styles.dataViewTabs}>
+        {resultsState === 'success' && (
           <Tabs
             tabs={dataViewTabs}
             activeTab={dataView}
@@ -700,7 +713,56 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             variant="pills"
             size="sm"
           />
-        </div>
+        )}
+      </div>
+
+      <OnCoursePanel
+        oncourse={liveState.oncourse}
+        isOpen={oncoursePanelOpen}
+        onToggle={() => setOncoursePanelOpen(!oncoursePanelOpen)}
+      />
+
+      {dataView !== 'schedule' && (
+        <>
+          {/* Day selector */}
+          {days.length > 0 && (
+            <div className={styles.daySelector}>
+              <Tabs
+                tabs={[{ id: '__all__', label: 'Vše', content: null }, ...dayTabs]}
+                activeTab={selectedDay ?? '__all__'}
+                onChange={(id) => setSelectedDay(id === '__all__' ? null : id)}
+                variant="pills"
+                size="sm"
+              />
+            </div>
+          )}
+
+          {showClassTabs && (
+            <ClassTabs
+              classGroups={filteredClassGroups}
+              selectedClassId={selectedClassId}
+              onClassChange={handleClassChange}
+              classNameMap={classNameMap}
+            />
+          )}
+
+          {showRoundTabs && (
+            <RoundTabs
+              races={displayRaces}
+              selectedRaceId={selectedRaceId}
+              onRaceChange={handleRaceChange}
+              hasMergedBR={hasMergedBR}
+            />
+          )}
+
+          {categories.length > 0 && (
+            <CategoryFilter
+              categories={categories}
+              selectedCatId={selectedCatId}
+              onCategoryChange={handleCategoryChange}
+            />
+          )}
+        </>
       )}
 
       {dataView !== 'schedule' && (
@@ -713,7 +775,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
               size="sm"
               placeholder="Hledat závodníka..."
               value={searchQuery}
-              onChange={setSearchQuery}
+              onChange={handleSearchChange}
               debounceMs={300}
               resultsCount={searchResultsCount}
               fullWidth

@@ -22,7 +22,7 @@ interface Column {
 
 function buildStandardColumns(selectedCatId: string | null): Column[] {
   const useCategory = Boolean(selectedCatId);
-  return [
+  const cols: Column[] = [
     {
       key: 'rnk',
       header: 'Poř.',
@@ -50,6 +50,17 @@ function buildStandardColumns(selectedCatId: string | null): Column[] {
         </div>
       ),
     },
+  ];
+  if (!selectedCatId) {
+    cols.push({
+      key: 'catId',
+      header: 'Kat.',
+      width: '48px',
+      hideOnMobile: true,
+      render: (row) => <span className={styles.catText}>{row.catId ?? ''}</span>,
+    });
+  }
+  cols.push(
     {
       key: 'time',
       header: 'Čas',
@@ -92,7 +103,8 @@ function buildStandardColumns(selectedCatId: string | null): Column[] {
         return <span className={styles.behindText}>{behind ?? ''}</span>;
       },
     },
-  ];
+  );
+  return cols;
 }
 
 /** Mobile-only cell showing both BR runs stacked */

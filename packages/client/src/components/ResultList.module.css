@@ -167,6 +167,11 @@
   color: var(--csk-color-text-secondary, #6b7280);
 }
 
+.catText {
+  font-size: var(--csk-font-size-xs, 0.75rem);
+  color: var(--csk-color-text-secondary, #6b7280);
+}
+
 .athleteName {
   font-weight: 500;
   color: var(--csk-color-text-primary, #111827);

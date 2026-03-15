@@ -64,6 +64,15 @@
   color: var(--csk-color-text-tertiary, #9ca3af);
 }
 
+.dayHeader {
+  font-weight: 600;
+  font-size: var(--csk-font-size-sm, 0.875rem);
+  color: var(--csk-color-text-primary, #111827);
+  padding: 0.75rem 0.75rem 0.375rem;
+  background: var(--csk-color-bg-secondary, #f8f9fa);
+  border-bottom: 1px solid var(--csk-color-border-secondary, #e5e7eb);
+}
+
 .statusCol {
   flex-shrink: 0;
 }

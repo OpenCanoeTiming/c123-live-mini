@@ -5,6 +5,45 @@
 
 import type { RaceInfo } from '../services/api';
 
+export interface DayInfo {
+  date: string; // YYYY-MM-DD
+  label: string; // "Den 1 (15.3.)" etc.
+  raceIds: Set<string>;
+}
+
+/**
+ * Extract unique days from race startTimes.
+ * Returns sorted array of DayInfo. If all races fall on same day, returns empty array.
+ */
+export function extractDays(races: RaceInfo[]): DayInfo[] {
+  const dayMap = new Map<string, Set<string>>();
+
+  for (const race of races) {
+    if (!race.startTime) continue;
+    const d = new Date(race.startTime);
+    if (isNaN(d.getTime())) continue;
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const existing = dayMap.get(key);
+    if (existing) {
+      existing.add(race.raceId);
+    } else {
+      dayMap.set(key, new Set([race.raceId]));
+    }
+  }
+
+  if (dayMap.size <= 1) return [];
+
+  const sorted = [...dayMap.entries()].sort(([a], [b]) => a.localeCompare(b));
+  return sorted.map(([date, raceIds], i) => {
+    const [, m, day] = date.split('-');
+    return {
+      date,
+      label: `Den ${i + 1} (${parseInt(day)}.${parseInt(m)}.)`,
+      raceIds,
+    };
+  });
+}
+
 export interface ClassGroup {
   classId: string;
   races: RaceInfo[];

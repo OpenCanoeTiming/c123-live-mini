@@ -1,4 +1,4 @@
-import { HeroSection, LiveIndicator, Badge, type HeroSectionMetaItem } from '@czechcanoe/rvp-design-system';
+import { HeroSection, Badge, type HeroSectionMetaItem } from '@czechcanoe/rvp-design-system';
 import type { EventDetail } from '../services/api';
 import type { ConnectionState } from '../hooks/useEventWebSocket';
 
@@ -18,7 +18,7 @@ function getInitials(title: string): string {
 function StatusBadges({ status, connectionState }: { status: EventDetail['status']; connectionState?: ConnectionState }) {
   // Connection state takes priority for live events
   if (connectionState === 'reconnecting') {
-    return <LiveIndicator variant="connecting" color="warning" size="sm">Obnovování</LiveIndicator>;
+    return <Badge variant="warning" size="sm">Obnovování</Badge>;
   }
   if (connectionState === 'disconnected') {
     return <Badge variant="default" size="sm">Offline</Badge>;
@@ -26,7 +26,7 @@ function StatusBadges({ status, connectionState }: { status: EventDetail['status
 
   switch (status) {
     case 'running':
-      return <LiveIndicator variant="live" color="success" size="sm" pulse glow>Live</LiveIndicator>;
+      return <Badge variant="success" size="sm">Live</Badge>;
     case 'finished':
       return <Badge variant="default">Dokončeno</Badge>;
     case 'official':
@@ -55,7 +55,7 @@ export function EventHeader({ event, connectionState }: EventHeaderProps) {
 
   return (
     <HeroSection
-      variant="compact"
+      variant="minimal"
       section="dv"
       title={event.mainTitle}
       subtitle={subtitle || undefined}
@@ -63,7 +63,6 @@ export function EventHeader({ event, connectionState }: EventHeaderProps) {
       badges={<StatusBadges status={event.status} connectionState={connectionState} />}
       metadata={metadata.length > 0 ? metadata : undefined}
       meshBackground
-      wave
     />
   );
 }
