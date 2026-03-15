@@ -9,6 +9,7 @@ import type { OnCourseEntry, OnCourseInput } from '@c123-live-mini/shared';
 export class OnCourseStore {
   private entries: Map<string, OnCourseEntry> = new Map();
   private eventEntries: Map<string, Set<string>> = new Map();
+  private lastSeen: Map<string, number> = new Map(); // key → Date.now()
 
   /**
    * Generate unique key for an OnCourse entry
@@ -53,6 +54,7 @@ export class OnCourseStore {
     };
 
     this.entries.set(key, entry);
+    this.lastSeen.set(key, Date.now());
 
     // Track entries by eventId
     if (!this.eventEntries.has(eventId)) {
@@ -95,6 +97,7 @@ export class OnCourseStore {
   remove(eventId: string, raceId: string, bib: number): boolean {
     const key = this.getKey(raceId, bib);
     const deleted = this.entries.delete(key);
+    this.lastSeen.delete(key);
 
     if (deleted && this.eventEntries.has(eventId)) {
       this.eventEntries.get(eventId)!.delete(key);
@@ -154,6 +157,33 @@ export class OnCourseStore {
   }
 
   /**
+   * Remove entries not seen for longer than ttlMs.
+   * Returns number of removed entries.
+   */
+  expireStale(eventId: string, ttlMs: number): number {
+    const eventKeys = this.eventEntries.get(eventId);
+    if (!eventKeys) return 0;
+
+    const now = Date.now();
+    const keysToRemove: string[] = [];
+
+    for (const key of eventKeys) {
+      const seen = this.lastSeen.get(key) ?? 0;
+      if (now - seen > ttlMs) {
+        keysToRemove.push(key);
+      }
+    }
+
+    for (const key of keysToRemove) {
+      this.entries.delete(key);
+      this.lastSeen.delete(key);
+      eventKeys.delete(key);
+    }
+
+    return keysToRemove.length;
+  }
+
+  /**
    * Remove entries for competitors who have finished
    * Called automatically when dtFinish is set, or can be called manually
    */
@@ -175,6 +205,7 @@ export class OnCourseStore {
 
     for (const key of keysToRemove) {
       this.entries.delete(key);
+      this.lastSeen.delete(key);
       eventKeys.delete(key);
       removed++;
     }
@@ -193,6 +224,7 @@ export class OnCourseStore {
 
     for (const key of eventKeys) {
       this.entries.delete(key);
+      this.lastSeen.delete(key);
     }
 
     this.eventEntries.delete(eventId);
@@ -204,6 +236,7 @@ export class OnCourseStore {
   clear(): void {
     this.entries.clear();
     this.eventEntries.clear();
+    this.lastSeen.clear();
   }
 
   /**

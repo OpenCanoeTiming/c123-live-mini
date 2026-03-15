@@ -246,48 +246,45 @@ export function registerIngestRoutes(
 
       const onCourseStore = getOnCourseStore();
 
-      // Treat each POST as a full snapshot: clear existing entries, then add current ones.
-      // This ensures riders removed from the feed (or an empty feed) are cleaned up.
-      onCourseStore.clearEvent(eventId);
-
-      // Process each OnCourse entry and collect the added entries
-      const addedEntries: PublicOnCourseEntry[] = [];
+      // Upsert each entry (C123 sends one rider per message)
       for (const entry of oncourse) {
         if (!entry.participantId || !entry.raceId || entry.bib === undefined) {
-          continue; // Skip invalid entries
+          continue;
         }
-
-        const addedEntry = onCourseStore.add(eventId, entry);
-
-        // Map to public format for broadcasting
-        addedEntries.push({
-          raceId: addedEntry.raceId,
-          bib: addedEntry.bib,
-          name: addedEntry.name,
-          club: addedEntry.club,
-          position: addedEntry.position,
-          gates: addedEntry.gates.map((penalty, index) => ({
-            number: index + 1,
-            type: 'normal' as const,
-            penalty,
-          })),
-          completed: addedEntry.completed,
-          dtStart: addedEntry.dtStart,
-          dtFinish: addedEntry.dtFinish,
-          time: addedEntry.time,
-          pen: addedEntry.pen,
-          total: addedEntry.total,
-          rank: addedEntry.rank,
-          ttbDiff: addedEntry.ttbDiff,
-          ttbName: addedEntry.ttbName,
-        });
+        onCourseStore.add(eventId, entry);
       }
+
+      // Expire entries not refreshed within TTL (handles removed riders & stopped feed)
+      onCourseStore.expireStale(eventId, ONCOURSE_TTL_MS);
 
       // Cleanup finished competitors
       onCourseStore.cleanupFinished(eventId);
 
-      // Return count of active competitors
-      const active = onCourseStore.getActiveCount(eventId);
+      // Build full snapshot of all active entries for broadcast
+      const allActive = onCourseStore.getAll(eventId);
+      const snapshot: PublicOnCourseEntry[] = allActive.map((e) => ({
+        raceId: e.raceId,
+        bib: e.bib,
+        name: e.name,
+        club: e.club,
+        position: e.position,
+        gates: e.gates.map((penalty, index) => ({
+          number: index + 1,
+          type: 'normal' as const,
+          penalty,
+        })),
+        completed: e.completed,
+        dtStart: e.dtStart,
+        dtFinish: e.dtFinish,
+        time: e.time,
+        pen: e.pen,
+        total: e.total,
+        rank: e.rank,
+        ttbDiff: e.ttbDiff,
+        ttbName: e.ttbName,
+      }));
+
+      const active = allActive.length;
 
       // Log successful ingestion
       await ingestRecordRepo.insert({
@@ -298,26 +295,49 @@ export function registerIngestRoutes(
         itemsProcessed: oncourse.length,
       });
 
-      // Broadcast full oncourse snapshot to WebSocket clients
-      // Each POST is a full snapshot, so we always broadcast (even empty = clear panel)
+      // Broadcast full oncourse snapshot to WebSocket clients.
+      // Always send the complete list so client can replace its state.
       try {
-        wsManager.broadcastDiff(eventId, { oncourse: addedEntries });
+        wsManager.broadcastDiff(eventId, { oncourse: snapshot });
       } catch (broadcastError) {
-        // Log broadcast errors but don't fail the ingestion
         request.log.error(broadcastError, 'Failed to broadcast oncourse update');
       }
 
-      // Reset TTL timer: if no new oncourse POST arrives within 10s, clear & broadcast empty.
-      // This handles the case when the feed stops completely (e.g. disconnected c123-server).
+      // Schedule a deferred expiration check: if no new POST arrives within TTL,
+      // stale entries will be cleaned up and an empty snapshot broadcast.
       const existingTimer = oncourseTimers.get(eventId);
       if (existingTimer) clearTimeout(existingTimer);
       if (active > 0) {
         oncourseTimers.set(eventId, setTimeout(() => {
           oncourseTimers.delete(eventId);
           const store = getOnCourseStore();
-          store.clearEvent(eventId);
+          store.expireStale(eventId, ONCOURSE_TTL_MS);
+          store.cleanupFinished(eventId);
+          const remaining = store.getAll(eventId);
           try {
-            wsManager.broadcastDiff(eventId, { oncourse: [] });
+            wsManager.broadcastDiff(eventId, {
+              oncourse: remaining.map((e) => ({
+                raceId: e.raceId,
+                bib: e.bib,
+                name: e.name,
+                club: e.club,
+                position: e.position,
+                gates: e.gates.map((penalty, index) => ({
+                  number: index + 1,
+                  type: 'normal' as const,
+                  penalty,
+                })),
+                completed: e.completed,
+                dtStart: e.dtStart,
+                dtFinish: e.dtFinish,
+                time: e.time,
+                pen: e.pen,
+                total: e.total,
+                rank: e.rank,
+                ttbDiff: e.ttbDiff,
+                ttbName: e.ttbName,
+              })),
+            });
           } catch { /* ignore */ }
         }, ONCOURSE_TTL_MS));
       } else {
