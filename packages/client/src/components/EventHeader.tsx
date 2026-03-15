@@ -26,7 +26,7 @@ function StatusBadges({ status, connectionState }: { status: EventDetail['status
 
   switch (status) {
     case 'running':
-      return <Badge variant="success" size="sm">Live</Badge>;
+      return <Badge variant="energy" size="sm" glow>Live</Badge>;
     case 'finished':
       return <Badge variant="default">Dokončeno</Badge>;
     case 'official':
