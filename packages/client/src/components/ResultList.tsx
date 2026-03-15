@@ -173,6 +173,7 @@ function buildBestRunColumns(selectedCatId: string | null): Column[] {
     {
       key: 'brRuns',
       header: 'Jízdy',
+      width: '1px',
       align: 'right',
       mobileOnly: true,
       render: (row) => <BrRunsCell row={row} />,
@@ -213,6 +214,7 @@ function buildBestRunColumns(selectedCatId: string | null): Column[] {
     {
       key: 'totalTotal',
       header: 'Výsledek',
+      width: '1px',
       align: 'right',
       render: (row) => {
         if (row.status) return null;

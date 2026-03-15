@@ -224,6 +224,7 @@
   align-items: baseline;
   gap: 0.25rem;
   font-size: var(--csk-font-size-xs, 0.75rem);
+  white-space: nowrap;
 }
 
 .brRunLabel {
