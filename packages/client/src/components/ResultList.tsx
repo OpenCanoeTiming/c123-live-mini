@@ -38,6 +38,7 @@ function buildStandardColumns(selectedCatId: string | null): Column[] {
       header: 'St.č.',
       width: '48px',
       align: 'center',
+      hideOnMobile: true,
       render: (row) => <span className={styles.bibText}>{row.bib ?? '-'}</span>,
     },
     {
@@ -46,7 +47,10 @@ function buildStandardColumns(selectedCatId: string | null): Column[] {
       width: '100%',
       render: (row) => (
         <div>
-          <div className={styles.athleteName}>{row.name}</div>
+          <div className={styles.athleteName}>
+            <span className={styles.bibBadgeMobile}>{row.bib}</span>
+            {row.name}
+          </div>
           {row.club && <div className={styles.athleteClub}>{row.club}</div>}
         </div>
       ),
@@ -157,6 +161,7 @@ function buildBestRunColumns(selectedCatId: string | null): Column[] {
       header: 'St.č.',
       width: '48px',
       align: 'center',
+      hideOnMobile: true,
       render: (row) => <span className={styles.bibText}>{row.bib ?? '-'}</span>,
     },
     {
@@ -165,7 +170,10 @@ function buildBestRunColumns(selectedCatId: string | null): Column[] {
       width: '100%',
       render: (row) => (
         <div>
-          <div className={styles.athleteName}>{row.name}</div>
+          <div className={styles.athleteName}>
+            <span className={styles.bibBadgeMobile}>{row.bib}</span>
+            {row.name}
+          </div>
           {row.club && <div className={styles.athleteClub}>{row.club}</div>}
         </div>
       ),
@@ -174,7 +182,6 @@ function buildBestRunColumns(selectedCatId: string | null): Column[] {
       key: 'brRuns',
       header: 'Jízdy',
       width: '1px',
-      align: 'right',
       mobileOnly: true,
       render: (row) => <BrRunsCell row={row} />,
     },
@@ -216,6 +223,7 @@ function buildBestRunColumns(selectedCatId: string | null): Column[] {
       header: 'Výsledek',
       width: '1px',
       align: 'right',
+      hideOnMobile: true,
       render: (row) => {
         if (row.status) return null;
         return (
