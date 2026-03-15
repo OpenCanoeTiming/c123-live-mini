@@ -91,6 +91,10 @@ export function registerIngestRoutes(
   const resultRepo = new ResultRepository(db);
   const brCombinedService = new BrCombinedService(resultRepo);
 
+  // TTL timers for oncourse expiration: if no POST arrives within 10s, clear & broadcast empty
+  const ONCOURSE_TTL_MS = 10_000;
+  const oncourseTimers = new Map<string, NodeJS.Timeout>();
+
   /**
    * POST /api/v1/ingest/xml
    * Ingest full XML export data
@@ -301,6 +305,23 @@ export function registerIngestRoutes(
       } catch (broadcastError) {
         // Log broadcast errors but don't fail the ingestion
         request.log.error(broadcastError, 'Failed to broadcast oncourse update');
+      }
+
+      // Reset TTL timer: if no new oncourse POST arrives within 10s, clear & broadcast empty.
+      // This handles the case when the feed stops completely (e.g. disconnected c123-server).
+      const existingTimer = oncourseTimers.get(eventId);
+      if (existingTimer) clearTimeout(existingTimer);
+      if (active > 0) {
+        oncourseTimers.set(eventId, setTimeout(() => {
+          oncourseTimers.delete(eventId);
+          const store = getOnCourseStore();
+          store.clearEvent(eventId);
+          try {
+            wsManager.broadcastDiff(eventId, { oncourse: [] });
+          } catch { /* ignore */ }
+        }, ONCOURSE_TTL_MS));
+      } else {
+        oncourseTimers.delete(eventId);
       }
 
       return { active };
