@@ -680,10 +680,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         onToggle={() => setOncoursePanelOpen(!oncoursePanelOpen)}
       />
 
-      {/* NAV ROW 1: Days (left) + Data View (right) */}
-      {resultsState === 'success' && (
-        <div className={styles.navigationRow}>
-          {days.length > 1 && (
+      {/* NAV ROW 1: Days (left) + Data View (right) — always visible after event loads */}
+      <div className={styles.navigationRow}>
+        {days.length > 1 && (
+          <div className={styles.dayTabs}>
             <Tabs
               tabs={dayTabs}
               activeTab={selectedDay ?? dayTabs[0]?.id}
@@ -692,14 +692,16 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
               size="sm"
               energyAccent
             />
-          )}
+          </div>
+        )}
+        {resultsState === 'success' && (
           <DataViewSelector
             tabs={dataViewTabs}
             activeTab={dataView}
             onChange={handleDataViewChange}
           />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* NAV ROW 2: ClassTabs carousel (hidden in schedule view) */}
       {dataView !== 'schedule' && showClassTabs && (

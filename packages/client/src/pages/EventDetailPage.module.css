@@ -18,7 +18,12 @@
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
-  flex-wrap: wrap;
+  min-height: 2rem;
+}
+
+/* Prevent day tabs from stretching full width */
+.dayTabs {
+  flex-shrink: 0;
 }
 
 /* Standalone search for startlist view */

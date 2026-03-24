@@ -69,10 +69,11 @@
   }
 }
 
-/* Table base */
+/* Table base — separate (not collapse) so border-radius works on th */
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: var(--csk-font-size-sm, 0.875rem);
   line-height: 1.4;
 }
