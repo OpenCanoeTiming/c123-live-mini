@@ -26,6 +26,7 @@ import { groupRaces, extractDays, type ClassGroup, type DayInfo } from '../utils
 import { isBestRunRace } from '../utils/raceTypeLabels';
 import { EventHeader } from '../components/EventHeader';
 import { ClassTabs } from '../components/ClassTabs';
+import { DataViewSelector } from '../components/DataViewSelector';
 import { ResultList } from '../components/ResultList';
 import { StartlistTable } from '../components/StartlistTable';
 import { OnCoursePanel } from '../components/OnCoursePanel';
@@ -690,13 +691,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
               energyAccent
             />
           )}
-          <Tabs
+          <DataViewSelector
             tabs={dataViewTabs}
             activeTab={dataView}
             onChange={handleDataViewChange}
-            variant="pills"
-            size="sm"
-            energyAccent
           />
         </div>
       )}
