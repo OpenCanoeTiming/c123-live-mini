@@ -133,7 +133,8 @@ function eventLiveStateReducer(state: EventLiveState, action: EventLiveStateActi
       const { event, classes, races, categories } = action.payload;
       return {
         ...state,
-        event,
+        // Preserve imageUrl from initial REST fetch (not sent via WS)
+        event: { ...event, imageUrl: event.imageUrl ?? state.event?.imageUrl ?? null },
         classes,
         races,
         categories,

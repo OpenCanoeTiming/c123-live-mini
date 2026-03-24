@@ -84,10 +84,9 @@ export class IngestService {
     // Pairing is done via API key. This allows eventId in live-mini to be
     // independent (e.g. national race number) from C123 EventId.
 
-    // Update event metadata if needed
+    // Update event metadata from XML (but preserve admin-set mainTitle)
     if (parsed.event) {
       await this.eventRepo.update(event.id, {
-        main_title: parsed.event.mainTitle,
         sub_title: parsed.event.subTitle,
         location: parsed.event.location,
         facility: parsed.event.facility,
