@@ -104,7 +104,7 @@ export function groupRaces(races: RaceInfo[]): ClassGroup[] {
  * - When both best-run-1 and best-run-2 exist, hide BR1 (BR2 has combined data)
  * - Keeps all other race types
  */
-function getDisplayRaces(races: RaceInfo[]): RaceInfo[] {
+export function getDisplayRaces(races: RaceInfo[]): RaceInfo[] {
   const hasBr2 = races.some((r) => r.raceType === 'best-run-2');
   if (!hasBr2) return races;
 

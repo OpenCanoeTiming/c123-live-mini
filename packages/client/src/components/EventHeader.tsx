@@ -50,9 +50,7 @@ export function EventHeader({ event, connectionState }: EventHeaderProps) {
   if (dates) {
     metadata.push({ key: 'dates', label: 'Termín', value: dates });
   }
-  if (event.facility) {
-    metadata.push({ key: 'facility', label: 'Areál', value: event.facility });
-  }
+  // facility omitted — redundant with location in subtitle (#100)
 
   return (
     <div className={styles.wrapper}>

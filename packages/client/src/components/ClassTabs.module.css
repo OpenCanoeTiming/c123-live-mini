@@ -1,0 +1,94 @@
+/**
+ * ClassTabs styles
+ * Desktop: tabs wrap naturally (no carousel).
+ * Mobile: horizontal scroll with gradient fade hint, no arrows needed.
+ */
+
+/* Desktop: wrapping layout, no carousel */
+.carouselWrapper {
+  position: relative;
+}
+
+/* Hide panel area — class tabs are purely navigational */
+.carousel :global(.csk-tabs__panel) {
+  display: none;
+}
+
+.carousel :global([role="tablist"]) {
+  flex-wrap: wrap;
+}
+
+/* Mobile: horizontal scroll carousel */
+@media (max-width: 640px) {
+  .carousel {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Fade right edge to signal more content */
+    mask-image: linear-gradient(to right, black 70%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 70%, transparent 100%);
+  }
+
+  .carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .carousel :global([role="tablist"]) {
+    flex-wrap: nowrap;
+  }
+
+  .carousel :global([role="tab"]) {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Right chevron — bounces every 10s */
+  .carouselWrapper::after {
+    content: '›';
+    position: absolute;
+    right: 0.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--csk-color-primary, #e65c00);
+    pointer-events: none;
+    animation: carousel-hint 10s ease-in-out infinite;
+  }
+
+  /* Left fade + chevron — only when scrolled */
+  .scrolled .carousel {
+    mask-image: linear-gradient(to right, transparent 0%, black 15%, black 70%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 70%, transparent 100%);
+  }
+
+  .scrolled::before {
+    content: '‹';
+    position: absolute;
+    left: 0.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--csk-color-primary, #e65c00);
+    pointer-events: none;
+    z-index: 1;
+  }
+}
+
+@keyframes carousel-hint {
+  /* Invisible most of the cycle */
+  0%, 74%  { opacity: 0; transform: translateY(-50%) translateX(0); }
+  /* Bounce 1 */
+  78%      { opacity: 1; transform: translateY(-50%) translateX(0); }
+  81%      { opacity: 1; transform: translateY(-50%) translateX(6px); }
+  84%      { opacity: 1; transform: translateY(-50%) translateX(0); }
+  /* Bounce 2 */
+  87%      { opacity: 1; transform: translateY(-50%) translateX(6px); }
+  90%      { opacity: 1; transform: translateY(-50%) translateX(0); }
+  /* Bounce 3 */
+  93%      { opacity: 1; transform: translateY(-50%) translateX(6px); }
+  96%      { opacity: 1; transform: translateY(-50%) translateX(0); }
+  /* Fade out */
+  100%     { opacity: 0; transform: translateY(-50%) translateX(0); }
+}

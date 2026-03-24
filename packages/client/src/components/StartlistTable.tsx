@@ -87,13 +87,17 @@ export function StartlistTable({ entries }: StartlistTableProps) {
 
   const hasStartTimes = entries.some((e) => e.startTime != null);
   const columns = buildColumns(hasStartTimes);
+  const entriesWithKey = entries.map((e, i) => ({
+    ...e,
+    _rowKey: `${e.athleteId ?? 'x'}-${e.catId ?? 'x'}-${e.startOrder ?? i}`,
+  }));
 
   return (
     <div className={styles.startlistCard}>
       <Table
         columns={columns}
-        data={entries}
-        rowKey="athleteId"
+        data={entriesWithKey}
+        rowKey="_rowKey"
         size="sm"
         hoverable
         variant="striped"

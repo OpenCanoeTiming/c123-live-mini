@@ -14,10 +14,66 @@
   background-color: var(--color-bg-primary);
 }
 
-/* Table base */
+/* --- Integrated table toolbar --- */
+.tableToolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--csk-color-surface, #f9fafb);
+  border: 1px solid var(--csk-color-border-secondary, #e5e7eb);
+  border-bottom: none;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  flex-wrap: wrap;
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.searchWrapper {
+  flex: 1;
+  min-width: 8rem;
+  max-width: 14rem;
+}
+
+/* ViewMode hidden on mobile — marginal feature */
+.viewModeDesktopOnly {
+  display: none;
+}
+
+/* When toolbar present, remove top border-radius from table head */
+.tableWithToolbar .headerRow th:first-child {
+  border-top-left-radius: 0;
+}
+
+.tableWithToolbar .headerRow th:last-child {
+  border-top-right-radius: 0;
+}
+
+@media (min-width: 769px) {
+  .viewModeDesktopOnly {
+    display: block;
+  }
+}
+
+@media (max-width: 768px) {
+  .searchWrapper {
+    min-width: 6rem;
+    max-width: none;
+    flex: 1;
+  }
+}
+
+/* Table base — separate (not collapse) so border-radius works on th */
 .table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: var(--csk-font-size-sm, 0.875rem);
   line-height: 1.4;
 }
