@@ -22,6 +22,14 @@
   background: var(--gradient-primary-soft, linear-gradient(135deg, #2563eb, #3b82f6));
 }
 
+.headerRow th:first-child {
+  border-top-left-radius: var(--radius-md, 0.375rem);
+}
+
+.headerRow th:last-child {
+  border-top-right-radius: var(--radius-md, 0.375rem);
+}
+
 .headerCell {
   padding: var(--spacing-3, 0.75rem) var(--spacing-4, 1rem);
   font-weight: var(--font-weight-semibold, 600);
@@ -36,14 +44,6 @@
   z-index: 1;
   border-bottom: none;
   vertical-align: middle;
-}
-
-.headerRow .headerCell:first-child {
-  border-top-left-radius: var(--radius-md, 0.375rem);
-}
-
-.headerRow .headerCell:last-child {
-  border-top-right-radius: var(--radius-md, 0.375rem);
 }
 
 /* Data rows */

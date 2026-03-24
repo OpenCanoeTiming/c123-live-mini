@@ -301,7 +301,7 @@ export function ResultList({
       <table className={styles.table}>
           <thead>
             <tr className={styles.headerRow}>
-              {onToggleExpand && <th className={styles.expandCol}></th>}
+              {onToggleExpand && <th className={`${styles.headerCell} ${styles.expandCol}`}></th>}
               {columns.map((col) => (
                 <th
                   key={col.key}
