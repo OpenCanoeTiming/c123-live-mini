@@ -453,6 +453,23 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     [classGroups, selectedDay, days, eventId, navigate]
   );
 
+  // Handle day change — keep same class, switch to that class's race on the new day
+  const handleDayChange = useCallback(
+    (dayDate: string) => {
+      setSelectedDay(dayDate);
+      const dayInfo = days.find((d) => d.date === dayDate);
+      if (!dayInfo || !selectedClassId) return;
+      const group = classGroups.find((g) => g.classId === selectedClassId);
+      if (!group) return;
+      const dayRace = group.races.find((r) => dayInfo.raceIds.has(r.raceId));
+      if (dayRace) {
+        setSelectedRaceId(dayRace.raceId);
+        navigate(`/events/${eventId}/race/${dayRace.raceId}`);
+      }
+    },
+    [days, selectedClassId, classGroups, eventId, navigate]
+  );
+
   // Handle race/round change
   const handleRaceChange = useCallback(
     (raceId: string) => {
@@ -687,7 +704,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             <Tabs
               tabs={dayTabs}
               activeTab={selectedDay ?? dayTabs[0]?.id}
-              onChange={(id) => setSelectedDay(id)}
+              onChange={handleDayChange}
               variant="pills"
               size="sm"
               energyAccent
