@@ -16,6 +16,7 @@ import * as m009 from './migrations/009_create_ingest_records.js';
 import * as m010 from './migrations/010_data_abstraction.js';
 import * as m011 from './migrations/011_remove_legacy_columns.js';
 import * as m012 from './migrations/012_add_status_changed_at.js';
+import * as m013 from './migrations/013_add_event_image.js';
 
 const migrations: Record<string, Migration> = {
   '001_create_events': m001,
@@ -30,6 +31,7 @@ const migrations: Record<string, Migration> = {
   '010_data_abstraction': m010,
   '011_remove_legacy_columns': m011,
   '012_add_status_changed_at': m012,
+  '013_add_event_image': m013,
 };
 
 class StaticMigrationProvider implements MigrationProvider {
@@ -52,8 +54,11 @@ export function createDatabase(dbPath?: string): Kysely<Database> {
   // Ensure directory exists
   mkdirSync(dirname(path), { recursive: true });
 
+  const sqliteDb = new SQLite(path);
+  sqliteDb.pragma('foreign_keys = ON');
+
   const dialect = new SqliteDialect({
-    database: new SQLite(path),
+    database: sqliteDb,
   });
 
   return new Kysely<Database>({ dialect });
@@ -61,8 +66,10 @@ export function createDatabase(dbPath?: string): Kysely<Database> {
 
 // Default database instance (legacy support)
 mkdirSync(dirname(DEFAULT_DATABASE_PATH), { recursive: true });
+const defaultSqliteDb = new SQLite(DEFAULT_DATABASE_PATH);
+defaultSqliteDb.pragma('foreign_keys = ON');
 const dialect = new SqliteDialect({
-  database: new SQLite(DEFAULT_DATABASE_PATH),
+  database: defaultSqliteDb,
 });
 
 export const db = new Kysely<Database>({ dialect });

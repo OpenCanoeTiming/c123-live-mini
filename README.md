@@ -84,6 +84,14 @@ npm run build
 npm test
 ```
 
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `3000` | Server port |
+| `DATABASE_PATH` | `./data/live-mini.db` | SQLite database path |
+| `MASTER_PASSWORDS` | *(empty)* | Comma-separated admin passwords. If not set, admin API is open. |
+
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md) - System design, data flows, authentication

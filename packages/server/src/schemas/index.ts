@@ -39,6 +39,7 @@ export const eventsListSchema = {
               endDate: { type: ['string', 'null'] },
               discipline: { type: ['string', 'null'] },
               status: { type: 'string' },
+              imageUrl: { type: ['string', 'null'] },
             },
             required: ['eventId', 'mainTitle', 'status'],
           },
@@ -76,6 +77,7 @@ export const eventDetailSchema = {
             endDate: { type: ['string', 'null'] },
             discipline: { type: ['string', 'null'] },
             status: { type: 'string' },
+            imageUrl: { type: ['string', 'null'] },
           },
           required: ['eventId', 'mainTitle', 'status'],
         },
@@ -402,6 +404,7 @@ export const createEventBodySchema = {
     startDate: { type: 'string' },
     endDate: { type: 'string' },
     discipline: { type: 'string' },
+    imageData: { type: 'string', maxLength: 1048576 },
   },
   required: ['eventId', 'mainTitle'],
 } as const;
@@ -420,6 +423,61 @@ export const createEventSchema = {
     },
     400: errorResponseSchema,
     409: errorResponseSchema,
+  },
+} as const;
+
+export const adminEventsListSchema = {
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        events: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              eventId: { type: 'string' },
+              mainTitle: { type: 'string' },
+              subTitle: { type: ['string', 'null'] },
+              location: { type: ['string', 'null'] },
+              startDate: { type: ['string', 'null'] },
+              endDate: { type: ['string', 'null'] },
+              discipline: { type: ['string', 'null'] },
+              status: { type: 'string' },
+              apiKey: { type: ['string', 'null'] },
+              hasXmlData: { type: 'boolean' },
+              hasImage: { type: 'boolean' },
+              createdAt: { type: 'string' },
+            },
+            required: ['eventId', 'mainTitle', 'status', 'apiKey'],
+          },
+        },
+      },
+      required: ['events'],
+    },
+    401: errorResponseSchema,
+  },
+} as const;
+
+export const adminDeleteEventSchema = {
+  params: {
+    type: 'object',
+    properties: {
+      eventId: { type: 'string' },
+    },
+    required: ['eventId'],
+  },
+  response: {
+    200: {
+      type: 'object',
+      properties: {
+        deleted: { type: 'boolean' },
+        eventId: { type: 'string' },
+      },
+      required: ['deleted', 'eventId'],
+    },
+    401: errorResponseSchema,
+    404: errorResponseSchema,
   },
 } as const;
 

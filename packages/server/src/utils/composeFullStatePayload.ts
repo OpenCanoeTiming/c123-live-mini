@@ -57,6 +57,9 @@ export async function composeFullStatePayload(
       discipline: event.discipline,
       status: event.status as PublicEventDetail['status'],
       facility: event.facility,
+      imageUrl: event.image
+        ? `/api/v1/events/${event.event_id}/image`
+        : null,
     },
     classes: classes.map((cls) => ({
       classId: cls.class_id,
