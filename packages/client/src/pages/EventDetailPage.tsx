@@ -598,14 +598,16 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       // Class not on this day — select first class on this day
       const firstGroup = filteredClassGroups[0];
       setSelectedClassId(firstGroup.classId);
-      if (firstGroup.displayRaces.length > 0) {
-        setSelectedRaceId(firstGroup.displayRaces[0].raceId);
-      }
+      // Prefer race from this day (use .races, not .displayRaces — BR1 may be the only option)
+      const dayRace = dayInfo
+        ? firstGroup.races.find((r) => dayInfo.raceIds.has(r.raceId))
+        : null;
+      setSelectedRaceId(dayRace?.raceId ?? firstGroup.displayRaces[0]?.raceId ?? null);
     } else if (dayInfo && selectedRaceId && !dayInfo.raceIds.has(selectedRaceId)) {
       // Class is visible but selected race is from another day — find race for this day
       const group = filteredClassGroups.find((g) => g.classId === selectedClassId);
       if (group) {
-        const dayRace = group.displayRaces.find((r) => dayInfo.raceIds.has(r.raceId));
+        const dayRace = group.races.find((r) => dayInfo.raceIds.has(r.raceId));
         if (dayRace) {
           setSelectedRaceId(dayRace.raceId);
         }

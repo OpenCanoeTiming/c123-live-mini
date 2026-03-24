@@ -47,11 +47,11 @@
 }
 
 /* When toolbar present, remove top border-radius from table head */
-.tableToolbar + .table .headerRow th:first-child {
+.tableWithToolbar .headerRow th:first-child {
   border-top-left-radius: 0;
 }
 
-.tableToolbar + .table .headerRow th:last-child {
+.tableWithToolbar .headerRow th:last-child {
   border-top-right-radius: 0;
 }
 

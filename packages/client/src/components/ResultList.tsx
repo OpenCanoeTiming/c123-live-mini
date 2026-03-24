@@ -361,7 +361,7 @@ export function ResultList({
           </div>
         </div>
       )}
-      <table className={styles.table}>
+      <table className={`${styles.table} ${hasToolbar ? styles.tableWithToolbar : ''}`}>
           <thead className={styles.tableHead}>
             <tr className={styles.headerRow}>
               {onToggleExpand && <th className={`${styles.headerCell} ${styles.expandCol}`}></th>}
