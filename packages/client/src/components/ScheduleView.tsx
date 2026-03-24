@@ -5,7 +5,7 @@
  * Groups races by day, shows correct per-race status badges.
  */
 
-import { Card, SectionHeader, Badge } from '@czechcanoe/rvp-design-system';
+import { Card, Badge } from '@czechcanoe/rvp-design-system';
 import type { RaceInfo } from '../services/api';
 import { getRaceTypeLabel } from '../utils/raceTypeLabels';
 import styles from './ScheduleView.module.css';
@@ -102,7 +102,6 @@ export function ScheduleView({ races, classNameMap, currentRaceId, onRaceClick }
 
   return (
     <Card>
-      <SectionHeader title="Program závodu" />
       <div className={styles.scheduleList}>
         {hasMultipleDays
           ? dayGroups.map((group) => (

@@ -2,7 +2,6 @@ import {
   Card,
   Table,
   EmptyState,
-  SectionHeader,
   type ColumnDef,
 } from '@czechcanoe/rvp-design-system';
 import type { StartlistEntry } from '../services/api';
@@ -94,7 +93,6 @@ export function StartlistTable({ entries }: StartlistTableProps) {
 
   return (
     <Card className={styles.startlistCard}>
-      <SectionHeader title="Startovní listina" />
       <Table
         columns={columns}
         data={entries}
