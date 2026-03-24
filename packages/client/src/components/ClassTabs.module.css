@@ -1,0 +1,43 @@
+/**
+ * ClassTabs carousel styles
+ * Horizontal scroll with gradient fade mask for scroll affordance.
+ */
+
+.carouselWrapper {
+  position: relative;
+}
+
+.carousel {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+
+.carousel::-webkit-scrollbar {
+  display: none;
+}
+
+/* Force tabs to not wrap */
+.carousel :global([role="tablist"]) {
+  flex-wrap: nowrap;
+}
+
+.carousel :global([role="tab"]) {
+  scroll-snap-align: start;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Gradient fade on right edge */
+.carouselWrapper::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 2rem;
+  background: linear-gradient(to right, transparent, var(--csk-color-background, #fff));
+  pointer-events: none;
+  z-index: 1;
+}

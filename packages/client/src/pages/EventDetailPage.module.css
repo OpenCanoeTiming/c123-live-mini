@@ -12,21 +12,20 @@
   gap: 0.75rem;
 }
 
-.daySelector {
-  margin-bottom: 0;
-}
-
-.dataViewTabs {
-  margin-bottom: 0;
-}
-
-.viewModeToggle {
-  margin-bottom: 0;
-}
-
-.toolbarRow {
+/* NAV ROW 1: Days (left) + Data View toggle (right) */
+.navigationRow {
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
   flex-wrap: wrap;
+}
+
+.dayTabs {
+  flex-shrink: 0;
+}
+
+.dataViewTabs {
+  flex-shrink: 0;
+  margin-left: auto;
 }

@@ -1,4 +1,4 @@
-import { Tabs, type TabItem } from '@czechcanoe/rvp-design-system';
+import { Dropdown, DropdownButton, type DropdownItem } from '@czechcanoe/rvp-design-system';
 import type { CategoryInfo } from '../services/api';
 
 interface CategoryFilterProps {
@@ -14,23 +14,34 @@ export function CategoryFilter({
 }: CategoryFilterProps) {
   if (categories.length === 0) return null;
 
-  const tabs: TabItem[] = [
-    { id: '__all__', label: 'Vše', content: null },
+  const selectedLabel = selectedCatId
+    ? categories.find((c) => c.catId === selectedCatId)?.name ?? 'Kategorie'
+    : 'Kategorie';
+
+  const items: DropdownItem[] = [
+    {
+      id: '__all__',
+      label: 'Vše',
+      onClick: () => onCategoryChange(null),
+    },
     ...categories.map((cat) => ({
       id: cat.catId,
       label: cat.name,
-      content: null,
+      onClick: () => onCategoryChange(cat.catId),
     })),
   ];
 
   return (
-    <Tabs
-      tabs={tabs}
-      activeTab={selectedCatId ?? '__all__'}
-      onChange={(id) => onCategoryChange(id === '__all__' ? null : id)}
-      variant="pills"
+    <Dropdown
+      trigger={
+        <DropdownButton size="sm" variant="ghost">
+          {selectedLabel}
+        </DropdownButton>
+      }
+      items={items}
       size="sm"
-      style={{ marginBottom: '0.75rem' }}
+      position="bottom-end"
+      aria-label="Filtr kategorie"
     />
   );
 }

@@ -5,7 +5,6 @@ import {
   EmptyState,
   Button,
   Tabs,
-  SearchInput,
   type TabItem,
 } from '@czechcanoe/rvp-design-system';
 import { useLocation } from 'wouter';
@@ -26,13 +25,11 @@ import { groupRaces, extractDays, type ClassGroup, type DayInfo } from '../utils
 import { isBestRunRace } from '../utils/raceTypeLabels';
 import { EventHeader } from '../components/EventHeader';
 import { ClassTabs } from '../components/ClassTabs';
-import { RoundTabs } from '../components/RoundTabs';
-import { CategoryFilter } from '../components/CategoryFilter';
 import { ResultList } from '../components/ResultList';
 import { StartlistTable } from '../components/StartlistTable';
 import { OnCoursePanel } from '../components/OnCoursePanel';
 import { ScheduleView } from '../components/ScheduleView';
-import { ViewModeToggle, type ViewMode } from '../components/ViewModeToggle';
+import type { ViewMode } from '../components/ViewModeToggle';
 import { useEventLiveState } from '../hooks/useEventLiveState';
 import { useEventWebSocket } from '../hooks/useEventWebSocket';
 import { getOnCourse } from '../services/api';
@@ -110,7 +107,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           payload: message.data,
         });
         // Re-fetch results for the currently selected race after full state replacement
-        // (WS_FULL clears resultsByRace, so we need to reload to keep the UI populated)
         if (selectedRaceId && eventId) {
           getEventResults(eventId, selectedRaceId, {
             catId: selectedCatId ?? undefined,
@@ -149,7 +145,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
       case 'refresh':
         dispatch({ type: 'WS_REFRESH' });
-        // Trigger REST re-fetch of current race and oncourse
         if (selectedRaceId && eventId) {
           getEventResults(eventId, selectedRaceId, {
             catId: selectedCatId ?? undefined,
@@ -201,24 +196,20 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   }, [selectedRaceId, selectedCatId]);
 
   useEffect(() => {
-    // Start polling when disconnected and should be connected
     if (connectionState === 'disconnected' && shouldConnect && selectedRaceId) {
       console.log('[EventDetailPage] Starting polling fallback (15s interval)');
 
       const poll = async () => {
-        // Capture current params at poll time
         const currentRaceId = pollingParamsRef.current.raceId;
         const currentCatId = pollingParamsRef.current.catId;
 
         if (!currentRaceId) return;
 
         try {
-          // Fetch current race results
           const resultsData = await getEventResults(eventId, currentRaceId, {
             catId: currentCatId ?? undefined,
           });
 
-          // Only dispatch if params haven't changed during the request
           if (pollingParamsRef.current.raceId === currentRaceId && pollingParamsRef.current.catId === currentCatId) {
             dispatch({
               type: 'SET_RESULTS',
@@ -229,10 +220,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             });
           }
 
-          // Fetch oncourse data
           const oncourseData = await getOnCourse(eventId);
-
-          // Oncourse data is event-wide, so always dispatch
           dispatch({
             type: 'SET_ONCOURSE',
             payload: oncourseData,
@@ -242,10 +230,8 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         }
       };
 
-      // Start interval
       pollingIntervalRef.current = window.setInterval(poll, 15000);
     } else {
-      // Stop polling when WebSocket reconnects or no longer needed
       if (pollingIntervalRef.current !== null) {
         console.log('[EventDetailPage] Stopping polling fallback');
         clearInterval(pollingIntervalRef.current);
@@ -253,7 +239,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       }
     }
 
-    // Cleanup on unmount
     return () => {
       if (pollingIntervalRef.current !== null) {
         clearInterval(pollingIntervalRef.current);
@@ -265,7 +250,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   // Fetch detailed data when view mode changes to 'detailed'
   useEffect(() => {
     if (viewMode === 'detailed' && selectedRaceId && results) {
-      // Check if we need to fetch detailed data
       const needsDetail = results.results.some((result) => {
         if (result.bib === null) return false;
         const key = `${selectedRaceId}-${result.bib}`;
@@ -278,7 +262,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           catId: selectedCatId ?? undefined,
         })
           .then((resultsData) => {
-            // Cache detailed data for all results
             resultsData.results.forEach((result) => {
               if (result.bib !== null) {
                 dispatch({
@@ -322,7 +305,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
         if (cancelled) return;
 
-        // Dispatch to reducer (API types are now Public types from shared package)
         dispatch({
           type: 'SET_INITIAL',
           payload: {
@@ -339,6 +321,19 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         const dayInfos = extractDays(eventData.races);
         setDays(dayInfos);
 
+        // Auto-select active day (has running race), fallback first upcoming, fallback first
+        if (dayInfos.length > 1) {
+          const runningDay = dayInfos.find((d) =>
+            eventData.races.some((r) => d.raceIds.has(r.raceId) && r.raceStatus != null && r.raceStatus >= 2)
+          );
+          if (runningDay) {
+            setSelectedDay(runningDay.date);
+          } else {
+            // First day with any future race, or just first day
+            setSelectedDay(dayInfos[0].date);
+          }
+        }
+
         // Handle deep link with raceId from URL
         if (urlRaceId) {
           const targetRace = eventData.races.find((r) => r.raceId === urlRaceId);
@@ -347,20 +342,17 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             setSelectedClassId(targetClassId);
             setSelectedRaceId(urlRaceId);
           } else {
-            // raceId not found — show error
             setEventState('error');
             setEventError('Závod nenalezen');
             return;
           }
         } else if (groups.length > 0) {
-          // Auto-select first class and first display race (BR1 filtered out)
           setSelectedClassId(groups[0].classId);
           setSelectedRaceId(groups[0].displayRaces[0].raceId);
         }
 
         setEventState('success');
 
-        // Fetch initial oncourse data for running events
         if (eventData.event.status === 'running') {
           getOnCourse(eventId)
             .then((oncourseData) => {
@@ -406,7 +398,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       setStartlist(null);
 
       try {
-        // Always fetch both results and startlist in parallel
         const [resultsData, startlistData] = await Promise.all([
           getEventResults(eventId, raceId, {
             catId: selectedCatId ?? undefined,
@@ -426,7 +417,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         setCurrentRaceInfo(resultsData.race);
         setStartlist(startlistData.length > 0 ? startlistData : null);
 
-        // Default to results view when results exist, startlist otherwise
         if (resultsData.results.length > 0) {
           setDataView('results');
         } else if (startlistData.length > 0) {
@@ -436,7 +426,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         setResultsState('success');
       } catch {
         if (cancelled) return;
-        // Results failed — try startlist as fallback
         try {
           const startlistData = await getStartlist(eventId, raceId);
           if (cancelled) return;
@@ -454,7 +443,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     return () => { cancelled = true; };
   }, [eventId, selectedRaceId, selectedCatId, eventState]);
 
-  // Handle class change — auto-select first display race (BR1 filtered out)
+  // Handle class change — auto-select first display race
   const handleClassChange = useCallback(
     (classId: string) => {
       setSelectedClassId(classId);
@@ -491,17 +480,13 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       const newExpanded = new Set(expandedRows);
 
       if (newExpanded.has(key)) {
-        // Collapse row
         newExpanded.delete(key);
         setExpandedRows(newExpanded);
       } else {
-        // Expand row
         newExpanded.add(key);
         setExpandedRows(newExpanded);
 
-        // Check if detail data is already cached
         if (!liveState.detailedCache[key] && selectedRaceId) {
-          // Fetch detailed data for the entire race
           setDetailedLoading(prev => new Set([...prev, key]));
 
           try {
@@ -510,7 +495,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
               catId: selectedCatId ?? undefined,
             });
 
-            // Cache detailed data for all results in the race
             resultsData.results.forEach((result) => {
               if (result.bib !== null) {
                 dispatch({
@@ -563,7 +547,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     return map;
   }, [liveState.classes]);
 
-  // Search filter for results and startlist (uses deferred query for responsiveness)
+  // Search filter for results and startlist
   const filteredResults: ResultsResponse | null = useMemo(() => {
     if (!results) return null;
     if (!deferredSearchQuery.trim()) return results;
@@ -587,7 +571,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     );
   }, [startlist, deferredSearchQuery]);
 
-  // Data view tabs
+  // Data view tabs — always visible once loaded
   const hasResults = results && results.results.length > 0;
   const hasStartlist = startlist && startlist.length > 0;
   const dataViewTabs: TabItem[] = useMemo(() => {
@@ -631,7 +615,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     }
   }, [filteredClassGroups, selectedClassId, eventId, navigate]);
 
-  // Day selector tabs
+  // Day selector tabs (no "Vše")
   const dayTabs: TabItem[] = useMemo(() => {
     return days.map((d) => ({ id: d.date, label: d.label, content: null }));
   }, [days]);
@@ -671,7 +655,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const selectedGroup = filteredClassGroups.find((g) => g.classId === selectedClassId);
   const selectedRace = races.find((r) => r.raceId === selectedRaceId);
   const showClassTabs = filteredClassGroups.length > 1;
-  // Use displayRaces for tabs (BR1 hidden when BR2 exists)
   const displayRaces = selectedGroup?.displayRaces ?? [];
   const showRoundTabs = displayRaces.length > 1;
   const hasMergedBR = selectedGroup
@@ -691,77 +674,40 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         onToggle={() => setOncoursePanelOpen(!oncoursePanelOpen)}
       />
 
-      {dataView !== 'schedule' && (
-        <>
-          {/* Day selector */}
-          {days.length > 0 && (
-            <div className={styles.daySelector}>
+      {/* NAV ROW 1: Days (left) + Data View (right) */}
+      {resultsState === 'success' && (
+        <div className={styles.navigationRow}>
+          {days.length > 1 && (
+            <div className={styles.dayTabs}>
               <Tabs
-                tabs={[{ id: '__all__', label: 'Vše', content: null }, ...dayTabs]}
-                activeTab={selectedDay ?? '__all__'}
-                onChange={(id) => setSelectedDay(id === '__all__' ? null : id)}
+                tabs={dayTabs}
+                activeTab={selectedDay ?? dayTabs[0]?.id}
+                onChange={(id) => setSelectedDay(id)}
                 variant="pills"
                 size="sm"
               />
             </div>
           )}
-
-          {showClassTabs && (
-            <ClassTabs
-              classGroups={filteredClassGroups}
-              selectedClassId={selectedClassId}
-              onClassChange={handleClassChange}
-              classNameMap={classNameMap}
-            />
-          )}
-
-          {showRoundTabs && (
-            <RoundTabs
-              races={displayRaces}
-              selectedRaceId={selectedRaceId}
-              onRaceChange={handleRaceChange}
-              hasMergedBR={hasMergedBR}
-            />
-          )}
-
-          {categories.length > 0 && (
-            <CategoryFilter
-              categories={categories}
-              selectedCatId={selectedCatId}
-              onCategoryChange={handleCategoryChange}
-            />
-          )}
-        </>
-      )}
-
-      {resultsState === 'success' && (
-        <div className={styles.dataViewTabs}>
-          <Tabs
-            tabs={dataViewTabs}
-            activeTab={dataView}
-            onChange={(id) => setDataView(id as DataView)}
-            variant="pills"
-            size="sm"
-          />
-        </div>
-      )}
-
-      {dataView !== 'schedule' && (
-        <div className={styles.viewModeToggle}>
-          <div className={styles.toolbarRow}>
-            {dataView === 'results' && (
-              <ViewModeToggle viewMode={viewMode} onViewModeChange={setViewMode} />
-            )}
-            <SearchInput
+          <div className={styles.dataViewTabs}>
+            <Tabs
+              tabs={dataViewTabs}
+              activeTab={dataView}
+              onChange={(id) => setDataView(id as DataView)}
+              variant="pills"
               size="sm"
-              placeholder="Hledat závodníka..."
-              onChange={setSearchQuery}
-              debounceMs={200}
-              resultsCount={searchResultsCount}
-              fullWidth
             />
           </div>
         </div>
+      )}
+
+      {/* NAV ROW 2: ClassTabs carousel (hidden in schedule view) */}
+      {dataView !== 'schedule' && showClassTabs && (
+        <ClassTabs
+          classGroups={filteredClassGroups}
+          selectedClassId={selectedClassId}
+          onClassChange={handleClassChange}
+          classNameMap={classNameMap}
+        />
       )}
 
       {resultsState === 'loading' && <SkeletonCard />}
@@ -794,7 +740,17 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           detailedCache={liveState.detailedCache}
           detailedLoading={detailedLoading}
           viewMode={viewMode}
-
+          onViewModeChange={setViewMode}
+          roundRaces={displayRaces}
+          selectedRaceId={selectedRaceId}
+          onRaceChange={handleRaceChange}
+          hasMergedBR={hasMergedBR}
+          showRoundTabs={showRoundTabs}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchResultsCount={searchResultsCount}
+          categories={categories}
+          onCategoryChange={handleCategoryChange}
         />
       )}
 

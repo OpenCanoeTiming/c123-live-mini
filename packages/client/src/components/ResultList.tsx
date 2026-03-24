@@ -2,11 +2,15 @@ import { Fragment } from 'react';
 import {
   Badge,
   EmptyState,
+  SearchInput,
 } from '@czechcanoe/rvp-design-system';
-import type { ResultEntry, ResultsResponse } from '../services/api';
+import type { ResultEntry, ResultsResponse, RaceInfo, CategoryInfo } from '../services/api';
 import type { RunDetailData } from '../hooks/useEventLiveState';
 import { formatTime, formatPenalty } from '../utils/formatTime';
 import { RunDetailExpand } from './RunDetailExpand';
+import { ViewModeToggle, type ViewMode } from './ViewModeToggle';
+import { RoundTabs } from './RoundTabs';
+import { CategoryFilter } from './CategoryFilter';
 import styles from './ResultList.module.css';
 
 interface Column {
@@ -258,7 +262,21 @@ interface ResultListProps {
   onToggleExpand?: (key: string) => void;
   detailedCache?: Record<string, RunDetailData>;
   detailedLoading?: Set<string>;
-  viewMode?: 'simple' | 'detailed';
+  viewMode?: ViewMode;
+  onViewModeChange?: (mode: ViewMode) => void;
+  // Round tabs
+  roundRaces?: RaceInfo[];
+  selectedRaceId?: string | null;
+  onRaceChange?: (raceId: string) => void;
+  hasMergedBR?: boolean;
+  showRoundTabs?: boolean;
+  // Search
+  searchQuery?: string;
+  onSearchChange?: (q: string) => void;
+  searchResultsCount?: number;
+  // Category
+  categories?: CategoryInfo[];
+  onCategoryChange?: (catId: string | null) => void;
 }
 
 export function ResultList({
@@ -270,6 +288,17 @@ export function ResultList({
   detailedCache = {},
   detailedLoading = new Set(),
   viewMode = 'simple',
+  onViewModeChange,
+  roundRaces,
+  selectedRaceId,
+  onRaceChange,
+  hasMergedBR = false,
+  showRoundTabs = false,
+  searchQuery,
+  onSearchChange,
+  searchResultsCount,
+  categories = [],
+  onCategoryChange,
 }: ResultListProps) {
   const { results, race } = data;
 
@@ -296,8 +325,48 @@ export function ResultList({
     ? buildBestRunColumns(selectedCatId ?? null)
     : buildStandardColumns(selectedCatId ?? null);
 
+  const hasToolbar = onViewModeChange || showRoundTabs || onSearchChange || categories.length > 0;
+
   return (
     <div className={styles.tableWrapper}>
+      {hasToolbar && (
+        <div className={styles.tableToolbar}>
+          <div className={styles.toolbarLeft}>
+            {onViewModeChange && (
+              <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
+            )}
+            {showRoundTabs && roundRaces && onRaceChange && (
+              <RoundTabs
+                races={roundRaces}
+                selectedRaceId={selectedRaceId ?? null}
+                onRaceChange={onRaceChange}
+                hasMergedBR={hasMergedBR}
+              />
+            )}
+          </div>
+          <div className={styles.toolbarRight}>
+            {onSearchChange && (
+              <div className={styles.searchWrapper}>
+                <SearchInput
+                  size="sm"
+                  placeholder="Hledat závodníka..."
+                  value={searchQuery}
+                  onChange={onSearchChange}
+                  debounceMs={200}
+                  resultsCount={searchResultsCount}
+                />
+              </div>
+            )}
+            {onCategoryChange && categories.length > 0 && (
+              <CategoryFilter
+                categories={categories}
+                selectedCatId={selectedCatId ?? null}
+                onCategoryChange={onCategoryChange}
+              />
+            )}
+          </div>
+        </div>
+      )}
       <table className={styles.table}>
           <thead className={styles.tableHead}>
             <tr className={styles.headerRow}>

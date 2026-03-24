@@ -29,7 +29,6 @@ export function RoundTabs({
       onChange={onRaceChange}
       variant="pills"
       size="sm"
-      style={{ marginBottom: '0.75rem' }}
     />
   );
 }
