@@ -138,11 +138,10 @@ function eventLiveStateReducer(state: EventLiveState, action: EventLiveStateActi
         classes,
         races,
         categories,
-        // Clear resultsByRace on full refresh — data from a previous import
-        // would otherwise remain stale for races not currently selected.
-        // EventDetailPage re-fetches the selected race immediately after
-        // dispatching WS_FULL, so the brief flash is acceptable.
-        resultsByRace: {},
+        // HACK(stale-results): Keep resultsByRace to avoid flash/scroll reset.
+        // Trade-off: non-selected races may hold stale data until navigated to.
+        // Upgrade path: "fetch first" — await re-fetch before dispatching WS_FULL.
+        // See #82 for full analysis.
         detailedCache: {},
       };
     }
