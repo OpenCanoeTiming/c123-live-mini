@@ -213,6 +213,13 @@ export const resultsSchema = {
               prevPen: { type: ['integer', 'null'] },
               prevTotal: { type: ['integer', 'null'] },
               prevRnk: { type: ['integer', 'null'] },
+              // Previous run detailed fields (BR with detailed=true)
+              prevDtStart: { type: ['string', 'null'] },
+              prevDtFinish: { type: ['string', 'null'] },
+              prevGates: {
+                type: ['array', 'null'],
+                items: publicGateSchema,
+              },
               runs: {
                 type: 'array',
                 items: {
