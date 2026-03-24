@@ -68,6 +68,7 @@ export function registerEventsRoutes(
           endDate: e.end_date,
           discipline: e.discipline,
           status: e.status as PublicEvent['status'],
+          imageUrl: e.image ? `/api/v1/events/${e.event_id}/image` : null,
         })),
       };
     }
@@ -119,6 +120,9 @@ export function registerEventsRoutes(
           endDate: event.end_date,
           discipline: event.discipline,
           status: event.status as PublicEventDetail['status'],
+          imageUrl: event.image
+            ? `/api/v1/events/${event.event_id}/image`
+            : null,
         },
         classes: classesWithCategories.map((c) => ({
           // No internal ID exposed
@@ -144,6 +148,35 @@ export function registerEventsRoutes(
           raceStatus: r.race_status,
         })),
       };
+    }
+  );
+
+  /**
+   * GET /api/v1/events/:eventId/image
+   * Serve event image as binary response
+   */
+  app.get<{ Params: EventParams }>(
+    '/api/v1/events/:eventId/image',
+    async (request, reply) => {
+      const { eventId } = request.params;
+
+      const event = await eventRepo.findByEventId(eventId);
+
+      if (!event || !event.image) {
+        reply.code(404).send({
+          error: 'NotFound',
+          message: 'Image not found',
+        });
+        return;
+      }
+
+      reply
+        .header(
+          'Content-Type',
+          event.image_content_type ?? 'image/png'
+        )
+        .header('Cache-Control', 'public, max-age=86400')
+        .send(event.image);
     }
   );
 }

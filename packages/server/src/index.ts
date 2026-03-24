@@ -11,8 +11,14 @@ const start = async () => {
     // Run migrations on startup (FR-007)
     await runMigrations(db);
 
+    // Parse master passwords from environment
+    const masterPasswords = (process.env.MASTER_PASSWORDS ?? '')
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean);
+
     // Create and configure app
-    const app = createApp({ db, logger: true });
+    const app = createApp({ db, logger: true, masterPasswords });
 
     // Start server
     const port = parseInt(process.env.PORT ?? '3000', 10);
@@ -21,6 +27,7 @@ const start = async () => {
     console.log(`Server running on http://localhost:${port}`);
     console.log(`Using shared package version: ${SHARED_VERSION}`);
     console.log(`Database path: ${dbPath}`);
+    console.log(`Master passwords configured: ${masterPasswords.length > 0 ? masterPasswords.length : 'none (open admin)'}`);
   } catch (err) {
     console.error('Failed to start server:', err);
     process.exit(1);

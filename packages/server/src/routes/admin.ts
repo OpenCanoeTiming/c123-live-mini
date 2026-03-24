@@ -7,7 +7,13 @@ import { IngestRecordRepository } from '../db/repositories/IngestRecordRepositor
 import { EventLifecycleService } from '../services/EventLifecycleService.js';
 import { generateApiKey, isApiKeyValid } from '../utils/apiKey.js';
 import { createApiKeyAuth, type AuthenticatedRequest } from '../middleware/apiKeyAuth.js';
-import { createEventSchema, updateStatusSchema } from '../schemas/index.js';
+import { createMasterKeyAuth } from '../middleware/masterKeyAuth.js';
+import {
+  createEventSchema,
+  updateStatusSchema,
+  adminEventsListSchema,
+  adminDeleteEventSchema,
+} from '../schemas/index.js';
 import type { WebSocketManager } from '../services/WebSocketManager.js';
 
 /**
@@ -22,6 +28,7 @@ interface CreateEventBody {
   startDate?: string;
   endDate?: string;
   discipline?: string;
+  imageData?: string;
 }
 
 /**
@@ -38,17 +45,45 @@ interface CreateEventResponse {
 }
 
 /**
+ * Parse base64 image data, stripping data URI prefix if present.
+ * Returns the image buffer and content type.
+ */
+function parseImageData(imageData: string): {
+  buffer: Buffer;
+  contentType: string;
+} {
+  const dataUriMatch = imageData.match(
+    /^data:(image\/[a-zA-Z+]+);base64,(.+)$/
+  );
+
+  if (dataUriMatch) {
+    return {
+      buffer: Buffer.from(dataUriMatch[2], 'base64'),
+      contentType: dataUriMatch[1],
+    };
+  }
+
+  // Raw base64 without prefix — default to PNG
+  return {
+    buffer: Buffer.from(imageData, 'base64'),
+    contentType: 'image/png',
+  };
+}
+
+/**
  * Register admin routes
  */
 export function registerAdminRoutes(
   app: FastifyInstance,
   db: Kysely<Database>,
-  wsManager: WebSocketManager
+  wsManager: WebSocketManager,
+  masterPasswords: string[] = []
 ): void {
   const eventRepo = new EventRepository(db);
   const ingestRecordRepo = new IngestRecordRepository(db);
   const lifecycleService = new EventLifecycleService(db);
   const apiKeyAuth = createApiKeyAuth(db);
+  const masterKeyAuth = createMasterKeyAuth(masterPasswords);
 
   /**
    * POST /api/v1/admin/events
@@ -59,7 +94,7 @@ export function registerAdminRoutes(
     Reply: CreateEventResponse;
   }>(
     '/api/v1/admin/events',
-    { schema: createEventSchema },
+    { schema: createEventSchema, preHandler: masterKeyAuth },
     async (request, reply) => {
       const {
         eventId,
@@ -70,6 +105,7 @@ export function registerAdminRoutes(
         startDate,
         endDate,
         discipline,
+        imageData,
       } = request.body;
 
       // Validate required fields
@@ -99,6 +135,15 @@ export function registerAdminRoutes(
         return;
       }
 
+      // Parse image if provided
+      let image: Buffer | null = null;
+      let imageContentType: string | null = null;
+      if (imageData) {
+        const parsed = parseImageData(imageData);
+        image = parsed.buffer;
+        imageContentType = parsed.contentType;
+      }
+
       // Generate API key
       const apiKey = generateApiKey();
 
@@ -115,6 +160,8 @@ export function registerAdminRoutes(
         status: 'draft',
         api_key: apiKey,
         has_xml_data: 0,
+        image,
+        image_content_type: imageContentType,
       });
 
       // Log event creation as ingest record
@@ -139,6 +186,67 @@ export function registerAdminRoutes(
           validUntil: validity.validUntil?.toISOString(),
         },
       };
+    }
+  );
+
+  /**
+   * GET /api/v1/admin/events
+   * List all events with API keys (for key recovery)
+   */
+  app.get(
+    '/api/v1/admin/events',
+    { schema: adminEventsListSchema, preHandler: masterKeyAuth },
+    async () => {
+      const events = await eventRepo.findAll();
+
+      return {
+        events: events.map((e) => ({
+          eventId: e.event_id,
+          mainTitle: e.main_title,
+          subTitle: e.sub_title,
+          location: e.location,
+          startDate: e.start_date,
+          endDate: e.end_date,
+          discipline: e.discipline,
+          status: e.status,
+          apiKey: e.api_key,
+          hasXmlData: e.has_xml_data === 1,
+          hasImage: e.image !== null,
+          createdAt: e.created_at,
+        })),
+      };
+    }
+  );
+
+  /**
+   * DELETE /api/v1/admin/events/:eventId
+   * Delete an event and all related data (cascade)
+   */
+  app.delete<{ Params: { eventId: string } }>(
+    '/api/v1/admin/events/:eventId',
+    { schema: adminDeleteEventSchema, preHandler: masterKeyAuth },
+    async (request, reply) => {
+      const { eventId } = request.params;
+
+      const event = await eventRepo.findByEventId(eventId);
+      if (!event) {
+        reply.code(404).send({
+          error: 'NotFound',
+          message: `Event not found: ${eventId}`,
+        });
+        return;
+      }
+
+      // Close WebSocket room before deletion
+      try {
+        wsManager.closeRoom(eventId, 1000, 'Event deleted');
+      } catch {
+        // Ignore WS cleanup errors
+      }
+
+      await eventRepo.delete(event.id);
+
+      return { deleted: true, eventId };
     }
   );
 

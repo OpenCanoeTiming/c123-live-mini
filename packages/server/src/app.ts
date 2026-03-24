@@ -20,13 +20,14 @@ import { WebSocketManager } from './services/WebSocketManager.js';
 export interface AppOptions {
   db: Kysely<Database>;
   logger?: boolean;
+  masterPasswords?: string[];
 }
 
 /**
  * Create and configure Fastify app
  */
 export function createApp(options: AppOptions): FastifyInstance {
-  const { db, logger = true } = options;
+  const { db, logger = true, masterPasswords = [] } = options;
 
   const app = Fastify({ logger });
 
@@ -52,7 +53,7 @@ export function createApp(options: AppOptions): FastifyInstance {
   registerResultsRoutes(app, db);
   registerStartlistRoutes(app, db);
   registerIngestRoutes(app, db, wsManager);
-  registerAdminRoutes(app, db, wsManager);
+  registerAdminRoutes(app, db, wsManager, masterPasswords);
   registerOnCourseRoutes(app, db);
   registerCategoriesRoutes(app, db);
   registerConfigRoutes(app, db);

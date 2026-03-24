@@ -105,6 +105,19 @@ sequenceDiagram
 
 ## Authentication
 
+### Two-Level Auth
+
+| Level | Header | Purpose | Protects |
+|-------|--------|---------|----------|
+| **Master Password** | `X-Master-Key` | Admin operations | Create/list/delete events |
+| **Event API Key** | `X-API-Key` | Data ingestion | Ingest XML/results, status transitions |
+
+### Master Password
+
+- Configured via `MASTER_PASSWORDS` env var (comma-separated, supports multiple)
+- Required for: `POST /admin/events`, `GET /admin/events`, `DELETE /admin/events/:id`
+- If not configured: admin endpoints are open (development mode)
+
 ### API Key per Event
 
 ```mermaid
@@ -112,19 +125,27 @@ sequenceDiagram
     participant C as c123-server<br/>(authenticated)
     participant M as live-mini-server
 
-    C->>M: POST /admin/events
-    M-->>C: { apiKey: "xxx" }
+    C->>M: POST /admin/events<br/>X-Master-Key: xxx
+    M-->>C: { apiKey: "yyy" }
 
     loop Data Ingestion
-        C->>M: POST /ingest/data<br/>X-API-Key: xxx
+        C->>M: POST /ingest/data<br/>X-API-Key: yyy
         M-->>C: 200 OK
     end
 ```
 
-- **Generation:** API key created when timekeeper authenticates and creates event
+- **Generation:** API key created when event is created via admin API
 - **Validity:** Several days (duration of the event)
 - **Usage:** Key in header of every ingest request
 - **Scope:** One key = one event = prevents cross-event data leaks
+
+### Event ID Independence
+
+The `eventId` in live-mini is **independent** from the C123 `EventId` in XML. This allows using national race numbers or custom identifiers as live event IDs. Pairing of XML data to events is done exclusively via the API key — the XML `EventId` is not checked.
+
+### Event Image
+
+Events can have an associated image (logo/avatar), uploaded as base64 via the admin API (`imageData` field). The image is served at `GET /api/v1/events/:eventId/image` as a public, cacheable endpoint.
 
 ---
 

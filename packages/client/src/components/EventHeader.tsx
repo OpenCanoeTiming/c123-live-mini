@@ -59,7 +59,8 @@ export function EventHeader({ event, connectionState }: EventHeaderProps) {
       section="dv"
       title={event.mainTitle}
       subtitle={subtitle || undefined}
-      avatarInitials={getInitials(event.mainTitle)}
+      avatarSrc={event.imageUrl ?? undefined}
+      avatarInitials={event.imageUrl ? undefined : getInitials(event.mainTitle)}
       badges={<StatusBadges status={event.status} connectionState={connectionState} />}
       metadata={metadata.length > 0 ? metadata : undefined}
       meshBackground

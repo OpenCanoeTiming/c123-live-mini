@@ -14,6 +14,8 @@ export interface EventsTable {
   api_key: string | null;
   config: string | null;
   has_xml_data: number;
+  image: Buffer | null;
+  image_content_type: string | null;
   created_at: ColumnType<string, string | undefined, string | undefined>;
   status_changed_at: ColumnType<string, string | undefined, string | undefined>;
 }

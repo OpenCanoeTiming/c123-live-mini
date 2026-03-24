@@ -71,6 +71,8 @@ export interface PublicEvent {
   discipline: string | null;
   /** Event status */
   status: PublicEventStatus;
+  /** URL to event image (null if no image) */
+  imageUrl: string | null;
 }
 
 /**

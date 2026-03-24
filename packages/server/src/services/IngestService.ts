@@ -80,12 +80,9 @@ export class IngestService {
       throw new Error('Event not found for API key');
     }
 
-    // Verify event ID matches if provided in XML
-    if (parsed.event && parsed.event.eventId !== event.event_id) {
-      throw new Error(
-        `Event ID mismatch: XML contains ${parsed.event.eventId}, expected ${event.event_id}`
-      );
-    }
+    // Note: XML EventId is intentionally NOT checked against event_id.
+    // Pairing is done via API key. This allows eventId in live-mini to be
+    // independent (e.g. national race number) from C123 EventId.
 
     // Update event metadata if needed
     if (parsed.event) {
