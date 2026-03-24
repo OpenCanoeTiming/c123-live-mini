@@ -19,7 +19,7 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.375rem 0.5rem;
+  padding: 0.25rem 0.5rem;
   background: var(--csk-color-surface, #f9fafb);
   border: 1px solid var(--csk-color-border-secondary, #e5e7eb);
   border-bottom: none;
@@ -27,24 +27,23 @@
   flex-wrap: wrap;
 }
 
-.toolbarLeft {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
 .toolbarRight {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .searchWrapper {
-  width: 14rem;
-  flex-shrink: 1;
-  min-width: 0;
+  flex: 1;
+  min-width: 8rem;
+  max-width: 14rem;
+}
+
+/* ViewMode hidden on mobile — marginal feature */
+.viewModeDesktopOnly {
+  display: none;
 }
 
 /* When toolbar present, remove top border-radius from table head */
@@ -56,22 +55,17 @@
   border-top-right-radius: 0;
 }
 
-/* Mobile responsive search */
+@media (min-width: 769px) {
+  .viewModeDesktopOnly {
+    display: block;
+  }
+}
+
 @media (max-width: 768px) {
   .searchWrapper {
-    width: 2.25rem;
-    overflow: hidden;
-    transition: width 0.2s ease;
-  }
-
-  .searchWrapper:focus-within {
-    width: 100%;
+    min-width: 6rem;
+    max-width: none;
     flex: 1;
-  }
-
-  .toolbarRight {
-    flex-shrink: 1;
-    min-width: 0;
   }
 }
 

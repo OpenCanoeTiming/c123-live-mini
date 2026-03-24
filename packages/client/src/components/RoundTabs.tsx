@@ -29,6 +29,7 @@ export function RoundTabs({
       onChange={onRaceChange}
       variant="pills"
       size="sm"
+      energyAccent
     />
   );
 }

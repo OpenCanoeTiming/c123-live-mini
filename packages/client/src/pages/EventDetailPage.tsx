@@ -5,6 +5,7 @@ import {
   EmptyState,
   Button,
   Tabs,
+  SearchInput,
   type TabItem,
 } from '@czechcanoe/rvp-design-system';
 import { useLocation } from 'wouter';
@@ -45,10 +46,9 @@ interface EventDetailPageProps {
 export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageProps) {
   const [, navigate] = useLocation();
 
-  // Live state reducer (replaces individual useState for event/classes/races/categories/results)
+  // Live state reducer
   const [liveState, dispatch] = useEventLiveState();
 
-  // Derived state from reducer
   const eventDetail = liveState.event;
   const races = liveState.races;
   const categories = liveState.categories;
@@ -77,11 +77,11 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const [resultsState, setResultsState] = useState<LoadingState>('idle');
   const [currentRaceInfo, setCurrentRaceInfo] = useState<ResultsResponse['race'] | null>(null);
 
-  // Data view toggle: results vs startlist vs schedule
+  // Data view toggle
   type DataView = 'results' | 'startlist' | 'schedule';
   const [dataView, setDataView] = useState<DataView>('results');
 
-  // Search/filter state — useDeferredValue keeps input responsive while filtering defers
+  // Search — uncontrolled input with deferred filtering
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
@@ -89,8 +89,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const [days, setDays] = useState<DayInfo[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
+  // Guard: only auto-select day on first load, not on internal navigations
+  const dayAutoSelectedRef = useRef(false);
 
-  // Get results from reducer for selected race and construct ResultsResponse
+  // Get results from reducer
   const results: ResultsResponse | null = selectedRaceId && liveState.resultsByRace[selectedRaceId] && currentRaceInfo
     ? {
         race: currentRaceInfo,
@@ -106,7 +108,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           type: 'WS_FULL',
           payload: message.data,
         });
-        // Re-fetch results for the currently selected race after full state replacement
         if (selectedRaceId && eventId) {
           getEventResults(eventId, selectedRaceId, {
             catId: selectedCatId ?? undefined,
@@ -186,11 +187,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     handleWsMessage
   );
 
-  // REST polling fallback when WebSocket is disconnected
+  // REST polling fallback
   const pollingIntervalRef = useRef<number | null>(null);
   const pollingParamsRef = useRef({ raceId: selectedRaceId, catId: selectedCatId });
 
-  // Track current polling parameters
   useEffect(() => {
     pollingParamsRef.current = { raceId: selectedRaceId, catId: selectedCatId };
   }, [selectedRaceId, selectedCatId]);
@@ -202,29 +202,20 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       const poll = async () => {
         const currentRaceId = pollingParamsRef.current.raceId;
         const currentCatId = pollingParamsRef.current.catId;
-
         if (!currentRaceId) return;
 
         try {
           const resultsData = await getEventResults(eventId, currentRaceId, {
             catId: currentCatId ?? undefined,
           });
-
           if (pollingParamsRef.current.raceId === currentRaceId && pollingParamsRef.current.catId === currentCatId) {
             dispatch({
               type: 'SET_RESULTS',
-              payload: {
-                raceId: currentRaceId,
-                results: resultsData.results,
-              },
+              payload: { raceId: currentRaceId, results: resultsData.results },
             });
           }
-
           const oncourseData = await getOnCourse(eventId);
-          dispatch({
-            type: 'SET_ONCOURSE',
-            payload: oncourseData,
-          });
+          dispatch({ type: 'SET_ONCOURSE', payload: oncourseData });
         } catch (err) {
           console.error('[EventDetailPage] Polling failed:', err);
         }
@@ -321,17 +312,13 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         const dayInfos = extractDays(eventData.races);
         setDays(dayInfos);
 
-        // Auto-select active day (has running race), fallback first upcoming, fallback first
-        if (dayInfos.length > 1) {
+        // Auto-select active day only on FIRST load (not on internal navigate)
+        if (dayInfos.length > 1 && !dayAutoSelectedRef.current) {
+          dayAutoSelectedRef.current = true;
           const runningDay = dayInfos.find((d) =>
             eventData.races.some((r) => d.raceIds.has(r.raceId) && r.raceStatus != null && r.raceStatus >= 2)
           );
-          if (runningDay) {
-            setSelectedDay(runningDay.date);
-          } else {
-            // First day with any future race, or just first day
-            setSelectedDay(dayInfos[0].date);
-          }
+          setSelectedDay(runningDay ? runningDay.date : dayInfos[0].date);
         }
 
         // Handle deep link with raceId from URL
@@ -357,10 +344,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           getOnCourse(eventId)
             .then((oncourseData) => {
               if (cancelled) return;
-              dispatch({
-                type: 'SET_ONCOURSE',
-                payload: oncourseData,
-              });
+              dispatch({ type: 'SET_ONCOURSE', payload: oncourseData });
             })
             .catch((err) => {
               console.error('[EventDetailPage] Failed to load oncourse:', err);
@@ -409,10 +393,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
         dispatch({
           type: 'SET_RESULTS',
-          payload: {
-            raceId,
-            results: resultsData.results,
-          },
+          payload: { raceId, results: resultsData.results },
         });
         setCurrentRaceInfo(resultsData.race);
         setStartlist(startlistData.length > 0 ? startlistData : null);
@@ -443,7 +424,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     return () => { cancelled = true; };
   }, [eventId, selectedRaceId, selectedCatId, eventState]);
 
-  // Handle class change — auto-select first display race
+  // Handle class change
   const handleClassChange = useCallback(
     (classId: string) => {
       setSelectedClassId(classId);
@@ -474,7 +455,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     setExpandedRows(new Set());
   }, []);
 
-  // Handle row expand/collapse with detail data fetching
+  // Handle row expand/collapse
   const handleToggleExpand = useCallback(
     async (key: string) => {
       const newExpanded = new Set(expandedRows);
@@ -527,18 +508,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         }
       }
     },
-    [
-      expandedRows,
-      liveState.detailedCache,
-      selectedRaceId,
-      eventId,
-      selectedCatId,
-      detailedLoading,
-      dispatch,
-    ]
+    [expandedRows, liveState.detailedCache, selectedRaceId, eventId, selectedCatId, detailedLoading, dispatch]
   );
 
-  // Build human-readable class name map from liveState.classes
+  // Build class name map
   const classNameMap = useMemo(() => {
     const map: Record<string, string> = {};
     for (const cls of liveState.classes) {
@@ -547,7 +520,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     return map;
   }, [liveState.classes]);
 
-  // Search filter for results and startlist
+  // Search filter (uses deferred query for responsiveness)
   const filteredResults: ResultsResponse | null = useMemo(() => {
     if (!results) return null;
     if (!deferredSearchQuery.trim()) return results;
@@ -571,7 +544,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     );
   }, [startlist, deferredSearchQuery]);
 
-  // Data view tabs — always visible once loaded
+  // Data view tabs
   const hasResults = results && results.results.length > 0;
   const hasStartlist = startlist && startlist.length > 0;
   const dataViewTabs: TabItem[] = useMemo(() => {
@@ -582,13 +555,12 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     return tabs;
   }, [hasResults, hasStartlist]);
 
-  // Search results count
+  // Search results count for startlist search input
   const searchResultsCount = useMemo(() => {
     if (!searchQuery.trim()) return undefined;
-    if (dataView === 'results') return filteredResults?.results.length;
     if (dataView === 'startlist') return filteredStartlist?.length;
     return undefined;
-  }, [searchQuery, dataView, filteredResults, filteredStartlist]);
+  }, [searchQuery, dataView, filteredStartlist]);
 
   // Filter classGroups by selected day
   const filteredClassGroups = useMemo(() => {
@@ -600,27 +572,45 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     );
   }, [classGroups, selectedDay, days]);
 
-  // When day changes, auto-select first class from filtered groups if current is not visible
+  // When day changes: auto-select class/race that belongs to the new day
+  // DO NOT navigate — that re-triggers loadEvent and resets day selection
   useEffect(() => {
     if (filteredClassGroups.length === 0) return;
+
+    const dayInfo = selectedDay ? days.find((d) => d.date === selectedDay) : null;
     const currentVisible = filteredClassGroups.some((g) => g.classId === selectedClassId);
+
     if (!currentVisible) {
+      // Class not on this day — select first class on this day
       const firstGroup = filteredClassGroups[0];
       setSelectedClassId(firstGroup.classId);
       if (firstGroup.displayRaces.length > 0) {
-        const newRaceId = firstGroup.displayRaces[0].raceId;
-        setSelectedRaceId(newRaceId);
-        navigate(`/events/${eventId}/race/${newRaceId}`);
+        setSelectedRaceId(firstGroup.displayRaces[0].raceId);
+      }
+    } else if (dayInfo && selectedRaceId && !dayInfo.raceIds.has(selectedRaceId)) {
+      // Class is visible but selected race is from another day — find race for this day
+      const group = filteredClassGroups.find((g) => g.classId === selectedClassId);
+      if (group) {
+        const dayRace = group.displayRaces.find((r) => dayInfo.raceIds.has(r.raceId));
+        if (dayRace) {
+          setSelectedRaceId(dayRace.raceId);
+        }
       }
     }
-  }, [filteredClassGroups, selectedClassId, eventId, navigate]);
+  }, [filteredClassGroups, selectedDay, selectedClassId, selectedRaceId, days]);
 
   // Day selector tabs (no "Vše")
   const dayTabs: TabItem[] = useMemo(() => {
     return days.map((d) => ({ id: d.date, label: d.label, content: null }));
   }, [days]);
 
-  // 404 / error with back link
+  // Clear search when switching data view
+  const handleDataViewChange = useCallback((id: string) => {
+    setDataView(id as DataView);
+    setSearchQuery('');
+  }, []);
+
+  // 404 / error
   if (eventState === 'error') {
     return (
       <section>
@@ -678,25 +668,23 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       {resultsState === 'success' && (
         <div className={styles.navigationRow}>
           {days.length > 1 && (
-            <div className={styles.dayTabs}>
-              <Tabs
-                tabs={dayTabs}
-                activeTab={selectedDay ?? dayTabs[0]?.id}
-                onChange={(id) => setSelectedDay(id)}
-                variant="pills"
-                size="sm"
-              />
-            </div>
-          )}
-          <div className={styles.dataViewTabs}>
             <Tabs
-              tabs={dataViewTabs}
-              activeTab={dataView}
-              onChange={(id) => setDataView(id as DataView)}
+              tabs={dayTabs}
+              activeTab={selectedDay ?? dayTabs[0]?.id}
+              onChange={(id) => setSelectedDay(id)}
               variant="pills"
               size="sm"
+              energyAccent
             />
-          </div>
+          )}
+          <Tabs
+            tabs={dataViewTabs}
+            activeTab={dataView}
+            onChange={handleDataViewChange}
+            variant="pills"
+            size="sm"
+            energyAccent
+          />
         </div>
       )}
 
@@ -746,12 +734,22 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           onRaceChange={handleRaceChange}
           hasMergedBR={hasMergedBR}
           showRoundTabs={showRoundTabs}
-          searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          searchResultsCount={searchResultsCount}
           categories={categories}
           onCategoryChange={handleCategoryChange}
         />
+      )}
+
+      {resultsState === 'success' && dataView === 'startlist' && (
+        <div className={styles.startlistSearch}>
+          <SearchInput
+            size="sm"
+            placeholder="Hledat závodníka..."
+            onChange={setSearchQuery}
+            debounceMs={200}
+            resultsCount={searchResultsCount}
+          />
+        </div>
       )}
 
       {resultsState === 'success' && dataView === 'startlist' && filteredStartlist && filteredStartlist.length > 0 && (

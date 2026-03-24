@@ -270,10 +270,8 @@ interface ResultListProps {
   onRaceChange?: (raceId: string) => void;
   hasMergedBR?: boolean;
   showRoundTabs?: boolean;
-  // Search
-  searchQuery?: string;
+  // Search (uncontrolled — no value prop, just onChange callback)
   onSearchChange?: (q: string) => void;
-  searchResultsCount?: number;
   // Category
   categories?: CategoryInfo[];
   onCategoryChange?: (catId: string | null) => void;
@@ -294,9 +292,7 @@ export function ResultList({
   onRaceChange,
   hasMergedBR = false,
   showRoundTabs = false,
-  searchQuery,
   onSearchChange,
-  searchResultsCount,
   categories = [],
   onCategoryChange,
 }: ResultListProps) {
@@ -331,38 +327,36 @@ export function ResultList({
     <div className={styles.tableWrapper}>
       {hasToolbar && (
         <div className={styles.tableToolbar}>
-          <div className={styles.toolbarLeft}>
-            {onViewModeChange && (
-              <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
-            )}
-            {showRoundTabs && roundRaces && onRaceChange && (
-              <RoundTabs
-                races={roundRaces}
-                selectedRaceId={selectedRaceId ?? null}
-                onRaceChange={onRaceChange}
-                hasMergedBR={hasMergedBR}
+          {showRoundTabs && roundRaces && onRaceChange && (
+            <RoundTabs
+              races={roundRaces}
+              selectedRaceId={selectedRaceId ?? null}
+              onRaceChange={onRaceChange}
+              hasMergedBR={hasMergedBR}
+            />
+          )}
+          {onSearchChange && (
+            <div className={styles.searchWrapper}>
+              <SearchInput
+                size="sm"
+                placeholder="Hledat závodníka..."
+                onChange={onSearchChange}
+                debounceMs={200}
               />
-            )}
-          </div>
+            </div>
+          )}
           <div className={styles.toolbarRight}>
-            {onSearchChange && (
-              <div className={styles.searchWrapper}>
-                <SearchInput
-                  size="sm"
-                  placeholder="Hledat závodníka..."
-                  value={searchQuery}
-                  onChange={onSearchChange}
-                  debounceMs={200}
-                  resultsCount={searchResultsCount}
-                />
-              </div>
-            )}
             {onCategoryChange && categories.length > 0 && (
               <CategoryFilter
                 categories={categories}
                 selectedCatId={selectedCatId ?? null}
                 onCategoryChange={onCategoryChange}
               />
+            )}
+            {onViewModeChange && (
+              <div className={styles.viewModeDesktopOnly}>
+                <ViewModeToggle viewMode={viewMode} onViewModeChange={onViewModeChange} />
+              </div>
             )}
           </div>
         </div>
