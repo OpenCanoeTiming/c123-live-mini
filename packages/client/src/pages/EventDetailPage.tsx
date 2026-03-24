@@ -282,7 +282,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     }
   }, [viewMode, selectedRaceId, results, liveState.detailedCache, eventId, selectedCatId, dispatch]);
 
-  // Load event details + categories
+  // Track which eventId has been loaded to avoid full re-fetch on internal navigate
+  const loadedEventIdRef = useRef<string | null>(null);
+
+  // Load event details + categories — only when eventId changes
   useEffect(() => {
     let cancelled = false;
 
@@ -313,7 +316,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         const dayInfos = extractDays(eventData.races);
         setDays(dayInfos);
 
-        // Auto-select active day only on FIRST load (not on internal navigate)
+        // Auto-select active day
         if (dayInfos.length > 1 && !dayAutoSelectedRef.current) {
           dayAutoSelectedRef.current = true;
           const runningDay = dayInfos.find((d) =>
@@ -329,7 +332,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             const targetClassId = targetRace.classId ?? groups[0]?.classId ?? null;
             setSelectedClassId(targetClassId);
             setSelectedRaceId(urlRaceId);
-            // Set day to match deep-linked race (overrides auto-detect above)
+            // Set day to match deep-linked race
             if (dayInfos.length > 1) {
               const raceDay = dayInfos.find((d) => d.raceIds.has(urlRaceId));
               if (raceDay) setSelectedDay(raceDay.date);
@@ -345,6 +348,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         }
 
         setEventState('success');
+        loadedEventIdRef.current = eventId;
 
         if (eventData.event.status === 'running') {
           getOnCourse(eventId)
@@ -373,7 +377,31 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
     loadEvent();
     return () => { cancelled = true; };
-  }, [eventId, urlRaceId]);
+  }, [eventId]); // eslint-disable-line react-hooks/exhaustive-deps -- urlRaceId handled below
+
+  // Sync selection from URL changes (browser back/forward, deep link after initial load)
+  // Skips internal navigates (where state is already set by handleClassChange/handleDayChange)
+  useEffect(() => {
+    // Skip during initial load (loadEvent handles it) or same event not loaded yet
+    if (loadedEventIdRef.current !== eventId) return;
+    if (!urlRaceId) return;
+
+    // Only sync if URL race differs from current selection (browser back/forward)
+    if (urlRaceId === selectedRaceId) return;
+
+    const targetRace = races.find((r) => r.raceId === urlRaceId);
+    if (!targetRace) return;
+
+    const classId = targetRace.classId ?? selectedClassId;
+    if (classId) setSelectedClassId(classId);
+    setSelectedRaceId(urlRaceId);
+
+    // Sync day
+    if (days.length > 0) {
+      const raceDay = days.find((d) => d.raceIds.has(urlRaceId));
+      if (raceDay && raceDay.date !== selectedDay) setSelectedDay(raceDay.date);
+    }
+  }, [urlRaceId, eventId, races, days, selectedRaceId, selectedClassId, selectedDay]);
 
   // Load results/startlist when race changes
   useEffect(() => {
@@ -624,8 +652,9 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     );
   }, [classGroups, selectedDay, days]);
 
-  // When day changes: auto-select class/race that belongs to the new day
-  // DO NOT navigate — that re-triggers loadEvent and resets day selection
+  // Safety net: when filteredClassGroups changes (day switch), ensure selected class/race
+  // is valid. handleDayChange covers the common case but doesn't handle the edge case
+  // where the selected class doesn't exist on the new day.
   useEffect(() => {
     if (filteredClassGroups.length === 0) return;
 
