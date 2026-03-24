@@ -1,88 +1,94 @@
 /**
- * ClassTabs carousel styles
- * Horizontal scroll with gradient fade + arrow buttons.
+ * ClassTabs styles
+ * Desktop: tabs wrap naturally (no carousel).
+ * Mobile: horizontal scroll with gradient fade hint, no arrows needed.
  */
 
+/* Desktop: wrapping layout, no carousel */
 .carouselWrapper {
   position: relative;
 }
 
-.carousel {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-  /* Pad sides for arrow overlap */
-  padding: 0 1.5rem;
-}
-
-.carousel::-webkit-scrollbar {
+/* Hide panel area — class tabs are purely navigational */
+.carousel :global(.csk-tabs__panel) {
   display: none;
 }
 
-/* Force tabs to not wrap */
 .carousel :global([role="tablist"]) {
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
 }
 
-.carousel :global([role="tab"]) {
-  white-space: nowrap;
-  flex-shrink: 0;
+/* Mobile: horizontal scroll carousel */
+@media (max-width: 640px) {
+  .carousel {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* Fade right edge to signal more content */
+    mask-image: linear-gradient(to right, black 70%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 70%, transparent 100%);
+  }
+
+  .carousel::-webkit-scrollbar {
+    display: none;
+  }
+
+  .carousel :global([role="tablist"]) {
+    flex-wrap: nowrap;
+  }
+
+  .carousel :global([role="tab"]) {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Right chevron — bounces every 10s */
+  .carouselWrapper::after {
+    content: '›';
+    position: absolute;
+    right: 0.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--csk-color-primary, #e65c00);
+    pointer-events: none;
+    animation: carousel-hint 10s ease-in-out infinite;
+  }
+
+  /* Left fade + chevron — only when scrolled */
+  .scrolled .carousel {
+    mask-image: linear-gradient(to right, transparent 0%, black 15%, black 70%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, black 15%, black 70%, transparent 100%);
+  }
+
+  .scrolled::before {
+    content: '‹';
+    position: absolute;
+    left: 0.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--csk-color-primary, #e65c00);
+    pointer-events: none;
+    z-index: 1;
+  }
 }
 
-/* Scroll arrow buttons */
-.scrollArrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 50%;
-  border: 1px solid var(--csk-color-border-secondary, #e5e7eb);
-  background: var(--csk-color-bg-primary, #fff);
-  box-shadow: var(--shadow-sm, 0 1px 2px rgba(0,0,0,0.05));
-  color: var(--csk-color-text-secondary, #6b7280);
-  font-size: 1.125rem;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color 0.15s, box-shadow 0.15s;
-  padding: 0;
-}
-
-.scrollArrow:hover {
-  background: var(--csk-color-bg-secondary, #f3f4f6);
-  box-shadow: var(--shadow-md, 0 2px 4px rgba(0,0,0,0.1));
-}
-
-.scrollArrowLeft {
-  left: 0;
-}
-
-.scrollArrowRight {
-  right: 0;
-}
-
-/* Gradient fade on edges when scrollable */
-.carouselWrapper::before,
-.carouselWrapper::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1.5rem;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.carouselWrapper::before {
-  left: 0;
-  background: linear-gradient(to right, var(--csk-color-background, #fff), transparent);
-}
-
-.carouselWrapper::after {
-  right: 0;
-  background: linear-gradient(to left, var(--csk-color-background, #fff), transparent);
+@keyframes carousel-hint {
+  /* Invisible most of the cycle */
+  0%, 74%  { opacity: 0; transform: translateY(-50%) translateX(0); }
+  /* Bounce 1 */
+  78%      { opacity: 1; transform: translateY(-50%) translateX(0); }
+  81%      { opacity: 1; transform: translateY(-50%) translateX(6px); }
+  84%      { opacity: 1; transform: translateY(-50%) translateX(0); }
+  /* Bounce 2 */
+  87%      { opacity: 1; transform: translateY(-50%) translateX(6px); }
+  90%      { opacity: 1; transform: translateY(-50%) translateX(0); }
+  /* Bounce 3 */
+  93%      { opacity: 1; transform: translateY(-50%) translateX(6px); }
+  96%      { opacity: 1; transform: translateY(-50%) translateX(0); }
+  /* Fade out */
+  100%     { opacity: 0; transform: translateY(-50%) translateX(0); }
 }

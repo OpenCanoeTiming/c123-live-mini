@@ -17,43 +17,20 @@ export function ClassTabs({
   classNameMap,
 }: ClassTabsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
-  const checkScroll = useCallback(() => {
-    if (!scrollRef.current) return;
-    const el = scrollRef.current;
-    setCanScrollLeft(el.scrollLeft > 1);
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+  const handleScroll = useCallback(() => {
+    setScrolled((scrollRef.current?.scrollLeft ?? 0) > 4);
   }, []);
 
-  useEffect(() => {
-    checkScroll();
-    const el = scrollRef.current;
-    if (!el) return;
-    el.addEventListener('scroll', checkScroll, { passive: true });
-    const ro = new ResizeObserver(checkScroll);
-    ro.observe(el);
-    return () => {
-      el.removeEventListener('scroll', checkScroll);
-      ro.disconnect();
-    };
-  }, [checkScroll, classGroups]);
-
-  // Auto-scroll selected tab into view
+  // On mobile: scroll active tab into view
   useEffect(() => {
     if (!scrollRef.current || !selectedClassId) return;
     const activeTab = scrollRef.current.querySelector('[role="tab"][aria-selected="true"]');
     if (activeTab) {
-      activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      activeTab.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
     }
   }, [selectedClassId]);
-
-  const scroll = (dir: 'left' | 'right') => {
-    if (!scrollRef.current) return;
-    const amount = scrollRef.current.clientWidth * 0.6;
-    scrollRef.current.scrollBy({ left: dir === 'left' ? -amount : amount, behavior: 'smooth' });
-  };
 
   const tabs: TabItem[] = classGroups.map((group) => ({
     id: group.classId,
@@ -62,18 +39,8 @@ export function ClassTabs({
   }));
 
   return (
-    <div className={styles.carouselWrapper}>
-      {canScrollLeft && (
-        <button
-          className={`${styles.scrollArrow} ${styles.scrollArrowLeft}`}
-          onClick={() => scroll('left')}
-          aria-label="Posunout vlevo"
-          type="button"
-        >
-          ‹
-        </button>
-      )}
-      <div className={styles.carousel} ref={scrollRef}>
+    <div className={`${styles.carouselWrapper} ${scrolled ? styles.scrolled : ''}`}>
+      <div className={styles.carousel} ref={scrollRef} onScroll={handleScroll}>
         <Tabs
           tabs={tabs}
           activeTab={selectedClassId ?? undefined}
@@ -82,16 +49,6 @@ export function ClassTabs({
           energyAccent
         />
       </div>
-      {canScrollRight && (
-        <button
-          className={`${styles.scrollArrow} ${styles.scrollArrowRight}`}
-          onClick={() => scroll('right')}
-          aria-label="Posunout vpravo"
-          type="button"
-        >
-          ›
-        </button>
-      )}
     </div>
   );
 }

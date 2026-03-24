@@ -31,6 +31,11 @@
   display: none;
 }
 
+/* ClassTabs row — tighter spacing below */
+.classTabs {
+  margin-bottom: -0.25rem;
+}
+
 /* Standalone search for startlist view */
 .startlistSearch {
   max-width: 20rem;

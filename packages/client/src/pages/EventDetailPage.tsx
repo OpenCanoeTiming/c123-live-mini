@@ -735,12 +735,14 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
       {/* NAV ROW 2: ClassTabs carousel (hidden in schedule view) */}
       {dataView !== 'schedule' && showClassTabs && (
-        <ClassTabs
-          classGroups={filteredClassGroups}
-          selectedClassId={selectedClassId}
-          onClassChange={handleClassChange}
-          classNameMap={classNameMap}
-        />
+        <div className={styles.classTabs}>
+          <ClassTabs
+            classGroups={filteredClassGroups}
+            selectedClassId={selectedClassId}
+            onClassChange={handleClassChange}
+            classNameMap={classNameMap}
+          />
+        </div>
       )}
 
       {resultsState === 'loading' && <SkeletonCard />}
