@@ -83,15 +83,14 @@ export function RunDetailExpand({ detail, isLoading, isBestRun, athleteName, bet
     );
   }
 
-  // For BR races, show both runs side by side
-  if (isBestRun && (detail.gates || detail.prevGates)) {
-    // Determine which run's data goes where
-    const run1 = betterRunNr === 1
-      ? { dt: detail.dtStart, dtF: detail.dtFinish, gates: detail.gates }
-      : { dt: detail.prevDtStart ?? null, dtF: detail.prevDtFinish ?? null, gates: detail.prevGates ?? null };
-    const run2 = betterRunNr === 2
-      ? { dt: detail.dtStart, dtF: detail.dtFinish, gates: detail.gates }
-      : { dt: detail.prevDtStart ?? null, dtF: detail.prevDtFinish ?? null, gates: detail.prevGates ?? null };
+  // For BR races, show both runs side by side when both have gate data
+  if (isBestRun && detail.gates && detail.prevGates) {
+    // Server maps: dtStart/gates = better run, prevDtStart/prevGates = worse run
+    // We need to assign them to the correct run number (1 or 2)
+    const betterData = { dt: detail.dtStart, dtF: detail.dtFinish, gates: detail.gates };
+    const worseData = { dt: detail.prevDtStart ?? null, dtF: detail.prevDtFinish ?? null, gates: detail.prevGates };
+    const run1 = betterRunNr === 1 ? betterData : worseData;
+    const run2 = betterRunNr === 2 ? betterData : worseData;
 
     return (
       <div className={styles.container}>
