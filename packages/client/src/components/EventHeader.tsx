@@ -1,6 +1,7 @@
 import { HeroSection, Badge, type HeroSectionMetaItem } from '@czechcanoe/rvp-design-system';
 import type { EventDetail } from '../services/api';
 import type { ConnectionState } from '../hooks/useEventWebSocket';
+import styles from './EventHeader.module.css';
 
 interface EventHeaderProps {
   event: EventDetail;
@@ -54,16 +55,18 @@ export function EventHeader({ event, connectionState }: EventHeaderProps) {
   }
 
   return (
-    <HeroSection
-      variant="minimal"
-      section="dv"
-      title={event.mainTitle}
-      subtitle={subtitle || undefined}
-      avatarSrc={event.imageUrl ?? undefined}
-      avatarInitials={event.imageUrl ? undefined : getInitials(event.mainTitle)}
-      badges={<StatusBadges status={event.status} connectionState={connectionState} />}
-      metadata={metadata.length > 0 ? metadata : undefined}
-      meshBackground
-    />
+    <div className={styles.wrapper}>
+      <HeroSection
+        variant="minimal"
+        section="dv"
+        title={event.mainTitle}
+        subtitle={subtitle || undefined}
+        avatarSrc={event.imageUrl ?? undefined}
+        avatarInitials={event.imageUrl ? undefined : getInitials(event.mainTitle)}
+        badges={<StatusBadges status={event.status} connectionState={connectionState} />}
+        metadata={metadata.length > 0 ? metadata : undefined}
+        meshBackground
+      />
+    </div>
   );
 }

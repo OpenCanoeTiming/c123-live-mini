@@ -1,4 +1,10 @@
 /**
  * EventHeader styles
- * HeroSection from DS handles all styling — no custom overrides needed.
+ *
+ * Fix: DS avatar image overflows circle for tall images (box-sizing:content-box
+ * + border causes mismatch). Scoped to hero wrapper to avoid global side effects.
  */
+.wrapper :global(.csk-avatar__image) {
+  object-fit: cover;
+  border-radius: inherit;
+}
