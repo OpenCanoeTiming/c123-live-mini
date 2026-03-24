@@ -1,15 +1,17 @@
 /**
  * Layout styles for StartlistTable
- * Uses DS CSS variables for colors and spacing tokens
+ * Aligned visually with ResultList (blue header border, consistent typography).
  */
 
 .athleteName {
   font-weight: 500;
+  color: var(--csk-color-text-primary, #111827);
 }
 
 .athleteClub {
   font-size: var(--csk-font-size-xs, 0.75rem);
   color: var(--csk-color-text-tertiary, #9ca3af);
+  margin-top: 0.0625rem;
 }
 
 .startTime {
@@ -22,4 +24,20 @@
   font-size: var(--csk-font-size-xs, 0.75rem);
   color: var(--csk-color-text-secondary, #6b7280);
   font-weight: 500;
+
+}
+
+.bibBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.0625rem 0.3rem;
+  border-radius: 3px;
+  background: var(--csk-color-bg-secondary, #f3f4f6);
+  border: 1px solid var(--csk-color-border-secondary, #e5e7eb);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--csk-color-text-secondary, #6b7280);
+  line-height: 1.4;
 }

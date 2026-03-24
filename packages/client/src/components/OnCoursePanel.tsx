@@ -45,9 +45,7 @@ export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps
             <div key={`${entry.raceId}-${entry.bib}`} className={styles.entry}>
               {/* Line 1: bib, name (club) ... time +pen = total #rank */}
               <div className={styles.mainRow}>
-                <Badge variant="default" size="sm" pill>
-                  {entry.bib}
-                </Badge>
+                <span className={styles.bibBadge}>{entry.bib}</span>
                 <span className={styles.athleteName}>{entry.name}</span>
                 {entry.club && (
                   <span className={styles.athleteClub}>({entry.club})</span>

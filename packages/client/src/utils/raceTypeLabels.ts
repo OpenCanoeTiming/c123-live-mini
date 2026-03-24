@@ -9,11 +9,11 @@ const RACE_TYPE_LABELS: Record<string, string> = {
   'best-run-1': '1. jízda',
   'best-run-2': '2. jízda',
   training: 'Trénink',
-  seeding: 'Seeding',
+  seeding: '',
   'cross-heat': 'Kříž - Jízda',
   'cross-semifinal': 'Kříž - Semifinále',
   'cross-final': 'Kříž - Finále',
-  unknown: 'Neznámý typ',
+  unknown: '',
 };
 
 const BEST_RUN_TYPES = new Set(['best-run-1', 'best-run-2']);

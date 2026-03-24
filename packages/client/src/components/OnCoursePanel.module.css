@@ -72,6 +72,22 @@
   animation: fadeSlideIn 0.3s ease-out;
 }
 
+.bibBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  padding: 0.0625rem 0.3rem;
+  border-radius: 3px;
+  background: var(--csk-color-bg-secondary, #f3f4f6);
+  border: 1px solid var(--csk-color-border-secondary, #e5e7eb);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--csk-color-text-secondary, #6b7280);
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
 /* Desktop: single row */
 .mainRow {
   display: flex;

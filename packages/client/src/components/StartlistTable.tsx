@@ -1,8 +1,6 @@
 import {
-  Card,
   Table,
   EmptyState,
-  SectionHeader,
   type ColumnDef,
 } from '@czechcanoe/rvp-design-system';
 import type { StartlistEntry } from '../services/api';
@@ -29,7 +27,7 @@ function buildColumns(hasStartTimes: boolean): ColumnDef<StartlistEntry>[] {
       header: 'St.č.',
       width: '60px',
       align: 'center',
-      cell: (row) => row.bib ?? '-',
+      cell: (row) => <span className={styles.bibBadge}>{row.bib ?? '-'}</span>,
     },
   ];
 
@@ -80,12 +78,10 @@ interface StartlistTableProps {
 export function StartlistTable({ entries }: StartlistTableProps) {
   if (entries.length === 0) {
     return (
-      <Card>
-        <EmptyState
-          title="Startovní listina je prázdná"
-          description="Zatím nebyli přiřazeni žádní závodníci."
-        />
-      </Card>
+      <EmptyState
+        title="Startovní listina je prázdná"
+        description="Zatím nebyli přiřazeni žádní závodníci."
+      />
     );
   }
 
@@ -93,8 +89,7 @@ export function StartlistTable({ entries }: StartlistTableProps) {
   const columns = buildColumns(hasStartTimes);
 
   return (
-    <Card>
-      <SectionHeader title="Startovní listina" />
+    <div className={styles.startlistCard}>
       <Table
         columns={columns}
         data={entries}
@@ -103,6 +98,6 @@ export function StartlistTable({ entries }: StartlistTableProps) {
         hoverable
         variant="striped"
       />
-    </Card>
+    </div>
   );
 }
