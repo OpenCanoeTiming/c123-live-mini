@@ -62,6 +62,7 @@ export function EventHeader({ event, connectionState }: EventHeaderProps) {
         title={event.mainTitle}
         subtitle={subtitle || undefined}
         avatarSrc={event.imageUrl ?? undefined}
+        avatarShape={event.imageUrl ? 'rounded' : undefined}
         avatarInitials={event.imageUrl ? undefined : getInitials(event.mainTitle)}
         badges={<StatusBadges status={event.status} connectionState={connectionState} />}
         metadata={metadata.length > 0 ? metadata : undefined}

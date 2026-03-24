@@ -1,10 +1,20 @@
 /**
  * EventHeader styles
  *
- * Fix: DS avatar image overflows circle for tall images (box-sizing:content-box
- * + border causes mismatch). Scoped to hero wrapper to avoid global side effects.
+ * Circle avatars (initials fallback): no overrides needed — DS defaults work.
+ * Rounded avatars (uploaded image): larger rectangular area, no ring shadow.
  */
-.wrapper :global(.csk-avatar__image) {
-  object-fit: cover;
+
+/* Rectangular image avatar — bigger than the circle, no ring */
+.wrapper :global(.csk-hero-section__avatar .csk-avatar--rounded) {
+  width: 100px;
+  height: 140px;
+  box-shadow: none;
+}
+
+.wrapper :global(.csk-avatar--rounded .csk-avatar__image) {
+  object-fit: contain;
   border-radius: inherit;
+  width: 100%;
+  height: 100%;
 }
