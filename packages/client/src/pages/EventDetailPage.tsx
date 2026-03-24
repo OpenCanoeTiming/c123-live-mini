@@ -430,13 +430,26 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       setSelectedClassId(classId);
       setExpandedRows(new Set());
       const group = classGroups.find((g) => g.classId === classId);
-      if (group && group.displayRaces.length > 0) {
-        const newRaceId = group.displayRaces[0].raceId;
+      if (!group) return;
+
+      // When a day is selected, prefer the first race from that day
+      let newRaceId: string | null = null;
+      if (selectedDay) {
+        const dayInfo = days.find((d) => d.date === selectedDay);
+        if (dayInfo) {
+          const dayRace = group.races.find((r) => dayInfo.raceIds.has(r.raceId));
+          if (dayRace) newRaceId = dayRace.raceId;
+        }
+      }
+      if (!newRaceId && group.displayRaces.length > 0) {
+        newRaceId = group.displayRaces[0].raceId;
+      }
+      if (newRaceId) {
         setSelectedRaceId(newRaceId);
         navigate(`/events/${eventId}/race/${newRaceId}`);
       }
     },
-    [classGroups, eventId, navigate]
+    [classGroups, selectedDay, days, eventId, navigate]
   );
 
   // Handle race/round change
