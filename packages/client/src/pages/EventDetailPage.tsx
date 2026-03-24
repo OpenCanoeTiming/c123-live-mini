@@ -458,6 +458,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const handleClassChange = useCallback(
     (classId: string) => {
       setSelectedClassId(classId);
+      setExpandedRows(new Set());
       const group = classGroups.find((g) => g.classId === classId);
       if (group && group.displayRaces.length > 0) {
         const newRaceId = group.displayRaces[0].raceId;
@@ -472,6 +473,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const handleRaceChange = useCallback(
     (raceId: string) => {
       setSelectedRaceId(raceId);
+      setExpandedRows(new Set());
       navigate(`/events/${eventId}/race/${raceId}`);
     },
     [eventId, navigate]
@@ -480,6 +482,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   // Handle category change
   const handleCategoryChange = useCallback((catId: string | null) => {
     setSelectedCatId(catId);
+    setExpandedRows(new Set());
   }, []);
 
   // Handle row expand/collapse with detail data fetching
