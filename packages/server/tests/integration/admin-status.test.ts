@@ -39,6 +39,8 @@ describe('Admin Status Endpoint - PATCH /api/v1/admin/events/:eventId/status', (
       .addColumn('api_key', 'text', (col) => col.unique())
       .addColumn('config', 'text')
       .addColumn('has_xml_data', 'integer', (col) => col.notNull().defaultTo(0))
+      .addColumn('image', 'blob')
+      .addColumn('image_content_type', 'text')
       .addColumn('created_at', 'text', (col) =>
         col.notNull().defaultTo('2026-02-12T00:00:00.000Z')
       )
@@ -47,7 +49,7 @@ describe('Admin Status Endpoint - PATCH /api/v1/admin/events/:eventId/status', (
     // Create Fastify app and register routes
     app = Fastify();
     wsManager = new WebSocketManager();
-    registerAdminRoutes(app, db, wsManager);
+    registerAdminRoutes(app, db, wsManager, []);
 
     // Create test event
     eventRepo = new EventRepository(db);
