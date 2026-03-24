@@ -26,6 +26,11 @@
   flex-shrink: 0;
 }
 
+/* Hide tab panel area — day tabs are purely navigational, no content panels needed */
+.dayTabs :global(.csk-tabs__panel) {
+  display: none;
+}
+
 /* Standalone search for startlist view */
 .startlistSearch {
   max-width: 20rem;
