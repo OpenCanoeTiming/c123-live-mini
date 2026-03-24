@@ -9,7 +9,7 @@ const RACE_TYPE_LABELS: Record<string, string> = {
   'best-run-1': '1. jízda',
   'best-run-2': '2. jízda',
   training: 'Trénink',
-  seeding: 'Seeding',
+  seeding: 'Rozřazení',
   'cross-heat': 'Kříž - Jízda',
   'cross-semifinal': 'Kříž - Semifinále',
   'cross-final': 'Kříž - Finále',

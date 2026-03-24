@@ -92,9 +92,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const [days, setDays] = useState<DayInfo[]>([]);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
 
-  // Updated bibs tracking for animation (Phase 9)
-  const [updatedBibs, setUpdatedBibs] = useState<Set<number>>(new Set());
-  const updatedBibsTimerRef = useRef<number | null>(null);
 
   // Get results from reducer for selected race and construct ResultsResponse
   const results: ResultsResponse | null = selectedRaceId && liveState.resultsByRace[selectedRaceId] && currentRaceInfo
@@ -148,18 +145,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           type: 'WS_DIFF',
           payload: message.data,
         });
-        // Track updated bibs for animation highlight
-        if (message.data.results) {
-          const bibs = new Set(message.data.results.filter(r => r.bib != null).map(r => r.bib!));
-          if (bibs.size > 0) {
-            setUpdatedBibs(bibs);
-            if (updatedBibsTimerRef.current) clearTimeout(updatedBibsTimerRef.current);
-            updatedBibsTimerRef.current = window.setTimeout(() => {
-              setUpdatedBibs(new Set());
-              updatedBibsTimerRef.current = null;
-            }, 2500);
-          }
-        }
         break;
 
       case 'refresh':
@@ -806,7 +791,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           detailedCache={liveState.detailedCache}
           detailedLoading={detailedLoading}
           viewMode={viewMode}
-          updatedBibs={updatedBibs}
+
         />
       )}
 

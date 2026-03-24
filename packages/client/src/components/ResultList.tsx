@@ -34,37 +34,21 @@ function buildStandardColumns(selectedCatId: string | null): Column[] {
       },
     },
     {
-      key: 'bib',
-      header: 'St.č.',
-      width: '48px',
-      align: 'center',
-      hideOnMobile: true,
-      render: (row) => <span className={styles.bibText}>{row.bib ?? '-'}</span>,
-    },
-    {
       key: 'name',
       header: 'Jméno',
       width: '100%',
       render: (row) => (
         <div>
           <div className={styles.athleteName}>
-            <span className={styles.bibBadgeMobile}>{row.bib}</span>
+            <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
             {row.name}
+            {row.catId && <span className={styles.catTag}>{row.catId}</span>}
           </div>
           {row.club && <div className={styles.athleteClub}>{row.club}</div>}
         </div>
       ),
     },
   ];
-  if (!selectedCatId) {
-    cols.push({
-      key: 'catId',
-      header: 'Kat.',
-      width: '48px',
-      hideOnMobile: true,
-      render: (row) => <span className={styles.catText}>{row.catId ?? ''}</span>,
-    });
-  }
   cols.push(
     {
       key: 'time',
@@ -157,22 +141,15 @@ function buildBestRunColumns(selectedCatId: string | null): Column[] {
       },
     },
     {
-      key: 'bib',
-      header: 'St.č.',
-      width: '48px',
-      align: 'center',
-      hideOnMobile: true,
-      render: (row) => <span className={styles.bibText}>{row.bib ?? '-'}</span>,
-    },
-    {
       key: 'name',
       header: 'Jméno',
       width: '100%',
       render: (row) => (
         <div>
           <div className={styles.athleteName}>
-            <span className={styles.bibBadgeMobile}>{row.bib}</span>
+            <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
             {row.name}
+            {row.catId && <span className={styles.catTag}>{row.catId}</span>}
           </div>
           {row.club && <div className={styles.athleteClub}>{row.club}</div>}
         </div>
@@ -283,7 +260,6 @@ interface ResultListProps {
   detailedCache?: Record<string, RunDetailData>;
   detailedLoading?: Set<string>;
   viewMode?: 'simple' | 'detailed';
-  updatedBibs?: Set<number>;
 }
 
 export function ResultList({
@@ -295,7 +271,6 @@ export function ResultList({
   detailedCache = {},
   detailedLoading = new Set(),
   viewMode = 'simple',
-  updatedBibs = new Set(),
 }: ResultListProps) {
   const { results, race } = data;
 
@@ -349,13 +324,11 @@ export function ResultList({
               const isLoading = detailedLoading.has(rowKey);
               const detail = detailedCache[rowKey] ?? null;
               const podiumClass = getRowPodiumClass(row.rnk, row.status);
-              const isUpdated = updatedBibs.has(row.bib ?? -1);
-
               return (
                 <Fragment key={rowKey}>
                   <tr
                     onClick={onToggleExpand ? () => onToggleExpand(rowKey) : undefined}
-                    className={`${styles.dataRow} ${podiumClass} ${index % 2 === 1 ? styles.stripedRow : ''} ${onToggleExpand ? styles.clickable : ''} ${isExpanded ? styles.expandedDataRow : ''} ${isUpdated ? styles.rowUpdated : ''}`}
+                    className={`${styles.dataRow} ${podiumClass} ${index % 2 === 1 ? styles.stripedRow : ''} ${onToggleExpand ? styles.clickable : ''} ${isExpanded ? styles.expandedDataRow : ''}`}
                   >
                     {onToggleExpand && (
                       <td className={`${styles.cell} ${styles.expandCol}`}>

@@ -29,7 +29,7 @@ function buildColumns(hasStartTimes: boolean): ColumnDef<StartlistEntry>[] {
       header: 'St.č.',
       width: '60px',
       align: 'center',
-      cell: (row) => row.bib ?? '-',
+      cell: (row) => <span className={styles.bibBadge}>{row.bib ?? '-'}</span>,
     },
   ];
 
@@ -93,7 +93,7 @@ export function StartlistTable({ entries }: StartlistTableProps) {
   const columns = buildColumns(hasStartTimes);
 
   return (
-    <Card>
+    <Card className={styles.startlistCard}>
       <SectionHeader title="Startovní listina" />
       <Table
         columns={columns}
