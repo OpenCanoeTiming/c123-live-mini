@@ -299,7 +299,7 @@ export function ResultList({
   return (
     <div className={styles.tableWrapper}>
       <table className={styles.table}>
-          <thead>
+          <thead className={styles.tableHead}>
             <tr className={styles.headerRow}>
               {onToggleExpand && <th className={`${styles.headerCell} ${styles.expandCol}`}></th>}
               {columns.map((col) => (
