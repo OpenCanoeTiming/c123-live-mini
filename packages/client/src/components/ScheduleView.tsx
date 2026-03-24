@@ -91,7 +91,7 @@ export function ScheduleView({ races, classNameMap, currentRaceId, onRaceClick }
         </div>
         <div className={styles.infoCol}>
           <span className={styles.raceName}>{className}</span>
-          <span className={styles.raceType}>{raceLabel}</span>
+          {raceLabel && <span className={styles.raceType}>{raceLabel}</span>}
         </div>
         <div className={styles.statusCol}>
           {getRaceStatusBadge(race.raceStatus, isCurrent)}

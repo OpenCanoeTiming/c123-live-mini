@@ -3,16 +3,6 @@
  * Aligned visually with ResultList (blue header border, consistent typography).
  */
 
-/* Override DS Table header to match results header styling */
-.startlistCard :global(.csk-table thead tr) {
-  border-bottom: 2px solid var(--csk-color-primary, #2563eb);
-}
-
-.startlistCard :global(.csk-table thead th) {
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
 .athleteName {
   font-weight: 500;
   color: var(--csk-color-text-primary, #111827);

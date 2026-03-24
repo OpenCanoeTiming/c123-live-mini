@@ -1,5 +1,4 @@
 import {
-  Card,
   Table,
   EmptyState,
   type ColumnDef,
@@ -79,12 +78,10 @@ interface StartlistTableProps {
 export function StartlistTable({ entries }: StartlistTableProps) {
   if (entries.length === 0) {
     return (
-      <Card>
-        <EmptyState
-          title="Startovní listina je prázdná"
-          description="Zatím nebyli přiřazeni žádní závodníci."
-        />
-      </Card>
+      <EmptyState
+        title="Startovní listina je prázdná"
+        description="Zatím nebyli přiřazeni žádní závodníci."
+      />
     );
   }
 
@@ -92,7 +89,7 @@ export function StartlistTable({ entries }: StartlistTableProps) {
   const columns = buildColumns(hasStartTimes);
 
   return (
-    <Card className={styles.startlistCard}>
+    <div className={styles.startlistCard}>
       <Table
         columns={columns}
         data={entries}
@@ -101,6 +98,6 @@ export function StartlistTable({ entries }: StartlistTableProps) {
         hoverable
         variant="striped"
       />
-    </Card>
+    </div>
   );
 }

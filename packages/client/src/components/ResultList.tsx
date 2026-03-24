@@ -1,6 +1,5 @@
 import { Fragment } from 'react';
 import {
-  Card,
   Badge,
   EmptyState,
 } from '@czechcanoe/rvp-design-system';
@@ -280,12 +279,10 @@ export function ResultList({
 
   if (results.length === 0) {
     return (
-      <Card>
-        <EmptyState
-          title="Zatím žádné výsledky"
-          description="Výsledky se zobrazí po zahájení závodu."
-        />
-      </Card>
+      <EmptyState
+        title="Zatím žádné výsledky"
+        description="Výsledky se zobrazí po zahájení závodu."
+      />
     );
   }
 
@@ -300,9 +297,8 @@ export function ResultList({
     : buildStandardColumns(selectedCatId ?? null);
 
   return (
-    <Card className={styles.resultsCard}>
-      <div className={styles.tableWrapper}>
-        <table className={styles.table}>
+    <div className={styles.tableWrapper}>
+      <table className={styles.table}>
           <thead>
             <tr className={styles.headerRow}>
               {onToggleExpand && <th className={styles.expandCol}></th>}
@@ -364,8 +360,7 @@ export function ResultList({
             })}
           </tbody>
         </table>
-      </div>
-    </Card>
+    </div>
   );
 }
 
