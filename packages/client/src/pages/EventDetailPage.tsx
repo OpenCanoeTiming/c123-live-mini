@@ -22,7 +22,7 @@ import {
   type CategoryInfo,
   type StartlistEntry,
 } from '../services/api';
-import { groupRaces, extractDays, type ClassGroup, type DayInfo } from '../utils/groupRaces';
+import { groupRaces, extractDays, getDisplayRaces, type ClassGroup, type DayInfo } from '../utils/groupRaces';
 import { isBestRunRace } from '../utils/raceTypeLabels';
 import { EventHeader } from '../components/EventHeader';
 import { ClassTabs } from '../components/ClassTabs';
@@ -425,6 +425,17 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     return () => { cancelled = true; };
   }, [eventId, selectedRaceId, selectedCatId, eventState]);
 
+  // Pick the best display race for a given class on a given day.
+  // Applies getDisplayRaces on day-filtered races so BR1 is hidden when BR2 exists.
+  const pickDayRaceId = useCallback(
+    (group: ClassGroup, dayInfo: DayInfo): string | null => {
+      const dayRaces = group.races.filter((r) => dayInfo.raceIds.has(r.raceId));
+      const display = getDisplayRaces(dayRaces);
+      return display[0]?.raceId ?? dayRaces[0]?.raceId ?? null;
+    },
+    []
+  );
+
   // Handle class change
   const handleClassChange = useCallback(
     (classId: string) => {
@@ -433,14 +444,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       const group = classGroups.find((g) => g.classId === classId);
       if (!group) return;
 
-      // When a day is selected, prefer the first race from that day
       let newRaceId: string | null = null;
       if (selectedDay) {
         const dayInfo = days.find((d) => d.date === selectedDay);
-        if (dayInfo) {
-          const dayRace = group.races.find((r) => dayInfo.raceIds.has(r.raceId));
-          if (dayRace) newRaceId = dayRace.raceId;
-        }
+        if (dayInfo) newRaceId = pickDayRaceId(group, dayInfo);
       }
       if (!newRaceId && group.displayRaces.length > 0) {
         newRaceId = group.displayRaces[0].raceId;
@@ -450,7 +457,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         navigate(`/events/${eventId}/race/${newRaceId}`);
       }
     },
-    [classGroups, selectedDay, days, eventId, navigate]
+    [classGroups, selectedDay, days, eventId, navigate, pickDayRaceId]
   );
 
   // Handle day change — keep same class, switch to that class's race on the new day
@@ -461,13 +468,13 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       if (!dayInfo || !selectedClassId) return;
       const group = classGroups.find((g) => g.classId === selectedClassId);
       if (!group) return;
-      const dayRace = group.races.find((r) => dayInfo.raceIds.has(r.raceId));
-      if (dayRace) {
-        setSelectedRaceId(dayRace.raceId);
-        navigate(`/events/${eventId}/race/${dayRace.raceId}`);
+      const newRaceId = pickDayRaceId(group, dayInfo);
+      if (newRaceId) {
+        setSelectedRaceId(newRaceId);
+        navigate(`/events/${eventId}/race/${newRaceId}`);
       }
     },
-    [days, selectedClassId, classGroups, eventId, navigate]
+    [days, selectedClassId, classGroups, eventId, navigate, pickDayRaceId]
   );
 
   // Handle race/round change
@@ -615,22 +622,19 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       // Class not on this day — select first class on this day
       const firstGroup = filteredClassGroups[0];
       setSelectedClassId(firstGroup.classId);
-      // Prefer race from this day (use .races, not .displayRaces — BR1 may be the only option)
-      const dayRace = dayInfo
-        ? firstGroup.races.find((r) => dayInfo.raceIds.has(r.raceId))
-        : null;
-      setSelectedRaceId(dayRace?.raceId ?? firstGroup.displayRaces[0]?.raceId ?? null);
+      const newRaceId = dayInfo
+        ? pickDayRaceId(firstGroup, dayInfo)
+        : firstGroup.displayRaces[0]?.raceId ?? null;
+      setSelectedRaceId(newRaceId);
     } else if (dayInfo && selectedRaceId && !dayInfo.raceIds.has(selectedRaceId)) {
       // Class is visible but selected race is from another day — find race for this day
       const group = filteredClassGroups.find((g) => g.classId === selectedClassId);
       if (group) {
-        const dayRace = group.races.find((r) => dayInfo.raceIds.has(r.raceId));
-        if (dayRace) {
-          setSelectedRaceId(dayRace.raceId);
-        }
+        const newRaceId = pickDayRaceId(group, dayInfo);
+        if (newRaceId) setSelectedRaceId(newRaceId);
       }
     }
-  }, [filteredClassGroups, selectedDay, selectedClassId, selectedRaceId, days]);
+  }, [filteredClassGroups, selectedDay, selectedClassId, selectedRaceId, days, pickDayRaceId]);
 
   // Day selector tabs (no "Vše")
   const dayTabs: TabItem[] = useMemo(() => {
