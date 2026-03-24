@@ -329,6 +329,11 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             const targetClassId = targetRace.classId ?? groups[0]?.classId ?? null;
             setSelectedClassId(targetClassId);
             setSelectedRaceId(urlRaceId);
+            // Set day to match deep-linked race (overrides auto-detect above)
+            if (dayInfos.length > 1) {
+              const raceDay = dayInfos.find((d) => d.raceIds.has(urlRaceId));
+              if (raceDay) setSelectedDay(raceDay.date);
+            }
           } else {
             setEventState('error');
             setEventError('Závod nenalezen');
