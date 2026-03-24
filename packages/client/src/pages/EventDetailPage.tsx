@@ -691,6 +691,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const selectedGroup = filteredClassGroups.find((g) => g.classId === selectedClassId);
   const selectedRace = races.find((r) => r.raceId === selectedRaceId);
   const showClassTabs = filteredClassGroups.length > 1;
+  const classTabsStandalone = filteredClassGroups.reduce(
+    (sum, g) => sum + (classNameMap[g.classId] ?? g.classId).length,
+    0
+  ) > 21;
   const displayRaces = selectedGroup?.displayRaces ?? [];
   const showRoundTabs = displayRaces.length > 1;
   const hasMergedBR = selectedGroup
@@ -710,7 +714,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         onToggle={() => setOncoursePanelOpen(!oncoursePanelOpen)}
       />
 
-      {/* NAV ROW 1: Days (left) + Data View (right) — always visible after event loads */}
+      {/* NAV ROW: Days (left) + ClassTabs (center, desktop only inline) + Data View (right) */}
       <div className={styles.navigationRow}>
         {days.length > 1 && (
           <div className={styles.dayTabs}>
@@ -724,6 +728,16 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             />
           </div>
         )}
+        {dataView !== 'schedule' && showClassTabs && (
+          <div className={`${styles.classTabs} ${classTabsStandalone ? styles.classTabsStandalone : ''}`}>
+            <ClassTabs
+              classGroups={filteredClassGroups}
+              selectedClassId={selectedClassId}
+              onClassChange={handleClassChange}
+              classNameMap={classNameMap}
+            />
+          </div>
+        )}
         {resultsState === 'success' && (
           <DataViewSelector
             tabs={dataViewTabs}
@@ -732,18 +746,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           />
         )}
       </div>
-
-      {/* NAV ROW 2: ClassTabs carousel (hidden in schedule view) */}
-      {dataView !== 'schedule' && showClassTabs && (
-        <div className={styles.classTabs}>
-          <ClassTabs
-            classGroups={filteredClassGroups}
-            selectedClassId={selectedClassId}
-            onClassChange={handleClassChange}
-            classNameMap={classNameMap}
-          />
-        </div>
-      )}
 
       {resultsState === 'loading' && <SkeletonCard />}
 

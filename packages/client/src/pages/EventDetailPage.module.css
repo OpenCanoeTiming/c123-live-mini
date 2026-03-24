@@ -19,6 +19,7 @@
   align-items: center;
   gap: 0.5rem;
   min-height: 2rem;
+  flex-wrap: wrap;
 }
 
 /* Prevent day tabs from stretching full width */
@@ -31,9 +32,26 @@
   display: none;
 }
 
-/* ClassTabs row — tighter spacing below */
+/* ClassTabs — desktop: grows to fill space between days and data view */
 .classTabs {
-  margin-bottom: -0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Too many categories: ClassTabs breaks to its own full-width row */
+.classTabsStandalone {
+  order: 10;
+  width: 100%;
+  flex: none;
+}
+
+/* Mobile: always standalone */
+@media (max-width: 640px) {
+  .classTabs {
+    order: 10;
+    width: 100%;
+    flex: none;
+  }
 }
 
 /* Standalone search for startlist view */
