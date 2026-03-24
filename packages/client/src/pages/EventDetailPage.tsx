@@ -582,6 +582,15 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     );
   }, [startlist, deferredSearchQuery]);
 
+  // Filter categories to only those present in this race — use startlist (always unfiltered)
+  // so the dropdown stays stable even when a category filter is active.
+  const availableCategories = useMemo(() => {
+    const source = startlist ?? results?.results ?? [];
+    if (source.length === 0) return categories;
+    const present = new Set(source.map((e) => e.catId).filter(Boolean));
+    return categories.filter((c) => present.has(c.catId));
+  }, [categories, startlist, results]);
+
   // Data view tabs
   const hasResults = results && results.results.length > 0;
   const hasStartlist = startlist && startlist.length > 0;
@@ -771,7 +780,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           hasMergedBR={hasMergedBR}
           showRoundTabs={showRoundTabs}
           onSearchChange={setSearchQuery}
-          categories={categories}
+          categories={availableCategories}
           onCategoryChange={handleCategoryChange}
         />
       )}
