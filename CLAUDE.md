@@ -1,226 +1,132 @@
-# c123-live-mini
+# Claude Code Instructions - C123 Live Mini
 
-Minimalistic live results solution for C123 timing ecosystem.
+## Project
 
-## Required Context
+C123 Live Mini - minimalistic live results for canoe slalom races timed with Canoe123.
 
-**Before running any Spec-Kit command, always read:**
-
-- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design, data flows, merge strategy, authentication
-
-This ensures specs are consistent with architectural decisions.
+**GitHub:** OpenCanoeTiming/c123-live-mini | **License:** MIT
 
 ---
 
-## SDD Workflow
+## Architecture
 
-This project uses Spec-Driven Development. Full methodology:
-https://github.com/jakubbican/gh-sdd-ai-workflow
-
-### Issue Types
-
-| Type | Label | Purpose |
-|------|-------|---------|
-| Feature | `type/feature` | Main work unit, tracked in GitHub |
-| Task | `type/task` | Optional - tasks live in `tasks.md` |
-| Bug | `type/bug` | Bug fix, no spec needed |
-| Feedback | `type/feedback` | Routes to spec update or bug |
-
-### Mandatory Label Transitions
-
-| Trigger | Command |
-|---------|---------|
-| After `/speckit.tasks` | `gh issue edit N --remove-label "spec/draft" --add-label "spec/approved"` |
-| Start implementation | `gh issue edit N --add-label "status/wip"` |
-| Before PR | `gh issue edit N --remove-label "status/wip"` |
-
-### Feature Workflow
-
-1. **Create Feature issue** (label: `type/feature`, `spec/draft`)
-2. **Run `/speckit.specify`** - creates branch `###-feature-name` and **link to issue**
-3. **Run Spec-Kit phases** - update issue after each:
-   - `/speckit.specify` → creates branch + update issue
-   - `/speckit.clarify` → update issue
-   - `/speckit.plan` → update issue
-   - `/speckit.tasks` → update issue + **change label to `spec/approved`**
-4. **Start implementation** → **add `status/wip` label**
-5. **Implement per phase** - commit + push + update issue after each
-6. **Before PR** → **remove `status/wip` label**
-7. **Create PR** with `Closes #N`
-
-### Branching Strategy
-
-> Branch names use spec-kit format `###-feature-name` which matches `specs/` directory.
-
-| Issue Type | Branch Pattern | Example |
-|------------|----------------|---------|
-| Feature | `###-feature-name` (created by spec-kit) | `002-data-model` |
-| Bug | `fix-{N}-{slug}` | `fix-99-ws-reconnect` |
-
----
-
-## Recommended Prompts
-
-### Starting a Feature
+> **Full details:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ```
-Read Feature issue #N and run /speckit.specify with its content.
-Spec-kit will create branch ###-feature-name automatically.
-Add comment to issue with branch link.
-```
-
-### Spec Phases
-
-```
-Read Feature issue #N and run /speckit.specify with its content.
-After completion, update the issue with link to spec.md and status.
-```
-
-```
-/speckit.clarify
-After completion, update Feature issue #N with status.
-```
-
-```
-/speckit.plan
-After completion, update Feature issue #N with links to plan.md and status.
-```
-
-```
-/speckit.tasks
-After completion:
-1. Update Feature issue #N with phase breakdown from tasks.md
-2. Change label: gh issue edit N --remove-label "spec/draft" --add-label "spec/approved"
-```
-
-### Start Implementation
-
-```
-Before starting first phase, add WIP label:
-gh issue edit N --add-label "status/wip"
-```
-
-### Implementation (ITERATIVE - per phase)
-
-```
-/speckit.implement next incomplete phase from Feature #N.
-After completion: commit all changes, push, update Feature issue with progress.
-```
-
-### Feature Completion
-
-```
-1. Remove WIP label: gh issue edit N --remove-label "status/wip"
-2. Create PR for Feature #N. Include summary of all phases and 'Closes #N' in body.
-```
-
----
-
-## Feature Issue Updates (REQUIRED)
-
-**After EVERY Spec-Kit command or implementation phase, update the Feature issue.**
-
-### After Spec Phase
-
-```markdown
-## Spec Phase Complete ✓
-
-**Branch:** [00N-feature-name](../../tree/00N-feature-name)
-
-### Created
-- [spec.md](../../blob/00N-feature-name/specs/00N-feature-name/spec.md)
-
-### Status
-- [x] /speckit.specify
-- [ ] /speckit.clarify
-- [ ] /speckit.plan
-- [ ] /speckit.tasks
-- [ ] Implementation
-
-### Next
-Run `/speckit.clarify` to refine the spec.
-```
-
-### After Implementation Phase
-
-```markdown
-## Phase X Complete ✓
-
-### Tasks Implemented
-- [x] T001-T005 (Setup)
-- [x] T006-T008 (Foundation)
-
-### Commits
-- `abc123` feat: add monorepo structure
-
-### Next
-Phase 3: User Story 1 (T009-T020)
-```
-
----
-
-## Project Context
-
-> **Full architecture details:** [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-
-### Architecture
-
-```mermaid
-flowchart LR
-    C123[Canoe123.exe<br/>TCP/XML] --> SERVER[c123-server<br/>local]
-    SERVER --> MINI[c123-live-mini-server<br/>cloud/API]
-    MINI --> PAGE[c123-live-mini-page<br/>SPA/React]
+┌──────────────┐     TCP/XML     ┌──────────────┐    HTTP/JSON    ┌──────────────────┐    WS/REST    ┌─────────────┐
+│  Canoe123    │ ──────────────► │  c123-server  │ ─────────────► │ live-mini-server  │ ───────────► │  live-mini   │
+│  (timing)    │                 │  (local)      │                │ (cloud/Railway)   │              │  (browser)   │
+└──────────────┘                 └──────────────┘                └──────────────────┘              └─────────────┘
 ```
 
 ### Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| Monorepo | npm workspaces |
-| Backend | Node.js, TypeScript, Fastify |
-| Database | SQLite + Kysely (Repository Pattern) |
-| Frontend | React + Vite |
-| Design System | rvp-design-system (public) |
+| Monorepo | npm workspaces (`packages/server`, `packages/client`) |
+| Backend | Node.js 20 LTS, TypeScript 5.x strict, Fastify, Kysely, better-sqlite3 |
+| Database | SQLite file-based (`packages/server/data/live-mini.db`), Repository Pattern |
+| Frontend | React 18, Vite, wouter |
+| Design System | @czechcanoe/rvp-design-system (public-facing) |
 | Deployment | Railway (planned) |
 
-### Related Projects
+---
 
-| Project | Purpose | Link |
-|---------|---------|------|
-| c123-protocol-docs | C123 protocol (XML, TCP) | `../c123-protocol-docs` |
-| c123-server | Local timing server + Admin UI | `../c123-server` |
-| rvp-design-system | Public apps design system | [GitHub](https://github.com/CzechCanoe/rvp-design-system/) |
-| timing-design-system | Internal timing tools DS | [GitHub](https://github.com/OpenCanoeTiming/timing-design-system/) |
+## Key References
 
-### Design Systems
+| Purpose | Path |
+|---------|------|
+| **Architecture & data flows** | `docs/ARCHITECTURE.md` |
+| **C123 protocol (XML, TCP)** | `../c123-protocol-docs/` |
+| **c123-server (data source)** | `../c123-server/` |
+| **Design system** | [rvp-design-system](https://github.com/CzechCanoe/rvp-design-system/) |
+| **Historical specs** | `specs/` (read-only reference for features 001-010) |
 
-| Design System | Purpose | Used In |
-|--------------|---------|---------|
-| **rvp-design-system** | Public-facing CSK apps | live-mini-page (this project) |
-| **timing-design-system** | Admin/internal tools | c123-server Admin UI |
+---
 
-**Important:** Frontend must strictly use rvp-design-system. No inline styles or local overrides.
+## Important Rules
 
-### Conventions
+1. **Design system only** — Frontend must strictly use `@czechcanoe/rvp-design-system`. No inline styles or local overrides.
+2. **Headless API** — Server has no Admin UI. Administration via c123-server.
+3. **Mobile-first** — Frontend optimized for spectators on phones at the venue.
 
-- **Language:** Code and commits in English
+---
+
+## Development
+
+```bash
+# Server (from project root)
+npx tsx packages/server/src/index.ts
+
+# Client (separate terminal)
+cd packages/client && npx vite
+
+# Client proxies /api → localhost:3000, /ws → localhost:3000
+```
+
+---
+
+## Workflow
+
+Every issue goes through 4 phases. **Each phase updates the issue** so progress is visible in GitHub.
+
+### 1. Rozbor (Analysis) → comment on issue
+
+Before any code, post an analysis comment to the issue:
+- **What & why** — restate the problem in own words, confirm understanding
+- **Challenge the idea** — is this the right solution? Simpler alternatives? Over-engineering risk?
+- **Scope** — what's in, what's explicitly out
+- **Risks & open questions** — unknowns, dependencies, edge cases
+- Use `/second-opinion` for non-trivial architectural or design decisions
+
+### 2. Plan → comment on issue
+
+- Use Claude Code plan mode to design implementation
+- **Post plan summary to the issue:** key decisions, files to change, rough approach
+- For larger features: include detailed plan outline (phases, key tasks)
+- Get user confirmation before starting implementation
+
+### 3. Implement → update issue with progress
+
+- Create branch from main
+- Commit incrementally, push regularly
+- **Comment on issue** with progress updates (what's done, what's next, any blockers)
+- For multi-phase features: update after each phase
+
+### 4. PR & Review → link PR to issue
+
+- **Every issue must result in a PR** with `Closes #N`
+- Run `/second-opinion` or independent sub-agent review on the PR diff before requesting human review
+- Include test plan in PR description
+- PR description summarizes what changed and why
+
+### Branching
+
+| Issue Type | Branch Pattern | Example |
+|------------|----------------|---------|
+| Feature | `feat/{N}-{slug}` | `feat/103-category-status` |
+| Bug | `fix-{N}-{slug}` | `fix-99-ws-reconnect` |
+
+---
+
+## DEVLOG.md
+
+Append-only record of dead ends, surprising problems, and their solutions. Strictly append — never edit or delete existing entries.
+
+### Entry format
+```markdown
+## YYYY-MM-DD — Short description
+
+**Problem:** What went wrong or didn't work
+**Attempted:** What was tried
+**Solution:** What actually worked (or: still open)
+**Lesson:** What to remember next time
+```
+
+---
+
+## Language
+
 - **Communication:** Czech or English
-- **API:** Headless, JSON-based
-- **Admin:** Via c123-server UI (not in this project)
-- **Frontend:** Mobile-first, rvp-design-system only
-
-## Active Technologies
-- TypeScript 5.x (Node.js 20 LTS, strict mode) + Fastify, Kysely, better-sqlite3
-- SQLite file-based (`packages/server/data/live-mini.db`, Repository Pattern)
-- TypeScript 5.x, Node.js 20 LTS (strict mode) + Fastify, Kysely, better-sqlite3 (006-client-api)
-- SQLite file-based (`packages/server/data/live-mini.db`), Repository Pattern (006-client-api)
-- TypeScript 5.x strict mode, React 18, Node.js 20 LTS + wouter (new), react 18, @czechcanoe/rvp-design-system 1.0.2 (007-frontend-foundation)
-- N/A (frontend-only, all data from Client API) (007-frontend-foundation)
-- TypeScript 5.x, Node.js 20 LTS (strict mode) + Fastify, Kysely, better-sqlite3, `@fastify/websocket` (new) (009-live-data-pipeline)
-- SQLite file-based (`packages/server/data/live-mini.db`), Repository Pattern — no schema changes (009-live-data-pipeline)
-- TypeScript 5.x strict mode, React 18, Node.js 20 LTS + React 18.3.1, wouter, @czechcanoe/rvp-design-system 1.0.3, Vite (010-live-results-ui)
-- N/A (frontend-only, all data from server API and WebSocket) (010-live-results-ui)
-
-## Recent Changes
-- 003-technical-poc: Monorepo structure (packages/server, packages/page), React + Vite frontend
-- 002-data-model: Added TypeScript 5.x (Node.js 20 LTS) + Fastify, Kysely, better-sqlite3
+- **Code, commits:** English
+- **Documentation:** English
