@@ -10,6 +10,13 @@ Purpose: short-lived memory for agents and humans. Read **Current conventions** 
 
 ## Log (newest first)
 
+### 2026-04-04 — Issue #117: Docker, Railway config-as-code, README deployment
+
+- **What:** Root multi-stage `Dockerfile` (Node 20 bookworm builder + slim runner, BuildKit secret `npm_token` for `npm ci`, prune dev deps, non-root user, `CMD node packages/server/dist/index.js`); `.dockerignore`; `railway.toml` (`DOCKERFILE`, start command, `/health` healthcheck); README **Deployment** (local prod smoke, Docker build/run, Railway env + build secret, `DATABASE_PATH` vs `DATABASE_URL`, SQLite-on-Railway options A/B/C with recommendation, manual smoke checklist, upstream PR note for `Closes #117`).
+- **Why:** Close remaining packaging/docs items for [issue #117](https://github.com/OpenCanoeTiming/c123-live-mini/issues/117); reproducible image with GitHub Packages auth at build only; operators use README as entry point.
+- **Do not undo:** Do not remove the `npm_token` mount from the Dockerfile without an alternative way to install `@czechcanoe/*` from GitHub Packages in CI/Railway. Keep `railway.toml` healthcheck aligned with `GET /health`.
+- **Also:** `ViewModeToggle.tsx` — `Switch` `onChange` is typed as `ChangeEvent<HTMLElement>` or `(id: string) => void`; handler uses `HTMLElement` + `HTMLInputElement` guard so `tsc --noEmit` passes.
+
 ### 2026-04-04 — Git: ignore `.cursor/` and `vendor/`; public client uses registry DS
 
 - **What:** `.gitignore` adds `.cursor/` and `vendor/`; `packages/client` depends on `@czechcanoe/rvp-design-system` `latest` again; `.npmrc.example` for GitHub Packages; root `typescript` set to `~5.7.3`.

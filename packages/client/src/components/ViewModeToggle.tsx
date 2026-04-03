@@ -1,4 +1,9 @@
+import type { ChangeEvent } from 'react';
 import { Switch } from '@czechcanoe/rvp-design-system';
+
+function isInputTarget(t: EventTarget | null): t is HTMLInputElement {
+  return t !== null && 'checked' in t && typeof (t as HTMLInputElement).checked === 'boolean';
+}
 
 export type ViewMode = 'simple' | 'detailed';
 
@@ -14,7 +19,11 @@ export function ViewModeToggle({ viewMode, onViewModeChange }: ViewModeTogglePro
       label="Detailní"
       labelPosition="left"
       checked={viewMode === 'detailed'}
-      onChange={(e) => onViewModeChange(e.target.checked ? 'detailed' : 'simple')}
+      onChange={(e: ChangeEvent<HTMLElement>) => {
+        const t = e.target;
+        if (!isInputTarget(t)) return;
+        onViewModeChange(t.checked ? 'detailed' : 'simple');
+      }}
     />
   );
 }

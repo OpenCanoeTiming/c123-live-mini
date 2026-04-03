@@ -1,0 +1,37 @@
+# Dependencies (installed in the image)
+node_modules
+**/node_modules
+
+# Git and local tooling
+.git
+.github
+.cursor
+vendor
+
+# Secrets and local env
+.env
+.env.*
+!.env.example
+
+# Build outputs from the host (image rebuilds clean)
+packages/*/dist
+
+# Large / irrelevant for production build
+specs
+
+# Tests and coverage
+coverage
+**/tests
+**/__tests__
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db
+*.sqlite
+*.sqlite3
+*.db

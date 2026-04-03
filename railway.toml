@@ -1,0 +1,13 @@
+# Railway config-as-code: https://docs.railway.com/reference/config-as-code
+# Build: add NODE_AUTH_TOKEN as a **build-time** secret/variable so Docker can run `npm ci`
+# (GitHub Packages — see `.npmrc.example` and README Deployment).
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+startCommand = "node packages/server/dist/index.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
