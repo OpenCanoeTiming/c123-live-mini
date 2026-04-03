@@ -14,7 +14,7 @@ type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 
 export function EventListPage() {
   const [events, setEvents] = useState<EventListItem[]>([]);
-  const [state, setState] = useState<LoadingState>('idle');
+  const [state, setState] = useState<LoadingState>('loading');
   const [error, setError] = useState<string | null>(null);
   const [, navigate] = useLocation();
 

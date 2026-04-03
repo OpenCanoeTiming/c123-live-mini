@@ -11,6 +11,7 @@ import { registerOnCourseRoutes } from './routes/oncourse.js';
 import { registerCategoriesRoutes } from './routes/categories.js';
 import { registerConfigRoutes } from './routes/config.js';
 import { registerWebSocketRoutes } from './routes/websocket.js';
+import { registerProductionSpa } from './registerProductionSpa.js';
 import { AppError } from './utils/errors.js';
 import { WebSocketManager } from './services/WebSocketManager.js';
 
@@ -26,7 +27,7 @@ export interface AppOptions {
 /**
  * Create and configure Fastify app
  */
-export function createApp(options: AppOptions): FastifyInstance {
+export async function createApp(options: AppOptions): Promise<FastifyInstance> {
   const { db, logger = true, masterPasswords = [] } = options;
 
   const app = Fastify({ logger });
@@ -57,6 +58,8 @@ export function createApp(options: AppOptions): FastifyInstance {
   registerOnCourseRoutes(app, db);
   registerCategoriesRoutes(app, db);
   registerConfigRoutes(app, db);
+
+  await registerProductionSpa(app);
 
   // Global error handler following contracts/api.md error format
   app.setErrorHandler(

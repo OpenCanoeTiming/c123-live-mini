@@ -13,7 +13,6 @@ packages/*/package-lock.json
 .env
 .env.local
 .env.*.local
-.npmrc
 
 # IDE
 .vscode/
@@ -36,3 +35,9 @@ _logs/
 .claude/settings.json
 .claude/credentials.json
 .claude/settings.local.json
+
+# Cursor — local AI rules and editor config (not part of the product)
+.cursor/
+
+# Local-only overrides (e.g. design-system stub without GitHub Packages access)
+vendor/

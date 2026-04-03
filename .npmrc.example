@@ -1,0 +1,15 @@
+# The repo already ships a root `.npmrc` with only:
+#   @czechcanoe:registry=https://npm.pkg.github.com/
+# Put your token in your user-level npmrc (recommended) so it is never committed:
+#   Windows: %USERPROFILE%\.npmrc
+#   macOS/Linux: ~/.npmrc
+#
+# Add one line (replace YOUR_TOKEN; no quotes):
+#   //npm.pkg.github.com/:_authToken=YOUR_TOKEN
+#
+# Or for a single shell session:
+#   set NODE_AUTH_TOKEN=YOUR_TOKEN   (cmd)
+#   $env:NODE_AUTH_TOKEN = "YOUR_TOKEN"   (PowerShell)
+#
+# Token: GitHub → Settings → Developer settings → Personal access tokens
+# Classic: "read:packages" (and "repo" if needed). Fine-grained: Packages → Read + SSO authorize for CzechCanoe.

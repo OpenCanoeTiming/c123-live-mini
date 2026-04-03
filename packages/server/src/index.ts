@@ -18,7 +18,7 @@ const start = async () => {
       .filter(Boolean);
 
     // Create and configure app
-    const app = createApp({ db, logger: true, masterPasswords });
+    const app = await createApp({ db, logger: true, masterPasswords });
 
     // Start server
     const port = parseInt(process.env.PORT ?? '3000', 10);

@@ -30,6 +30,9 @@ npm run test --workspace=@c123-live-mini/server
 | `HOST` | Server host | `0.0.0.0` |
 | `NODE_ENV` | Environment (`development` / `production`) | `development` |
 | `LOG_LEVEL` | Log level (`debug` / `info` / `warn` / `error`) | `info` |
+| `CLIENT_DIST_PATH` | Absolute path to Vite `dist` (production SPA). If unset, defaults to `packages/client/dist` next to this package. | *(derived)* |
+
+When `NODE_ENV=production` and the client build directory exists, the server serves the SPA and uses `index.html` for non-API GET routes (same origin as `/api/v1` and WebSockets). If the directory is missing, the API still starts and a warning is logged.
 
 ## API Endpoints
 
