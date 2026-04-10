@@ -28,7 +28,7 @@ C123 Live Mini - minimalistic live results for canoe slalom races timed with Can
 | Database | SQLite file-based (`packages/server/data/live-mini.db`), Repository Pattern |
 | Frontend | React 18, Vite, wouter |
 | Design System | @czechcanoe/rvp-design-system (public-facing) |
-| Deployment | Railway (planned) |
+| Deployment | Railway (staging live, production deferred) — see `docs/RUNBOOK.md` |
 
 ---
 
@@ -37,6 +37,8 @@ C123 Live Mini - minimalistic live results for canoe slalom races timed with Can
 | Purpose | Path |
 |---------|------|
 | **Architecture & data flows** | `docs/ARCHITECTURE.md` |
+| **Deployment runbook** (staging URL, Railway access, smoke tests, troubleshooting) | `docs/RUNBOOK.md` |
+| **Post-mortems / lessons** | `DEVLOG.md` |
 | **C123 protocol (XML, TCP)** | `../c123-protocol-docs/` |
 | **c123-server (data source)** | `../c123-server/` |
 | **Design system** | [rvp-design-system](https://github.com/CzechCanoe/rvp-design-system/) |
