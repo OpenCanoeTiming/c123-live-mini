@@ -21,7 +21,7 @@ flowchart LR
 | Backend | Node.js, TypeScript, Fastify |
 | Database | SQLite + Kysely |
 | Frontend | React + Vite |
-| Design System | [rvp-design-system](https://github.com/CzechCanoe/rvp-design-system/) |
+| Design System | [rvp-design-system](https://github.com/czechcanoe/rvp-design-system/) |
 | Deployment | Railway (Nixpacks, single-origin) |
 
 ## Project Structure
@@ -192,7 +192,7 @@ Two options:
 |---------|-------------|
 | [c123-server](https://github.com/OpenCanoeTiming/c123-server) | Local timing server + Admin UI |
 | [c123-protocol-docs](https://github.com/OpenCanoeTiming/c123-protocol-docs) | C123 protocol documentation |
-| [rvp-design-system](https://github.com/CzechCanoe/rvp-design-system) | CSK public apps design system |
+| [rvp-design-system](https://github.com/czechcanoe/rvp-design-system) | CSK public apps design system |
 
 ## License
 
