@@ -16,6 +16,7 @@ const mockEvents = [
     endDate: '2026-02-06',
     discipline: null,
     status: 'running',
+    imageUrl: null,
   },
 ];
 
@@ -45,9 +46,18 @@ afterEach(() => {
 });
 
 describe('App', () => {
-  it('renders the app title in header', () => {
+  it('renders the app title in header and hero', () => {
     render(<App />);
-    expect(screen.getByText('ČSK Live')).toBeTruthy();
+    // Header (satellite) and HeroSection both render the branding app name,
+    // so there are at least two matches.
+    expect(screen.getAllByText('ČSK Live').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renders the homepage hero subtitle from branding defaults', () => {
+    render(<App />);
+    expect(
+      screen.getByText('Živé výsledky kanoistického slalomu')
+    ).toBeTruthy();
   });
 
   it('shows shared package version in footer', () => {
@@ -88,11 +98,11 @@ describe('App', () => {
     expect(container.querySelector('.csk-skeleton-card')).toBeTruthy();
   });
 
-  it('shows Czech section header', async () => {
+  it('groups running events under "Probíhá živě" status section', async () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText('Závody')).toBeTruthy();
+      expect(screen.getByText('Probíhá živě')).toBeTruthy();
     });
   });
 });
