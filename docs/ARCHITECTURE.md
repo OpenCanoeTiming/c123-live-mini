@@ -253,7 +253,7 @@ Cache headers:
 
 ### Admin API safety in production
 
-When `NODE_ENV=production`, the server **refuses to start** if `MASTER_PASSWORDS` is empty unless `ADMIN_OPEN=1` is explicitly set. This prevents accidentally deploying a public URL with an open admin endpoint. The `ADMIN_OPEN=1` path is intended only for the initial Railway bootstrap — it logs loud warnings on every start and should be removed as soon as the first event is created and `MASTER_PASSWORDS` is configured.
+When `NODE_ENV=production`, the server **refuses to start** if `MASTER_PASSWORDS` is empty. This prevents accidentally deploying a public URL with an open admin endpoint — the master key must be configured before the first deploy. In development (`NODE_ENV` unset), an empty password list keeps the admin API open for local convenience.
 
 ### Dependencies between dev and prod modes
 

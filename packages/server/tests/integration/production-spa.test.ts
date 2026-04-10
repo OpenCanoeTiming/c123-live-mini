@@ -125,7 +125,11 @@ describe('Production SPA serving', () => {
     it('serves index.html on root GET', async () => {
       const app = await buildAppWithSpa();
 
-      const res = await app.inject({ method: 'GET', url: '/' });
+      const res = await app.inject({
+        method: 'GET',
+        url: '/',
+        headers: { accept: 'text/html' },
+      });
       expect(res.statusCode).toBe(200);
       expect(res.headers['content-type']).toContain('text/html');
       expect(res.body).toBe(INDEX_HTML);
@@ -139,6 +143,7 @@ describe('Production SPA serving', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/events/some-event-id',
+        headers: { accept: 'text/html,application/xhtml+xml' },
       });
       expect(res.statusCode).toBe(200);
       expect(res.headers['content-type']).toContain('text/html');
@@ -160,16 +165,61 @@ describe('Production SPA serving', () => {
       await app.close();
     });
 
-    it('uses no-store cache policy for index.html', async () => {
+    it('uses no-store cache policy for index.html via SPA fallback', async () => {
       const app = await buildAppWithSpa();
 
       // Request an SPA fallback path — index.html returned via sendFile
-      const res = await app.inject({ method: 'GET', url: '/some/route' });
+      // @fastify/static's reply.sendFile() triggers the `setHeaders`
+      // callback on the 'file' send path, so the no-store override must
+      // appear on the wire.
+      const res = await app.inject({
+        method: 'GET',
+        url: '/some/route',
+        headers: { accept: 'text/html' },
+      });
       expect(res.statusCode).toBe(200);
-      // Fallback path goes through setNotFoundHandler.sendFile which sets
-      // headers via @fastify/static setHeaders callback
-      // Accept either no-store (from our override) or a sensible default
-      expect(res.headers['cache-control']).toBeDefined();
+      expect(res.headers['cache-control']).toBe('no-store, max-age=0');
+
+      await app.close();
+    });
+
+    it('returns JSON 404 for stale hashed asset requests (no HTML leak)', async () => {
+      // Regression guard: with `wildcard: false`, @fastify/static registers
+      // explicit routes per file globbed from dist at startup. A request
+      // for a hashed asset that no longer exists (e.g. after redeploy)
+      // must NOT receive `index.html` — that would be HTML with
+      // content-type text/html served against a `.js` URL, causing the
+      // classic "Unexpected token '<'" SPA boot failure.
+      const app = await buildAppWithSpa();
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/assets/index-STALE123.js',
+        // Browser `<script>` fetches send `Accept: */*`, never text/html
+        headers: { accept: '*/*' },
+      });
+      expect(res.statusCode).toBe(404);
+      expect(res.headers['content-type']).toContain('application/json');
+      expect(JSON.parse(res.body)).toEqual({
+        error: 'Not found',
+        message: 'Resource not found',
+      });
+
+      await app.close();
+    });
+
+    it('returns JSON 404 for unknown path without text/html Accept', async () => {
+      // curl / fetch without an explicit text/html accept header should
+      // not get the SPA shell back — they get a real 404 they can act on.
+      const app = await buildAppWithSpa();
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/events/some-event-id',
+        headers: { accept: 'application/json' },
+      });
+      expect(res.statusCode).toBe(404);
+      expect(res.headers['content-type']).toContain('application/json');
 
       await app.close();
     });

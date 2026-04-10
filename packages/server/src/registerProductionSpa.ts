@@ -36,22 +36,35 @@ function sendJsonNotFound(reply: FastifyReply): void {
  * SPA is served by Vite's dev server on a different port, so nothing is
  * registered here.
  *
- * The registration runs in a nested plugin context via `app.register` so
- * that cache headers and the `setNotFoundHandler` are scoped locally and do
- * not leak into the API context. The API and WebSocket routes must be
- * registered on `app` BEFORE calling this function.
+ * The `@fastify/static` plugin is registered inside a nested
+ * `app.register(async ...)` scope so the reply decorators (`sendFile`) and
+ * the `setHeaders` callback live in an encapsulated plugin context. Note
+ * that `instance.setNotFoundHandler` called from a plugin whose effective
+ * prefix is `/` does **not** create a scoped handler — Fastify replaces the
+ * app-wide 404 handler in place (see `fastify/lib/four-oh-four.js`). This
+ * is acceptable because the handler explicitly forwards `/api/*` paths to
+ * JSON 404, but it means no other code may call `setNotFoundHandler` after
+ * this runs. The API and WebSocket routes must be registered on `app`
+ * BEFORE calling this function.
  *
  * Key configuration:
  * - `wildcard: false` — disables the default `GET /*` handler that would
  *   otherwise conflict with `/api/*` routes and `@fastify/websocket`'s
- *   upgrade interception.
+ *   upgrade interception. With `wildcard: false` the plugin globs `dist`
+ *   at registration time and registers one explicit HEAD+GET route per
+ *   file. Consequence: if a file in `dist` ever collides with an API
+ *   route name (e.g. `dist/health`), Fastify throws at `ready()` time.
  * - `index: false` — disables auto-serving of `index.html` on `/`; the
  *   `setNotFoundHandler` takes care of that so the SPA fallback logic is
  *   centralized.
- * - `setNotFoundHandler` — unknown `/api/*` paths return JSON 404 (for
- *   predictable client error handling); other GET/HEAD requests fall back
- *   to `index.html` (SPA client-side routing); other methods return 404
- *   JSON.
+ * - `setNotFoundHandler` — returns JSON 404 for:
+ *     • unknown `/api/*` paths (predictable client error handling)
+ *     • non-GET/HEAD methods
+ *     • requests without `Accept: text/html` (e.g. stale hashed asset
+ *       fetches from the browser — these must not receive `index.html`
+ *       as HTML because the SPA would silently fail to boot with
+ *       "Unexpected token '<'")
+ *   Otherwise serves `index.html` for SPA client-side routing.
  */
 export function registerProductionSpa(app: FastifyInstance): void {
   if (process.env.NODE_ENV !== 'production') {
@@ -88,6 +101,15 @@ export function registerProductionSpa(app: FastifyInstance): void {
           return sendJsonNotFound(reply);
         }
         if (request.method !== 'GET' && request.method !== 'HEAD') {
+          return sendJsonNotFound(reply);
+        }
+        // Only serve the SPA shell to browser navigations. A stale or
+        // missing hashed asset (e.g. `/assets/index-abc123.js` after a
+        // redeploy) must not be answered with `index.html` as HTML — that
+        // would break the SPA boot and potentially get cached by the
+        // browser/CDN against the asset URL.
+        const accept = String(request.headers.accept ?? '');
+        if (!accept.includes('text/html')) {
           return sendJsonNotFound(reply);
         }
         return reply.type('text/html').sendFile('index.html');

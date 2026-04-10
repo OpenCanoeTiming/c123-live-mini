@@ -13,7 +13,7 @@
 # Runtime env vars (set per environment in Railway):
 #   NODE_ENV=production
 #   DATABASE_PATH=/data/live-mini.db   (must point to mounted volume)
-#   MASTER_PASSWORDS=<comma-separated> (or ADMIN_OPEN=1 for bootstrap)
+#   MASTER_PASSWORDS=<comma-separated> (required; server refuses to start without it)
 #   LOG_LEVEL=info                     (optional; defaults to info)
 #   PORT=<auto>                        (Railway injects; server honors)
 

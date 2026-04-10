@@ -92,8 +92,7 @@ npm test
 | `NODE_ENV` | *(empty)* | runtime | Set to `production` to enable single-origin SPA serving and admin safety checks. |
 | `PORT` | `3000` | runtime | Server port. Railway injects this automatically. |
 | `DATABASE_PATH` | `./data/live-mini.db` | runtime | SQLite database path. **For Railway, set this to a path on the mounted volume, e.g. `/data/live-mini.db`** — otherwise data is lost on redeploy. |
-| `MASTER_PASSWORDS` | *(empty)* | runtime | Comma-separated admin passwords. Required in production unless `ADMIN_OPEN=1` is set for bootstrap. |
-| `ADMIN_OPEN` | *(empty)* | runtime | Set to `1` to temporarily allow open admin API in production (for initial Railway bootstrap). Always set `MASTER_PASSWORDS` as soon as the first event is created. |
+| `MASTER_PASSWORDS` | *(empty)* | runtime | Comma-separated admin passwords. **Required in production** — the server refuses to start in `NODE_ENV=production` without it. |
 | `CLIENT_DIST_PATH` | *(auto)* | runtime | Override for the client SPA dist directory. Defaults to `packages/client/dist` relative to the server package. |
 | `LOG_LEVEL` | `info` | runtime | Fastify logger level. |
 | `NODE_AUTH_TOKEN` | *(empty)* | build | GitHub Packages token with `read:packages`. Required at install/build time (locally, CI, Railway build). Not used at runtime. |
@@ -132,20 +131,21 @@ The project uses **two Railway environments within one Railway project**, each w
 
 Both environments use their own Railway Volume mounted at `/data` and their own set of environment variables (different `MASTER_PASSWORDS`, same `NODE_AUTH_TOKEN`). See issue [#117](https://github.com/OpenCanoeTiming/c123-live-mini/issues/117) for the step-by-step Railway setup checklist.
 
-### First-time admin bootstrap
+### Admin setup
 
-Because the server refuses to start in `NODE_ENV=production` with an empty `MASTER_PASSWORDS`, the very first deploy uses a bootstrap flow:
+The server refuses to start in `NODE_ENV=production` with an empty `MASTER_PASSWORDS` — set it **before** the first deploy:
 
-1. In Railway, set `ADMIN_OPEN=1` **instead of** `MASTER_PASSWORDS` on the first deploy. The server starts with loud warnings in the log.
-2. Create the first event via the admin API (no `X-Master-Key` header needed yet):
+1. Generate a strong password locally (e.g. `openssl rand -base64 24`).
+2. In Railway, add `MASTER_PASSWORDS=<password>` to the environment variables.
+3. Deploy. Create the first event with the master key:
    ```bash
    curl -X POST https://<your-service>/api/v1/admin/events \
      -H "Content-Type: application/json" \
+     -H "X-Master-Key: <password>" \
      -d '{"eventId":"bootstrap","mainTitle":"Bootstrap"}'
    ```
-   The response contains an `apiKey` used for data ingestion.
-3. In Railway, remove `ADMIN_OPEN` and set `MASTER_PASSWORDS=<strong password>`. Redeploy — the server now starts silently with admin endpoints protected.
-4. Verify: `curl -X POST https://<your-service>/api/v1/admin/events` should return `401 Unauthorized`, and the same call with `-H "X-Master-Key: <password>"` should succeed.
+   The response contains an `apiKey` used for XML data ingestion from `c123-server`.
+4. Verify unauthenticated access is rejected: the same call without `X-Master-Key` must return `401 Unauthorized`.
 
 ### Cost strategy
 
@@ -178,7 +178,7 @@ Two options:
 - **First Railway build takes 5–10 minutes** — `npm ci` from a cold cache is slow, subsequent builds are much faster thanks to Nixpacks layer caching.
 - **`npm ci` fails with 401** — `NODE_AUTH_TOKEN` is missing or has no `read:packages` scope / no SSO authorization for `CzechCanoe` org.
 - **WebSocket drops after Serverless sleep** — expected for the first connection after a cold start. Clients should reconnect automatically (see `useEventWebSocket` hook).
-- **Server refuses to start with `[FATAL] NODE_ENV=production with no MASTER_PASSWORDS`** — the admin safety policy is doing its job. Set `MASTER_PASSWORDS` or, for bootstrap only, `ADMIN_OPEN=1`.
+- **Server refuses to start with `[FATAL] NODE_ENV=production requires MASTER_PASSWORDS`** — the admin safety policy is doing its job. Set `MASTER_PASSWORDS=<strong password>` in Railway and redeploy.
 
 ## Documentation
 
