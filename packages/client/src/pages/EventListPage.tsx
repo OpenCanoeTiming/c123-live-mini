@@ -6,6 +6,8 @@ import {
   Card,
   EmptyState,
   Button,
+  Badge,
+  LiveIndicator,
 } from '@czechcanoe/rvp-design-system';
 import { useLocation } from 'wouter';
 import { getEvents, ApiError, type EventListItem } from '../services/api';
@@ -20,8 +22,14 @@ interface EventGroups {
   finished: EventListItem[];
 }
 
-const STATUS_SECTIONS: Array<{ key: keyof EventGroups; title: string }> = [
-  { key: 'running', title: 'Probíhá živě' },
+interface StatusSectionConfig {
+  key: keyof EventGroups;
+  title: string;
+  isLive?: boolean;
+}
+
+const STATUS_SECTIONS: StatusSectionConfig[] = [
+  { key: 'running', title: 'Probíhá živě', isLive: true },
   { key: 'upcoming', title: 'Nadcházející' },
   { key: 'finished', title: 'Skončené' },
 ];
@@ -81,64 +89,91 @@ export function EventListPage() {
 
   const groups = useMemo(() => groupEventsByStatus(events), [events]);
   const hasAnyEvents = events.length > 0;
+  const liveCount = groups.running.length;
 
   return (
     <>
-      {/*
-        The satellite Header already shows `branding.appName`. Use the
-        tagline as the hero title so we don't repeat the brand name above
-        the fold on mobile (review feedback on #134).
-      */}
       <HeroSection
-        variant="minimal"
-        section="generic"
+        variant="compact"
+        section="dv"
         title={branding.appSubtitle}
         meshBackground
+        patternOverlay
         wave
+        badges={
+          liveCount > 0 ? (
+            <Badge variant="energy" size="lg" glow>
+              LIVE • {liveCount}
+            </Badge>
+          ) : undefined
+        }
+        className="csk-reveal csk-reveal-1"
       />
 
-      {state === 'loading' && <SkeletonCard />}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2rem',
+          paddingBlock: '1.5rem',
+        }}
+      >
+        {state === 'loading' && <SkeletonCard />}
 
-      {state === 'error' && (
-        <Card>
-          <EmptyState
-            title="Chyba připojení"
-            description={error ?? 'Nepodařilo se připojit k serveru'}
-            action={<Button onClick={fetchEvents}>Zkusit znovu</Button>}
-          />
-        </Card>
-      )}
+        {state === 'error' && (
+          <Card>
+            <EmptyState
+              title="Chyba připojení"
+              description={error ?? 'Nepodařilo se připojit k serveru'}
+              action={<Button onClick={fetchEvents}>Zkusit znovu</Button>}
+            />
+          </Card>
+        )}
 
-      {state === 'success' && !hasAnyEvents && (
-        <Card>
-          <EmptyState
-            title="Žádné závody nejsou k dispozici"
-            description="Momentálně nejsou vypsány žádné závody."
-          />
-        </Card>
-      )}
+        {state === 'success' && !hasAnyEvents && (
+          <Card>
+            <EmptyState
+              title="Žádné závody nejsou k dispozici"
+              description="Momentálně nejsou vypsány žádné závody."
+            />
+          </Card>
+        )}
 
-      {state === 'success' && hasAnyEvents && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem',
-          }}
-        >
-          {STATUS_SECTIONS.map(({ key, title }) =>
+        {state === 'success' &&
+          hasAnyEvents &&
+          STATUS_SECTIONS.map(({ key, title, isLive }, idx) =>
             groups[key].length > 0 ? (
-              <section key={key}>
-                <SectionHeader title={title} />
+              <section
+                key={key}
+                className={`csk-reveal csk-reveal-${idx + 2}`}
+              >
+                <SectionHeader
+                  title={title}
+                  badge={
+                    isLive ? (
+                      <LiveIndicator
+                        variant="live"
+                        size="md"
+                        energyGlow
+                        pulse
+                        label="LIVE"
+                      />
+                    ) : (
+                      <Badge variant="default" size="sm">
+                        {groups[key].length}
+                      </Badge>
+                    )
+                  }
+                />
                 <EventList
                   events={groups[key]}
                   onSelectEvent={handleSelectEvent}
+                  emphasised={isLive}
                 />
               </section>
             ) : null
           )}
-        </div>
-      )}
+      </div>
     </>
   );
 }
