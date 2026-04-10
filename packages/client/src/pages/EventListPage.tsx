@@ -34,6 +34,19 @@ const STATUS_SECTIONS: StatusSectionConfig[] = [
   { key: 'finished', title: 'Skončené' },
 ];
 
+/** Czech pluralization for "závod" (race). */
+function raceCountLabel(count: number): string {
+  if (count === 1) return '1 závod';
+  if (count >= 2 && count <= 4) return `${count} závody`;
+  return `${count} závodů`;
+}
+
+const SECTION_DESCRIPTIONS: Record<keyof EventGroups, (n: number) => string> = {
+  running: (n) => `${raceCountLabel(n)} běží právě teď`,
+  upcoming: (n) => `${raceCountLabel(n)} v nejbližší době`,
+  finished: (n) => `${raceCountLabel(n)} už máme za sebou`,
+};
+
 function groupEventsByStatus(events: EventListItem[]): EventGroups {
   const groups: EventGroups = { running: [], upcoming: [], finished: [] };
   for (const event of events) {
@@ -111,11 +124,13 @@ export function EventListPage() {
       />
 
       <div
+        className="csk-mesh-bg--subtle"
         style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '1.75rem',
-          paddingBlock: '1.25rem',
+          paddingBlock: '1.5rem',
+          borderRadius: '12px',
         }}
       >
         {state === 'loading' && <SkeletonCard />}
@@ -150,6 +165,7 @@ export function EventListPage() {
                 <SectionHeader
                   title={title}
                   size={isLive ? 'lg' : 'md'}
+                  description={SECTION_DESCRIPTIONS[key](groups[key].length)}
                   badge={
                     isLive ? (
                       <LiveIndicator
@@ -158,11 +174,7 @@ export function EventListPage() {
                         energyGlow
                         pulse
                       />
-                    ) : (
-                      <Badge variant="default" size="sm">
-                        {groups[key].length}
-                      </Badge>
-                    )
+                    ) : undefined
                   }
                 />
                 <EventList
