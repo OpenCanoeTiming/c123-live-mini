@@ -8,7 +8,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "concurrently -n server,client -c blue,green \"npm run dev -w @c123-live-mini/server\" \"npm run dev -w @c123-live-mini/client\"",
+    "predev": "npm run build -w @c123-live-mini/shared",
+    "dev": "concurrently -n shared,server,client -c yellow,blue,green \"npm run build -w @c123-live-mini/shared -- --watch --preserveWatchOutput\" \"npm run dev -w @c123-live-mini/server\" \"npm run dev -w @c123-live-mini/client\"",
     "build": "npm run build -w @c123-live-mini/shared && npm run build -w @c123-live-mini/server && npm run build -w @c123-live-mini/client",
     "seed": "npm run seed -w @c123-live-mini/server",
     "test": "vitest run",
