@@ -239,6 +239,25 @@ Both staging and production share the same set; values differ only for `MASTER_P
 
 Note: `NIXPACKS_NODE_VERSION` and `NPM_CONFIG_INCLUDE` were tried during the Railway debugging session and **removed** in the final working state — the vite override fix made them unnecessary. See DEVLOG 2026-04-10.
 
+### Build-time client branding (`VITE_*`)
+
+These variables are read by Vite **during the Nixpacks build phase** (`vite build` step) and baked into the JS bundle. Changing a value requires a **redeploy** for the SPA to pick it up — they are NOT runtime config. All have safe defaults baked into the source so unsetting them reproduces the original ČSK Live deployment exactly.
+
+| Variable | Default | What it controls |
+|---|---|---|
+| `VITE_APP_NAME` | `ČSK Live` | Header title (satellite breadcrumb) **and** homepage hero title |
+| `VITE_APP_SUBTITLE` | `Živé výsledky kanoistického slalomu` | Homepage hero subtitle |
+| `VITE_HOME_LINK` | `https://kanoe.cz` | Satellite header back-link URL |
+| `VITE_HOME_LINK_LABEL` | `Zpět na kanoe.cz` | Satellite header back-link text |
+
+To change branding for an environment:
+
+1. Edit the variable in Railway dashboard (Project → service → Variables → select environment).
+2. Trigger a redeploy (`railway redeploy --service c123-live-mini --environment <env>` or push an empty commit; see "Forcing a redeploy" above).
+3. Verify the new value at the public URL.
+
+Local-dev override: copy `packages/client/.env.example` → `packages/client/.env.local` and edit, or pass inline like `VITE_APP_NAME="Foo" npx vite`.
+
 ---
 
 ## First-time bootstrap (after a fresh Railway deploy or DB reset)

@@ -10,6 +10,13 @@
 #   @czechcanoe/rvp-design-system. Set as a Railway project variable,
 #   marked for the build phase. See .npmrc.example for details.
 #
+# Build-time client branding (optional, all have defaults — see
+# packages/client/.env.example and docs/RUNBOOK.md):
+#   VITE_APP_NAME           — header + hero title
+#   VITE_APP_SUBTITLE       — hero subtitle
+#   VITE_HOME_LINK          — satellite header back-link URL
+#   VITE_HOME_LINK_LABEL    — satellite header back-link text
+#
 # Runtime env vars (set per environment in Railway):
 #   NODE_ENV=production
 #   DATABASE_PATH=/data/live-mini.db   (must point to mounted volume)
