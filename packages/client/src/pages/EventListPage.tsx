@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
+  HeroSection,
   SectionHeader,
   SkeletonCard,
   Card,
@@ -9,8 +10,40 @@ import {
 import { useLocation } from 'wouter';
 import { getEvents, ApiError, type EventListItem } from '../services/api';
 import { EventList } from '../components/EventList';
+import { branding } from '../config/branding';
 
 type LoadingState = 'idle' | 'loading' | 'success' | 'error';
+
+interface EventGroups {
+  running: EventListItem[];
+  upcoming: EventListItem[];
+  finished: EventListItem[];
+}
+
+const STATUS_SECTIONS: Array<{ key: keyof EventGroups; title: string }> = [
+  { key: 'running', title: 'Probíhá živě' },
+  { key: 'upcoming', title: 'Nadcházející' },
+  { key: 'finished', title: 'Skončené' },
+];
+
+function groupEventsByStatus(events: EventListItem[]): EventGroups {
+  const groups: EventGroups = { running: [], upcoming: [], finished: [] };
+  for (const event of events) {
+    switch (event.status) {
+      case 'running':
+        groups.running.push(event);
+        break;
+      case 'startlist':
+        groups.upcoming.push(event);
+        break;
+      case 'finished':
+      case 'official':
+        groups.finished.push(event);
+        break;
+    }
+  }
+  return groups;
+}
 
 export function EventListPage() {
   const [events, setEvents] = useState<EventListItem[]>([]);
@@ -46,9 +79,23 @@ export function EventListPage() {
     [navigate]
   );
 
+  const groups = useMemo(() => groupEventsByStatus(events), [events]);
+  const hasAnyEvents = events.length > 0;
+
   return (
-    <section>
-      <SectionHeader title="Závody" />
+    <>
+      {/*
+        The satellite Header already shows `branding.appName`. Use the
+        tagline as the hero title so we don't repeat the brand name above
+        the fold on mobile (review feedback on #134).
+      */}
+      <HeroSection
+        variant="minimal"
+        section="generic"
+        title={branding.appSubtitle}
+        meshBackground
+        wave
+      />
 
       {state === 'loading' && <SkeletonCard />}
 
@@ -57,19 +104,41 @@ export function EventListPage() {
           <EmptyState
             title="Chyba připojení"
             description={error ?? 'Nepodařilo se připojit k serveru'}
-            action={
-              <Button onClick={fetchEvents}>Zkusit znovu</Button>
-            }
+            action={<Button onClick={fetchEvents}>Zkusit znovu</Button>}
           />
         </Card>
       )}
 
-      {state === 'success' && (
-        <EventList
-          events={events}
-          onSelectEvent={handleSelectEvent}
-        />
+      {state === 'success' && !hasAnyEvents && (
+        <Card>
+          <EmptyState
+            title="Žádné závody nejsou k dispozici"
+            description="Momentálně nejsou vypsány žádné závody."
+          />
+        </Card>
       )}
-    </section>
+
+      {state === 'success' && hasAnyEvents && (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem',
+          }}
+        >
+          {STATUS_SECTIONS.map(({ key, title }) =>
+            groups[key].length > 0 ? (
+              <section key={key}>
+                <SectionHeader title={title} />
+                <EventList
+                  events={groups[key]}
+                  onSelectEvent={handleSelectEvent}
+                />
+              </section>
+            ) : null
+          )}
+        </div>
+      )}
+    </>
   );
 }
