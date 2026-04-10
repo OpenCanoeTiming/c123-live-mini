@@ -4,10 +4,16 @@ import { Route, Switch, Router } from 'wouter';
 import { useHashLocation } from 'wouter/use-hash-location';
 import { EventListPage } from './pages/EventListPage';
 import { EventDetailPage } from './pages/EventDetailPage';
+import { branding } from './config/branding';
 
 function App() {
   const headerContent = (
-    <Header variant="satellite" appName="ČSK Live" />
+    <Header
+      variant="satellite"
+      appName={branding.appName}
+      homeLink={branding.homeLink}
+      homeLinkLabel={branding.homeLinkLabel}
+    />
   );
 
   const footerContent = (
