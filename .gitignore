@@ -14,6 +14,13 @@ packages/*/package-lock.json
 .env.local
 .env.*.local
 
+# Secrets — never commit tokens, keys, credentials
+*.token
+.secrets/
+secrets/
+.railway-token
+.railway.env
+
 # Cursor — local AI rules, not part of the product
 .cursor/
 
