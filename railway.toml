@@ -1,0 +1,27 @@
+# Railway deployment configuration
+# https://docs.railway.com/reference/config-as-code
+#
+# This project deploys as a single Nixpacks-built Node.js service. The
+# Fastify server serves the API, WebSocket, and the client SPA from the
+# same origin (see docs/ARCHITECTURE.md → Production Deployment Model).
+#
+# Build-time secret required:
+#   NODE_AUTH_TOKEN — GitHub Packages read token for
+#   @czechcanoe/rvp-design-system. Set as a Railway project variable,
+#   marked for the build phase. See .npmrc.example for details.
+#
+# Runtime env vars (set per environment in Railway):
+#   NODE_ENV=production
+#   DATABASE_PATH=/data/live-mini.db   (must point to mounted volume)
+#   MASTER_PASSWORDS=<comma-separated> (or ADMIN_OPEN=1 for bootstrap)
+#   LOG_LEVEL=info                     (optional; defaults to info)
+#   PORT=<auto>                        (Railway injects; server honors)
+
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "node packages/server/dist/index.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
