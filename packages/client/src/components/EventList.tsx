@@ -106,6 +106,8 @@ export function EventList({ events, onSelectEvent }: EventListProps) {
                   alt=""
                   width={64}
                   height={64}
+                  loading="lazy"
+                  decoding="async"
                   style={{
                     width: '64px',
                     height: '64px',

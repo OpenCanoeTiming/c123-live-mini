@@ -15,10 +15,13 @@ export interface Branding {
   homeLinkLabel: string;
 }
 
+// Use `||` (not `??`) so an empty-string value entered in the Railway UI
+// falls back to the default — clearing a variable without deleting it would
+// otherwise produce a blank header / hero with no warning.
 export const branding: Branding = {
-  appName: import.meta.env.VITE_APP_NAME ?? 'ČSK Live',
+  appName: import.meta.env.VITE_APP_NAME || 'ČSK Live',
   appSubtitle:
-    import.meta.env.VITE_APP_SUBTITLE ?? 'Živé výsledky kanoistického slalomu',
-  homeLink: import.meta.env.VITE_HOME_LINK ?? 'https://kanoe.cz',
-  homeLinkLabel: import.meta.env.VITE_HOME_LINK_LABEL ?? 'Zpět na kanoe.cz',
+    import.meta.env.VITE_APP_SUBTITLE || 'Živé výsledky kanoistického slalomu',
+  homeLink: import.meta.env.VITE_HOME_LINK || 'https://kanoe.cz',
+  homeLinkLabel: import.meta.env.VITE_HOME_LINK_LABEL || 'Zpět na kanoe.cz',
 };

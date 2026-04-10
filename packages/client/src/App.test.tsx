@@ -46,14 +46,14 @@ afterEach(() => {
 });
 
 describe('App', () => {
-  it('renders the app title in header and hero', () => {
+  it('renders the app name only in the satellite header (not duplicated in hero)', () => {
     render(<App />);
-    // Header (satellite) and HeroSection both render the branding app name,
-    // so there are at least two matches.
-    expect(screen.getAllByText('ČSK Live').length).toBeGreaterThanOrEqual(1);
+    // Hero promotes the subtitle/tagline to title to avoid duplicating
+    // appName above the fold — see EventListPage.tsx.
+    expect(screen.getAllByText('ČSK Live').length).toBe(1);
   });
 
-  it('renders the homepage hero subtitle from branding defaults', () => {
+  it('renders the tagline as the homepage hero title', () => {
     render(<App />);
     expect(
       screen.getByText('Živé výsledky kanoistického slalomu')

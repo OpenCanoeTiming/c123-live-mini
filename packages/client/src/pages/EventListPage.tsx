@@ -84,11 +84,15 @@ export function EventListPage() {
 
   return (
     <>
+      {/*
+        The satellite Header already shows `branding.appName`. Use the
+        tagline as the hero title so we don't repeat the brand name above
+        the fold on mobile (review feedback on #134).
+      */}
       <HeroSection
         variant="minimal"
         section="generic"
-        title={branding.appName}
-        subtitle={branding.appSubtitle}
+        title={branding.appSubtitle}
         meshBackground
         wave
       />
