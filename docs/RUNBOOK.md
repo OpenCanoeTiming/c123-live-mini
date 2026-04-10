@@ -11,9 +11,11 @@ For deep architecture see [ARCHITECTURE.md](ARCHITECTURE.md). For historical deb
 | Environment | Branch watched | URL | Railway env name | Status |
 |---|---|---|---|---|
 | **staging** | `main` | https://c123-live-mini-staging.up.railway.app | `staging` | ✅ live |
-| **production** | `production` | *(not yet created)* | `production` | ⏸ deferred, see issue [#117](https://github.com/OpenCanoeTiming/c123-live-mini/issues/117) |
+| **production** | `production` | https://c123-live-mini.up.railway.app | `production` | ✅ live |
 
-**Auto-deploy flow:** push to `main` → GitHub Actions CI runs `npm ci && npm run build && npm test` → on green, Railway auto-deploys staging. Railway has **Wait for CI = ON**, so a failed CI check blocks the deploy.
+**Auto-deploy flow:** push to `main` → GitHub Actions CI runs `npm ci && npm run build && npm test` → on green, Railway auto-deploys staging. **Production** deploys from the `production` branch — push to `main` does **not** affect production. Promote to production by opening a release PR `main → production` and merging it; Railway then picks up the new commit on `production` and auto-deploys.
+
+Railway has **Wait for CI = ON** on both environments, so a failed CI check blocks the deploy.
 
 **Serverless sleep:** enabled. After ~10 min of no traffic, the container sleeps. First request after sleep has cold-start latency ~5–10 s (Nixpacks wake + Node boot + SQLite open). During a live race this is a non-issue because traffic is continuous.
 
@@ -200,31 +202,38 @@ curl -sS -X POST https://backboard.railway.com/graphql/v2 \
 
 ---
 
-## Railway IDs (staging)
+## Railway IDs
 
 Useful for scripting — these are not secret:
 
 | What | Value |
 |---|---|
-| Project | `skvs-live-mini` |
+| Project name | `skvs-live-mini` |
 | Project ID | `97408870-7b9e-4aa5-b3b1-5b546e4d1f34` |
-| Environment name | `staging` |
-| Environment ID | `b1c8ea80-c260-4819-bc9e-54de1a27fd62` |
 | Service name | `c123-live-mini` |
 | Service ID | `aadf519a-48b5-4da9-9259-21b9178a2619` |
-| Volume mount | `/data` |
-| Public domain | `c123-live-mini-staging.up.railway.app` |
+
+| Env | Env ID | Branch | Volume mount | Public domain |
+|---|---|---|---|---|
+| `staging` | `b1c8ea80-c260-4819-bc9e-54de1a27fd62` | `main` | `/data` | `c123-live-mini-staging.up.railway.app` |
+| `production` | `67189b9a-82ce-435f-931b-525053f50e36` | `production` | `/data` | `c123-live-mini.up.railway.app` |
+
+Both environments have **separate `MASTER_PASSWORDS`** and **separate `/data` volumes** (verified — staging volume `c123-live-mini-volume`, production volume `c123-live-mini-volume-prod`, no shared volume instances).
+
+Project tokens: each environment has its own scoped Project Access Token, both stored in `~/.config/c123-live-mini/railway.env` as `RAILWAY_TOKEN` (staging) and `RAILWAY_PROD_TOKEN` (production). To target production with a GraphQL call, replace the staging token in the `Project-Access-Token` header with the production one and the staging env ID with `RAILWAY_PROD_ENV_ID`.
 
 ---
 
-## Environment variables currently set on Railway staging
+## Environment variables currently set on Railway
+
+Both staging and production share the same set; values differ only for `MASTER_PASSWORDS`.
 
 | Variable | Purpose | Source |
 |---|---|---|
 | `NODE_ENV=production` | Activates SPA serving + admin safety check | Manual |
 | `DATABASE_PATH=/data/live-mini.db` | SQLite on mounted volume | Manual |
-| `MASTER_PASSWORDS=<strong-password>` | Admin API auth, required in prod | Manual (generated with `openssl rand -base64 24`) |
-| `NODE_AUTH_TOKEN=<GH PAT>` | Build-phase GitHub Packages auth for `@czechcanoe/rvp-design-system` | Manual |
+| `MASTER_PASSWORDS=<strong-password>` | Admin API auth, required in prod. **Different value per environment.** | Manual (generated with `openssl rand -base64 24`) |
+| `NODE_AUTH_TOKEN=<GH PAT>` | Build-phase GitHub Packages auth for `@czechcanoe/rvp-design-system`. Same value across environments. | Manual |
 | `LOG_LEVEL=info` | Fastify logger level | Manual |
 | `RAILWAY_*` | Service metadata (private domain, volume mount, etc.) | Railway-injected, read-only |
 
