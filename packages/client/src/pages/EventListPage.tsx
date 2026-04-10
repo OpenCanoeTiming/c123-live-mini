@@ -116,9 +116,6 @@ export function EventListPage() {
           flexDirection: 'column',
           gap: '2rem',
           paddingBlock: '1.5rem',
-          maxWidth: '760px',
-          marginInline: 'auto',
-          width: '100%',
         }}
       >
         {state === 'loading' && <SkeletonCard />}
