@@ -208,6 +208,64 @@ This follows the Live Page Prototype from rvp-design-system as the reference imp
 
 ---
 
+## Production Deployment Model
+
+In production, c123-live-mini runs as a **single Fastify process** that serves the REST API, the WebSocket endpoint, and the client SPA from the same origin. This is different from the development setup, where Vite's dev server runs separately on port 5173 and proxies `/api` to Fastify on port 3000.
+
+```mermaid
+flowchart LR
+    subgraph DEV[Development — two processes]
+        VITE[Vite dev :5173] -->|proxy /api + ws| FASTIFY_DEV[Fastify :3000]
+    end
+
+    subgraph PROD[Production — single origin]
+        CLIENT_PROD[Client browser] -->|HTTP + WS| FASTIFY_PROD[Fastify PORT]
+        FASTIFY_PROD --> STATIC[packages/client/dist<br/>SPA assets]
+        FASTIFY_PROD --> API[/api/v1/*/]
+        FASTIFY_PROD --> WS[/api/v1/events/:id/ws/]
+    end
+```
+
+### Why single-origin
+
+- **No CORS configuration needed** — client and server share the origin
+- **No separate WebSocket URL config** — client uses `window.location.host` dynamically
+- **One Railway service** — simpler deployment, one volume, one healthcheck, one billing line
+- **Simpler environment** — client uses relative paths (`/api/v1/...`), no env-based API base URL
+
+### Static file serving implementation
+
+Production SPA hosting is registered in `packages/server/src/registerProductionSpa.ts`. It's only active when `NODE_ENV=production`, and only when the client `dist` directory is resolvable (default: `packages/client/dist` relative to the server package; overridable via `CLIENT_DIST_PATH`).
+
+The registration happens inside a nested `app.register(async instance => ...)` plugin so cache headers and the 404 handler stay encapsulated from the API context. Three key configuration choices:
+
+1. **`wildcard: false`** on `@fastify/static` — the default catch-all `GET /*` handler would conflict with `/api/*` routes and `@fastify/websocket`'s upgrade interception.
+2. **`index: false`** — disables auto-serving `index.html` on `/`; the `setNotFoundHandler` handles it centrally so the SPA fallback logic is in one place.
+3. **`setNotFoundHandler`** in the nested scope — for unknown paths:
+   - If URL starts with `/api` or `/api/`, return **JSON 404** (so client-side API error handling is predictable).
+   - If method is not GET/HEAD, return JSON 404.
+   - Otherwise, serve `index.html` so the React Router / wouter router can handle the client-side route.
+
+Cache headers:
+
+- `index.html` → `no-store, max-age=0` (SPA shell should always be fresh)
+- Hashed assets (`index-X3H2G8hJ.js` etc.) → `public, max-age=31536000, immutable`
+
+### Admin API safety in production
+
+When `NODE_ENV=production`, the server **refuses to start** if `MASTER_PASSWORDS` is empty unless `ADMIN_OPEN=1` is explicitly set. This prevents accidentally deploying a public URL with an open admin endpoint. The `ADMIN_OPEN=1` path is intended only for the initial Railway bootstrap — it logs loud warnings on every start and should be removed as soon as the first event is created and `MASTER_PASSWORDS` is configured.
+
+### Dependencies between dev and prod modes
+
+The same Fastify app factory (`createApp` in `app.ts`) is used in both modes. The only difference is:
+
+- In dev, `registerProductionSpa` is a no-op (NODE_ENV check)
+- In prod, it registers the static + SPA fallback nested plugin at the end of route setup
+
+`createApp` remains **synchronous** — `registerProductionSpa` uses `app.register` which is fire-and-forget, so no async migration is needed in call sites. WebSocket routes and API routes are unchanged between dev and prod.
+
+---
+
 ## Integration Context
 
 This service is designed as a standalone component that will eventually integrate into a larger Czech Canoe Federation (CSK) registration portal system.
