@@ -20,6 +20,12 @@ interface EventGroups {
   finished: EventListItem[];
 }
 
+const STATUS_SECTIONS: Array<{ key: keyof EventGroups; title: string }> = [
+  { key: 'running', title: 'Probíhá živě' },
+  { key: 'upcoming', title: 'Nadcházející' },
+  { key: 'finished', title: 'Skončené' },
+];
+
 function groupEventsByStatus(events: EventListItem[]): EventGroups {
   const groups: EventGroups = { running: [], upcoming: [], finished: [] };
   for (const event of events) {
@@ -33,9 +39,6 @@ function groupEventsByStatus(events: EventListItem[]): EventGroups {
       case 'finished':
       case 'official':
         groups.finished.push(event);
-        break;
-      default:
-        // draft and unknown statuses are excluded from the public list
         break;
     }
   }
@@ -103,7 +106,12 @@ export function EventListPage() {
       )}
 
       {state === 'success' && !hasAnyEvents && (
-        <EventList events={[]} onSelectEvent={handleSelectEvent} />
+        <Card>
+          <EmptyState
+            title="Žádné závody nejsou k dispozici"
+            description="Momentálně nejsou vypsány žádné závody."
+          />
+        </Card>
       )}
 
       {state === 'success' && hasAnyEvents && (
@@ -114,32 +122,16 @@ export function EventListPage() {
             gap: '1.5rem',
           }}
         >
-          {groups.running.length > 0 && (
-            <section>
-              <SectionHeader title="Probíhá živě" />
-              <EventList
-                events={groups.running}
-                onSelectEvent={handleSelectEvent}
-              />
-            </section>
-          )}
-          {groups.upcoming.length > 0 && (
-            <section>
-              <SectionHeader title="Nadcházející" />
-              <EventList
-                events={groups.upcoming}
-                onSelectEvent={handleSelectEvent}
-              />
-            </section>
-          )}
-          {groups.finished.length > 0 && (
-            <section>
-              <SectionHeader title="Skončené" />
-              <EventList
-                events={groups.finished}
-                onSelectEvent={handleSelectEvent}
-              />
-            </section>
+          {STATUS_SECTIONS.map(({ key, title }) =>
+            groups[key].length > 0 ? (
+              <section key={key}>
+                <SectionHeader title={title} />
+                <EventList
+                  events={groups[key]}
+                  onSelectEvent={handleSelectEvent}
+                />
+              </section>
+            ) : null
           )}
         </div>
       )}

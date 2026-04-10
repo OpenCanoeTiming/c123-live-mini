@@ -1,4 +1,5 @@
 import { Card, Badge, EmptyState, LiveIndicator } from '@czechcanoe/rvp-design-system';
+import type { PublicEventStatus } from '@c123-live-mini/shared';
 import type { EventListItem } from '../services/api';
 
 interface EventListProps {
@@ -6,38 +7,29 @@ interface EventListProps {
   onSelectEvent: (eventId: string) => void;
 }
 
-/**
- * Map event status to Badge variant
- */
-function getStatusVariant(status: string): 'success' | 'default' | 'info' {
+function getStatusVariant(
+  status: PublicEventStatus
+): 'success' | 'default' | 'info' {
   switch (status) {
     case 'running':
       return 'success';
     case 'finished':
     case 'official':
       return 'info';
-    default:
+    case 'startlist':
       return 'default';
   }
 }
 
-/**
- * Map event status to Czech label
- */
-function getStatusLabel(status: string): string {
+function getStatusLabel(status: PublicEventStatus): string {
   switch (status) {
     case 'running':
       return 'probíhá';
     case 'finished':
-      return 'dokončeno';
     case 'official':
       return 'dokončeno';
     case 'startlist':
       return 'startovní listina';
-    case 'draft':
-      return 'příprava';
-    default:
-      return status;
   }
 }
 
@@ -56,7 +48,7 @@ const dayMonthFormatter = new Intl.DateTimeFormat('cs-CZ', {
  * Format an event date or date range in Czech locale.
  *
  * - single day → "5. května 2026"
- * - range → "1.–3. května 2026"
+ * - range → "1. května – 3. května 2026"
  * - returns null when both inputs are missing or unparseable
  */
 function formatEventDate(
@@ -79,9 +71,6 @@ function formatEventDate(
   return `${dayMonthFormatter.format(start)} – ${dateFormatter.format(end)}`;
 }
 
-/**
- * Display a list of events using DS components
- */
 export function EventList({ events, onSelectEvent }: EventListProps) {
   if (events.length === 0) {
     return (
@@ -115,7 +104,8 @@ export function EventList({ events, onSelectEvent }: EventListProps) {
                 <img
                   src={event.imageUrl}
                   alt=""
-                  loading="lazy"
+                  width={64}
+                  height={64}
                   style={{
                     width: '64px',
                     height: '64px',
