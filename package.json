@@ -21,6 +21,24 @@
     "concurrently": "^9.1.2",
     "vitest": "^4.1.2"
   },
+  "//overrides": [
+    "Rationale: vitest@4 depends on vite@8. In a hoisted npm workspaces tree,",
+    "vite@8 ends up at the root node_modules and @vitejs/plugin-react resolves",
+    "'vite' at the root (not packages/client/node_modules/vite@7.x). vite@8",
+    "direct-imports rolldown, whose per-platform native binding is an optional",
+    "dep that npm#4828 silently skips on Railway's linux-x64 Nixpacks builder,",
+    "so the client `vite build` crashes at config load time.",
+    "Forcing vite to ~7.1.9 across the whole tree eliminates vite@8 (and",
+    "transitively rolldown) entirely, so both the build and the vitest runner",
+    "share the same, rolldown-free engine.",
+    "See DEVLOG.md entry 2026-04-10 for the full debugging session and",
+    "issue #117 for the deployment context.",
+    "",
+    "Safe to remove when ANY of the following becomes true:",
+    "  (a) vitest no longer hard-depends on a vite major that uses rolldown",
+    "  (b) npm#4828 is fixed upstream (npm/cli#4828)",
+    "  (c) the project migrates to pnpm, which doesn't have this bug"
+  ],
   "overrides": {
     "vite": "~7.1.9"
   },

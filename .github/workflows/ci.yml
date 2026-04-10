@@ -36,6 +36,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Regression guard for the rolldown/hoisting trap documented in
+      # DEVLOG.md 2026-04-10. If the vite override in root package.json
+      # stops working (e.g. vitest pulls in vite@8 again under a different
+      # name, or someone removes the override), we'd re-introduce rolldown
+      # and its per-platform native binding, which npm#4828 silently skips
+      # on linux-x64. Fail fast on PR instead of on Railway.
+      - name: Verify vite singleton and no rolldown
+        run: |
+          if [ -d node_modules/rolldown ]; then
+            echo "::error::node_modules/rolldown/ reappeared — the vite override in package.json is no longer effective. See DEVLOG.md 2026-04-10."
+            exit 1
+          fi
+          VITE_COUNT=$(npm ls vite --all 2>/dev/null | grep -oE 'vite@[0-9]+\.[0-9]+\.[0-9]+' | sort -u | wc -l)
+          echo "Distinct resolved vite versions in tree: $VITE_COUNT"
+          if [ "$VITE_COUNT" -ne 1 ]; then
+            echo "::error::Expected exactly one resolved vite version (enforced by overrides); found $VITE_COUNT. See DEVLOG.md 2026-04-10."
+            npm ls vite --all || true
+            exit 1
+          fi
+
       - name: Build all packages
         run: npm run build
 
