@@ -13,7 +13,12 @@ packages/*/package-lock.json
 .env
 .env.local
 .env.*.local
-.npmrc
+
+# Cursor — local AI rules, not part of the product
+.cursor/
+
+# Local-only overrides (e.g. vendored design-system stub without GitHub Packages access)
+vendor/
 
 # IDE
 .vscode/

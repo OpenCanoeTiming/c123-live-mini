@@ -17,6 +17,19 @@ const start = async () => {
       .map((p) => p.trim())
       .filter(Boolean);
 
+    // Admin API safety: in production, MASTER_PASSWORDS is mandatory.
+    // Refuse to start with an empty password list to prevent accidentally
+    // deploying a public URL with an open admin API.
+    if (process.env.NODE_ENV === 'production' && masterPasswords.length === 0) {
+      console.error(
+        '[FATAL] NODE_ENV=production requires MASTER_PASSWORDS to be set.'
+      );
+      console.error(
+        '[FATAL] Refusing to start with open admin API in production.'
+      );
+      process.exit(1);
+    }
+
     // Create and configure app
     const app = createApp({ db, logger: true, masterPasswords });
 

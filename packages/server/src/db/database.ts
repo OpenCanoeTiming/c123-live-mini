@@ -64,24 +64,6 @@ export function createDatabase(dbPath?: string): Kysely<Database> {
   return new Kysely<Database>({ dialect });
 }
 
-// Default database instance (legacy support)
-mkdirSync(dirname(DEFAULT_DATABASE_PATH), { recursive: true });
-const defaultSqliteDb = new SQLite(DEFAULT_DATABASE_PATH);
-defaultSqliteDb.pragma('foreign_keys = ON');
-const dialect = new SqliteDialect({
-  database: defaultSqliteDb,
-});
-
-export const db = new Kysely<Database>({ dialect });
-
-export function getDb(): Kysely<Database> {
-  return db;
-}
-
-export async function closeDb(): Promise<void> {
-  await db.destroy();
-}
-
 /**
  * Run database migrations
  *

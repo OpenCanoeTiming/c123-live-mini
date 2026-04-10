@@ -1,0 +1,37 @@
+# GitHub Packages authentication for @czechcanoe/rvp-design-system
+#
+# The committed .npmrc at the repo root declares the scope registry and
+# references `NODE_AUTH_TOKEN` via variable expansion. You need to provide
+# the token in your shell environment — do NOT put a literal token in this
+# file or in the committed .npmrc.
+#
+# How to get a token:
+#   1. GitHub → Settings → Developer settings → Personal access tokens
+#   2. Create a "classic" token with scope `read:packages`
+#      (or a fine-grained token with Packages: Read)
+#   3. If your organization enforces SSO, click "Configure SSO" on the token
+#      and authorize it for the `CzechCanoe` organization.
+#
+# How to use the token:
+#
+#   Option A — ad-hoc shell export (per session):
+#     bash/zsh:   export NODE_AUTH_TOKEN=ghp_yourTokenHere
+#     PowerShell: $env:NODE_AUTH_TOKEN = "ghp_yourTokenHere"
+#     cmd.exe:    set NODE_AUTH_TOKEN=ghp_yourTokenHere
+#
+#   Option B — persist in your user-level ~/.npmrc (recommended):
+#     Add the line (replace token):
+#       //npm.pkg.github.com/:_authToken=ghp_yourTokenHere
+#     Then npm ci will pick it up without any shell environment.
+#     On Windows the file lives at %USERPROFILE%\.npmrc
+#
+# CI/CD and Railway builds:
+#   - GitHub Actions: add the token as a repository secret named
+#     `NODE_AUTH_TOKEN` (Settings → Secrets and variables → Actions).
+#   - Railway: add `NODE_AUTH_TOKEN` as a project variable, marked for the
+#     build phase.
+#
+# Verification:
+#   After setting the token, running `npm ci` at the repo root should pull
+#   `@czechcanoe/rvp-design-system` successfully. If you get an opaque 401,
+#   the token is missing or does not have SSO authorization.
