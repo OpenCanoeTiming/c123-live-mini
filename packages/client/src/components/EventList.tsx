@@ -106,11 +106,10 @@ export function EventList({
         return (
           <Card
             key={event.eventId}
-            variant={emphasised ? 'elevated' : 'surface'}
+            variant={emphasised ? 'aesthetic' : 'elevated'}
             padding="md"
             clickable
             onClick={() => onSelectEvent(event.eventId)}
-            className={emphasised ? 'csk-energy-glow--sm' : undefined}
           >
             <div
               style={{
