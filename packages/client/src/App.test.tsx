@@ -55,9 +55,11 @@ describe('App', () => {
 
   it('renders the tagline as the homepage hero title', () => {
     render(<App />);
-    expect(
-      screen.getByText('Živé výsledky kanoistického slalomu')
-    ).toBeTruthy();
+    // The hero uses `titleAccent` which splits the title into multiple
+    // elements (a leading span + an accent span), so we can't match the
+    // whole string with a string-based query.
+    expect(screen.getByText(/Živé výsledky/)).toBeTruthy();
+    expect(screen.getByText(/kanoistického slalomu/)).toBeTruthy();
   });
 
   it('shows shared package version in footer', () => {

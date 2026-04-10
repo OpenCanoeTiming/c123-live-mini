@@ -97,9 +97,9 @@ export function EventListPage() {
         variant="compact"
         section="dv"
         title={branding.appSubtitle}
+        titleAccent="kanoistického slalomu"
         meshBackground
         patternOverlay
-        wave
         badges={
           liveCount > 0 ? (
             <Badge variant="energy" size="lg" glow>
@@ -149,11 +149,12 @@ export function EventListPage() {
               >
                 <SectionHeader
                   title={title}
+                  size={isLive ? 'lg' : 'md'}
                   badge={
                     isLive ? (
                       <LiveIndicator
                         variant="live"
-                        size="md"
+                        size="lg"
                         energyGlow
                         pulse
                       />
