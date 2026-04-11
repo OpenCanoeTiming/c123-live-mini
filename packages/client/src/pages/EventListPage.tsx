@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   HeroSection,
-  SectionHeader,
   SkeletonCard,
   Card,
   EmptyState,
   Button,
+  Badge,
+  LiveIndicator,
 } from '@czechcanoe/rvp-design-system';
 import { useLocation } from 'wouter';
 import { getEvents, ApiError, type EventListItem } from '../services/api';
@@ -20,11 +21,30 @@ interface EventGroups {
   finished: EventListItem[];
 }
 
-const STATUS_SECTIONS: Array<{ key: keyof EventGroups; title: string }> = [
-  { key: 'running', title: 'Probíhá živě' },
+interface StatusSectionConfig {
+  key: keyof EventGroups;
+  title: string;
+  isLive?: boolean;
+}
+
+const STATUS_SECTIONS: StatusSectionConfig[] = [
+  { key: 'running', title: 'Probíhá živě', isLive: true },
   { key: 'upcoming', title: 'Nadcházející' },
   { key: 'finished', title: 'Skončené' },
 ];
+
+/** Czech pluralization for "závod" (race). */
+function raceCountLabel(count: number): string {
+  if (count === 1) return '1 závod';
+  if (count >= 2 && count <= 4) return `${count} závody`;
+  return `${count} závodů`;
+}
+
+const SECTION_DESCRIPTIONS: Record<keyof EventGroups, (n: number) => string> = {
+  running: (n) => `${raceCountLabel(n)} běží právě teď`,
+  upcoming: (n) => `${raceCountLabel(n)} v nejbližší době`,
+  finished: (n) => `${raceCountLabel(n)} už máme za sebou`,
+};
 
 function groupEventsByStatus(events: EventListItem[]): EventGroups {
   const groups: EventGroups = { running: [], upcoming: [], finished: [] };
@@ -43,6 +63,66 @@ function groupEventsByStatus(events: EventListItem[]): EventGroups {
     }
   }
   return groups;
+}
+
+interface SectionHeadingProps {
+  title: string;
+  description: string;
+  isLive?: boolean;
+}
+
+/**
+ * Custom section heading with stronger visual hierarchy than the
+ * design-system `SectionHeader` (which is intentionally subtle).
+ *
+ * Live sections get a coral accent bar, an inline pulsing live dot,
+ * and a slightly larger title — so spectators immediately spot the
+ * "Probíhá živě" block when they land on the page.
+ */
+function SectionHeading({ title, description, isLive }: SectionHeadingProps) {
+  return (
+    <header
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.25rem',
+        marginBottom: '0.875rem',
+        paddingLeft: isLive ? '0.875rem' : 0,
+        borderLeft: isLive
+          ? '4px solid var(--color-energy-500, #f97316)'
+          : undefined,
+      }}
+    >
+      <h2
+        style={{
+          margin: 0,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.625rem',
+          fontSize: isLive ? '1.5rem' : '1.25rem',
+          fontWeight: 800,
+          letterSpacing: '-0.01em',
+          lineHeight: 1.2,
+          color: 'var(--csk-color-on-surface, var(--color-text-primary))',
+        }}
+      >
+        {title}
+        {isLive && (
+          <LiveIndicator variant="live" size="md" energyGlow pulse />
+        )}
+      </h2>
+      <p
+        style={{
+          margin: 0,
+          fontSize: '0.9375rem',
+          color:
+            'var(--csk-color-on-surface-muted, var(--color-text-secondary))',
+        }}
+      >
+        {description}
+      </p>
+    </header>
+  );
 }
 
 export function EventListPage() {
@@ -81,64 +161,89 @@ export function EventListPage() {
 
   const groups = useMemo(() => groupEventsByStatus(events), [events]);
   const hasAnyEvents = events.length > 0;
+  const liveCount = groups.running.length;
+  const visibleSectionCount = STATUS_SECTIONS.filter(
+    (s) => groups[s.key].length > 0
+  ).length;
+  // When only a single status group is non-empty, the section heading is
+  // redundant — the hero badge + the cards' own status badges already
+  // tell the user what they're looking at. Skip headings in that case.
+  const showHeadings = visibleSectionCount > 1;
 
   return (
     <>
-      {/*
-        The satellite Header already shows `branding.appName`. Use the
-        tagline as the hero title so we don't repeat the brand name above
-        the fold on mobile (review feedback on #134).
-      */}
       <HeroSection
-        variant="minimal"
-        section="generic"
+        variant="compact"
+        section="dv"
         title={branding.appSubtitle}
+        titleAccent={branding.appSubtitleAccent}
         meshBackground
-        wave
+        patternOverlay
+        badges={
+          liveCount > 0 ? (
+            <Badge variant="energy" size="lg" glow>
+              LIVE • {liveCount}
+            </Badge>
+          ) : undefined
+        }
+        className="csk-reveal csk-reveal-1"
       />
 
-      {state === 'loading' && <SkeletonCard />}
+      <div
+        className="csk-mesh-bg--subtle"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2.25rem',
+          paddingBlock: '2rem',
+          paddingInline: '1rem',
+        }}
+      >
+        {state === 'loading' && <SkeletonCard />}
 
-      {state === 'error' && (
-        <Card>
-          <EmptyState
-            title="Chyba připojení"
-            description={error ?? 'Nepodařilo se připojit k serveru'}
-            action={<Button onClick={fetchEvents}>Zkusit znovu</Button>}
-          />
-        </Card>
-      )}
+        {state === 'error' && (
+          <Card>
+            <EmptyState
+              title="Chyba připojení"
+              description={error ?? 'Nepodařilo se připojit k serveru'}
+              action={<Button onClick={fetchEvents}>Zkusit znovu</Button>}
+            />
+          </Card>
+        )}
 
-      {state === 'success' && !hasAnyEvents && (
-        <Card>
-          <EmptyState
-            title="Žádné závody nejsou k dispozici"
-            description="Momentálně nejsou vypsány žádné závody."
-          />
-        </Card>
-      )}
+        {state === 'success' && !hasAnyEvents && (
+          <Card>
+            <EmptyState
+              title="Žádné závody nejsou k dispozici"
+              description="Momentálně nejsou vypsány žádné závody."
+            />
+          </Card>
+        )}
 
-      {state === 'success' && hasAnyEvents && (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem',
-          }}
-        >
-          {STATUS_SECTIONS.map(({ key, title }) =>
+        {state === 'success' &&
+          hasAnyEvents &&
+          STATUS_SECTIONS.map(({ key, title, isLive }, idx) =>
             groups[key].length > 0 ? (
-              <section key={key}>
-                <SectionHeader title={title} />
+              <section
+                key={key}
+                className={`csk-reveal csk-reveal-${idx + 2}`}
+              >
+                {showHeadings && (
+                  <SectionHeading
+                    title={title}
+                    description={SECTION_DESCRIPTIONS[key](groups[key].length)}
+                    isLive={isLive}
+                  />
+                )}
                 <EventList
                   events={groups[key]}
                   onSelectEvent={handleSelectEvent}
+                  emphasised={isLive}
                 />
               </section>
             ) : null
           )}
-        </div>
-      )}
+      </div>
     </>
   );
 }

@@ -245,8 +245,9 @@ These variables are read by Vite **during the Nixpacks build phase** (`vite buil
 
 | Variable | Default | What it controls |
 |---|---|---|
-| `VITE_APP_NAME` | `ČSK Live` | Header title (satellite breadcrumb) **and** homepage hero title |
-| `VITE_APP_SUBTITLE` | `Živé výsledky kanoistického slalomu` | Homepage hero subtitle |
+| `VITE_APP_NAME` | `ČSK Live` | Header title (satellite breadcrumb) |
+| `VITE_APP_SUBTITLE` | `Živé výsledky kanoistického slalomu` | Homepage hero title |
+| `VITE_APP_SUBTITLE_ACCENT` | `kanoistického slalomu` | Substring of the subtitle rendered in the hero accent colour (light blue on the dv section). Must literally appear inside `VITE_APP_SUBTITLE`; otherwise the hero shows the full title in one colour. Set to a non-substring value to effectively disable the accent. |
 | `VITE_HOME_LINK` | `https://kanoe.cz` | Satellite header back-link URL |
 | `VITE_HOME_LINK_LABEL` | `Zpět na kanoe.cz` | Satellite header back-link text |
 

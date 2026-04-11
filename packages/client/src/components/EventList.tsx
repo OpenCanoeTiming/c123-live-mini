@@ -1,18 +1,29 @@
-import { Card, Badge, EmptyState, LiveIndicator } from '@czechcanoe/rvp-design-system';
+import {
+  Card,
+  Badge,
+  EmptyState,
+  LiveIndicator,
+  Icon,
+} from '@czechcanoe/rvp-design-system';
 import type { PublicEventStatus } from '@c123-live-mini/shared';
 import type { EventListItem } from '../services/api';
 
 interface EventListProps {
   events: EventListItem[];
   onSelectEvent: (eventId: string) => void;
+  /**
+   * Highlight cards in this list as live/important
+   * (adds energy glow + elevated card variant).
+   */
+  emphasised?: boolean;
 }
 
 function getStatusVariant(
   status: PublicEventStatus
-): 'success' | 'default' | 'info' {
+): 'success' | 'default' | 'info' | 'energy' {
   switch (status) {
     case 'running':
-      return 'success';
+      return 'energy';
     case 'finished':
     case 'official':
       return 'info';
@@ -71,7 +82,11 @@ function formatEventDate(
   return `${dayMonthFormatter.format(start)} – ${dateFormatter.format(end)}`;
 }
 
-export function EventList({ events, onSelectEvent }: EventListProps) {
+export function EventList({
+  events,
+  onSelectEvent,
+  emphasised = false,
+}: EventListProps) {
   if (events.length === 0) {
     return (
       <Card>
@@ -87,9 +102,12 @@ export function EventList({ events, onSelectEvent }: EventListProps) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
       {events.map((event) => {
         const dateLabel = formatEventDate(event.startDate, event.endDate);
+        const isRunning = event.status === 'running';
         return (
           <Card
             key={event.eventId}
+            variant={emphasised ? 'aesthetic' : 'elevated'}
+            padding="md"
             clickable
             onClick={() => onSelectEvent(event.eventId)}
           >
@@ -97,33 +115,33 @@ export function EventList({ events, onSelectEvent }: EventListProps) {
               style={{
                 display: 'flex',
                 gap: '1rem',
-                alignItems: 'flex-start',
+                alignItems: 'center',
               }}
             >
               {event.imageUrl && (
                 <img
                   src={event.imageUrl}
                   alt=""
-                  width={64}
-                  height={64}
+                  width={72}
+                  height={72}
                   loading="lazy"
                   decoding="async"
                   style={{
-                    width: '64px',
-                    height: '64px',
+                    width: '72px',
+                    height: '72px',
                     flexShrink: 0,
                     objectFit: 'cover',
-                    borderRadius: 'var(--csk-radius-md, 8px)',
+                    borderRadius: 'var(--csk-radius-md, 12px)',
                   }}
                 />
               )}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{
-                    fontSize: '1.125rem',
+                    fontSize: emphasised ? '1.25rem' : '1.125rem',
                     fontWeight: 700,
-                    lineHeight: 1.3,
-                    marginBottom: '0.25rem',
+                    lineHeight: 1.25,
+                    marginBottom: '0.375rem',
                   }}
                 >
                   {event.mainTitle}
@@ -133,7 +151,7 @@ export function EventList({ events, onSelectEvent }: EventListProps) {
                     style={{
                       fontSize: '0.875rem',
                       color: 'var(--csk-color-text-secondary)',
-                      marginBottom: '0.25rem',
+                      marginBottom: '0.375rem',
                     }}
                   >
                     {event.subTitle}
@@ -143,13 +161,35 @@ export function EventList({ events, onSelectEvent }: EventListProps) {
                   style={{
                     display: 'flex',
                     flexWrap: 'wrap',
-                    gap: '0.25rem 1rem',
+                    gap: '0.375rem 1rem',
                     fontSize: '0.875rem',
                     color: 'var(--csk-color-text-tertiary)',
                   }}
                 >
-                  {event.location && <span>{event.location}</span>}
-                  {dateLabel && <span>{dateLabel}</span>}
+                  {event.location && (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.375rem',
+                      }}
+                    >
+                      <Icon name="map-pin" size="sm" aria-label="Místo" />
+                      {event.location}
+                    </span>
+                  )}
+                  {dateLabel && (
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.375rem',
+                      }}
+                    >
+                      <Icon name="calendar" size="sm" aria-label="Datum" />
+                      {dateLabel}
+                    </span>
+                  )}
                 </div>
               </div>
               <div
@@ -160,10 +200,27 @@ export function EventList({ events, onSelectEvent }: EventListProps) {
                   flexShrink: 0,
                 }}
               >
-                {event.status === 'running' && <LiveIndicator />}
-                <Badge variant={getStatusVariant(event.status)}>
+                {isRunning && (
+                  <LiveIndicator
+                    variant="live"
+                    size="sm"
+                    energyGlow
+                    pulse
+                  />
+                )}
+                <Badge
+                  variant={getStatusVariant(event.status)}
+                  size="md"
+                  glow={isRunning}
+                >
                   {getStatusLabel(event.status)}
                 </Badge>
+                <Icon
+                  name="chevron-right"
+                  size="md"
+                  aria-hidden
+                  className="csk-color-on-surface-muted"
+                />
               </div>
             </div>
           </Card>

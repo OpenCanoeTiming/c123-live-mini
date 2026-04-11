@@ -31,7 +31,12 @@ function App() {
 
   return (
     <Router hook={useHashLocation}>
-      <PageLayout variant="satellite" header={headerContent} footer={footerContent}>
+      <PageLayout
+        variant="satellite"
+        maxWidth="md"
+        header={headerContent}
+        footer={footerContent}
+      >
         <Switch>
           <Route path="/">
             <EventListPage />

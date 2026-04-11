@@ -5,7 +5,8 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import App from './App';
 
-// Mock data — updated for Feature #6 types (no id, no disId, uses raceType)
+// Mock data — two events in different status groups so the homepage
+// renders multiple sections (and therefore the section headings).
 const mockEvents = [
   {
     eventId: 'demo-2026',
@@ -16,6 +17,17 @@ const mockEvents = [
     endDate: '2026-02-06',
     discipline: null,
     status: 'running',
+    imageUrl: null,
+  },
+  {
+    eventId: 'demo-upcoming',
+    mainTitle: 'Upcoming Event',
+    subTitle: null,
+    location: 'Brno',
+    startDate: '2026-05-01',
+    endDate: '2026-05-03',
+    discipline: null,
+    status: 'startlist',
     imageUrl: null,
   },
 ];
@@ -55,9 +67,11 @@ describe('App', () => {
 
   it('renders the tagline as the homepage hero title', () => {
     render(<App />);
-    expect(
-      screen.getByText('Živé výsledky kanoistického slalomu')
-    ).toBeTruthy();
+    // The hero uses `titleAccent` which splits the title into multiple
+    // elements (a leading span + an accent span), so we can't match the
+    // whole string with a string-based query.
+    expect(screen.getByText(/Živé výsledky/)).toBeTruthy();
+    expect(screen.getByText(/kanoistického slalomu/)).toBeTruthy();
   });
 
   it('shows shared package version in footer', () => {
