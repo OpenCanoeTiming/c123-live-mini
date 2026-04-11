@@ -3,18 +3,21 @@ import {
   EmptyState,
   type ColumnDef,
 } from '@czechcanoe/rvp-design-system';
-import type { StartlistEntry } from '../services/api';
+import type { StartlistDisplayRow } from '../services/api';
 import styles from './StartlistTable.module.css';
 
-function formatStartTime(isoString: string | null): string {
-  if (!isoString) return '';
+function formatStartTime(isoString: string | null | undefined): string {
+  if (!isoString) return '—';
   const date = new Date(isoString);
   if (isNaN(date.getTime())) return isoString;
   return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 }
 
-function buildColumns(hasStartTimes: boolean): ColumnDef<StartlistEntry>[] {
-  const cols: ColumnDef<StartlistEntry>[] = [
+function buildColumns(
+  hasStartTimes: boolean,
+  hasBothRuns: boolean
+): ColumnDef<StartlistDisplayRow>[] {
+  const cols: ColumnDef<StartlistDisplayRow>[] = [
     {
       key: 'startOrder',
       header: 'Pořadí',
@@ -31,7 +34,32 @@ function buildColumns(hasStartTimes: boolean): ColumnDef<StartlistEntry>[] {
     },
   ];
 
-  if (hasStartTimes) {
+  if (hasBothRuns) {
+    cols.push(
+      {
+        key: 'run1StartTime',
+        header: 'B1',
+        width: '55px',
+        align: 'center',
+        cell: (row) => (
+          <span className={styles.startTime}>
+            {formatStartTime(row.run1StartTime)}
+          </span>
+        ),
+      },
+      {
+        key: 'run2StartTime',
+        header: 'B2',
+        width: '55px',
+        align: 'center',
+        cell: (row) => (
+          <span className={styles.startTime}>
+            {formatStartTime(row.run2StartTime)}
+          </span>
+        ),
+      }
+    );
+  } else if (hasStartTimes) {
     cols.push({
       key: 'startTime',
       header: 'Start',
@@ -72,7 +100,7 @@ function buildColumns(hasStartTimes: boolean): ColumnDef<StartlistEntry>[] {
 }
 
 interface StartlistTableProps {
-  entries: StartlistEntry[];
+  entries: StartlistDisplayRow[];
 }
 
 export function StartlistTable({ entries }: StartlistTableProps) {
@@ -85,11 +113,14 @@ export function StartlistTable({ entries }: StartlistTableProps) {
     );
   }
 
+  const hasBothRuns = entries.some(
+    (e) => e.run1StartTime !== undefined || e.run2StartTime !== undefined
+  );
   const hasStartTimes = entries.some((e) => e.startTime != null);
-  const columns = buildColumns(hasStartTimes);
+  const columns = buildColumns(hasStartTimes, hasBothRuns);
   const entriesWithKey = entries.map((e, i) => ({
     ...e,
-    _rowKey: `${e.athleteId ?? 'x'}-${e.catId ?? 'x'}-${e.startOrder ?? i}`,
+    _rowKey: `${e.athleteId ?? 'x'}-${e.catId ?? 'x'}-${e.startOrder ?? i}-${i}`,
   }));
 
   return (
