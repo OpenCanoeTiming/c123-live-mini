@@ -16,6 +16,7 @@ import type {
   PublicStartlistEntry,
   PublicOnCourseEntry,
 } from '@c123-live-mini/shared';
+import { getPairedBrRaceId } from '../utils/groupRaces';
 
 const API_BASE = '/api/v1';
 
@@ -56,6 +57,22 @@ export type ClassInfo = PublicClass;
 export type RaceInfo = PublicRace;
 export type CategoryInfo = PublicAggregatedCategory;
 export type StartlistEntry = PublicStartlistEntry;
+
+/**
+ * Display row for startlist tables.
+ *
+ * For non-BR races, only `startTime` is set; `run1StartTime`/`run2StartTime`
+ * are absent and the table renders a single "Start" column.
+ *
+ * For BR (best-of-two-runs) races, both `run1StartTime` and `run2StartTime`
+ * are present (either may be `null` if a participant only appears in one run)
+ * and the table renders two columns "B1" / "B2". `startTime` retains the
+ * queried race's start time for backward compat.
+ */
+export interface StartlistDisplayRow extends StartlistEntry {
+  run1StartTime?: string | null;
+  run2StartTime?: string | null;
+}
 
 /**
  * Result entry - combines standard, multi-run, and detailed fields
@@ -177,6 +194,103 @@ export async function getStartlist(
     `/events/${eventId}/startlist/${raceId}`
   );
   return response.startlist;
+}
+
+/**
+ * Build a stable merge key for joining BR1 and BR2 startlist entries.
+ *
+ * Prefers `athleteId` (= ICFId from C123 XML, stable across re-ingests).
+ * Falls back to `bib|catId|name` for participants without an ICF ID
+ * (typical at local races).
+ */
+function startlistMergeKey(entry: StartlistEntry): string {
+  if (entry.athleteId) return `aid:${entry.athleteId}`;
+  return `fb:${entry.bib ?? '_'}|${entry.catId ?? '_'}|${entry.name}`;
+}
+
+/**
+ * Union-merge startlists for BR1 and BR2 of the same race.
+ *
+ * - `queried` rows come first, in their existing `start_order` (typically
+ *   BR2 in reverse-of-BR1 order — what spectators expect on the BR2 tab).
+ * - Rows present only in `paired` (e.g. an athlete who DNS'd run 2 but
+ *   ran run 1) are appended below, preserving the paired race's
+ *   `start_order` so they render in a sensible sequence.
+ *
+ * Each output row has both `run1StartTime` and `run2StartTime` populated;
+ * either may be `null` when the athlete only appears in one run.
+ */
+function mergeBrStartlists(
+  queried: StartlistEntry[],
+  paired: StartlistEntry[],
+  queriedRunCode: 'BR1' | 'BR2'
+): StartlistDisplayRow[] {
+  const pairedByKey = new Map<string, StartlistEntry>();
+  for (const entry of paired) {
+    pairedByKey.set(startlistMergeKey(entry), entry);
+  }
+
+  const seen = new Set<string>();
+  const rows: StartlistDisplayRow[] = [];
+
+  for (const entry of queried) {
+    const key = startlistMergeKey(entry);
+    seen.add(key);
+    const other = pairedByKey.get(key) ?? null;
+    rows.push({
+      ...entry,
+      run1StartTime:
+        queriedRunCode === 'BR1' ? entry.startTime : (other?.startTime ?? null),
+      run2StartTime:
+        queriedRunCode === 'BR2' ? entry.startTime : (other?.startTime ?? null),
+    });
+  }
+
+  // Append paired-only rows (athletes present only in the paired run).
+  for (const entry of paired) {
+    const key = startlistMergeKey(entry);
+    if (seen.has(key)) continue;
+    rows.push({
+      ...entry,
+      run1StartTime:
+        queriedRunCode === 'BR2' ? entry.startTime : null,
+      run2StartTime:
+        queriedRunCode === 'BR1' ? entry.startTime : null,
+    });
+  }
+
+  return rows;
+}
+
+/**
+ * Get startlist for a race, transparently merging both runs for BR races.
+ *
+ * - Non-BR race → identical to `getStartlist`.
+ * - BR race → fetches the paired BR run in parallel and unions by
+ *   athlete (see `mergeBrStartlists`). If the paired race fails (e.g.
+ *   not yet ingested), the response degrades gracefully to the
+ *   queried race's data only — `run1StartTime`/`run2StartTime` will
+ *   contain whatever is known.
+ */
+export async function getStartlistMaybeBr(
+  eventId: string,
+  raceId: string
+): Promise<StartlistDisplayRow[]> {
+  const pairedRaceId = getPairedBrRaceId(raceId);
+
+  if (!pairedRaceId) {
+    // Non-BR race: identity (rows have no run1/run2 fields).
+    return getStartlist(eventId, raceId);
+  }
+
+  const queriedRunCode: 'BR1' | 'BR2' = raceId.includes('_BR1_') ? 'BR1' : 'BR2';
+
+  const [queried, paired] = await Promise.all([
+    getStartlist(eventId, raceId),
+    getStartlist(eventId, pairedRaceId).catch(() => [] as StartlistEntry[]),
+  ]);
+
+  return mergeBrStartlists(queried, paired, queriedRunCode);
 }
 
 /**

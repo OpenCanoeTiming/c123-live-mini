@@ -100,6 +100,25 @@ export function groupRaces(races: RaceInfo[]): ClassGroup[] {
 }
 
 /**
+ * Single source of truth for parsing BR race IDs.
+ * Format: {classId}_BR{N}_{suffix} where classId may contain underscores
+ * (e.g. K1M_ST_BR1_6 → classPrefix=K1M_ST, run=1, suffix=6).
+ */
+const BR_RACE_ID_PATTERN = /^(.+)_(BR[12])_(.+)$/;
+
+/**
+ * Given a BR race ID, return the paired run's race ID
+ * (BR1 ↔ BR2). Returns null if raceId is not a BR race.
+ */
+export function getPairedBrRaceId(raceId: string): string | null {
+  const match = raceId.match(BR_RACE_ID_PATTERN);
+  if (!match) return null;
+  const [, classPrefix, runCode, suffix] = match;
+  const pairedRunCode = runCode === 'BR1' ? 'BR2' : 'BR1';
+  return `${classPrefix}_${pairedRunCode}_${suffix}`;
+}
+
+/**
  * Filter races for tab display:
  * - When both best-run-1 and best-run-2 exist, hide BR1 (BR2 has combined data)
  * - Keeps all other race types
@@ -116,13 +135,12 @@ export function getDisplayRaces(races: RaceInfo[]): RaceInfo[] {
   const br2Races = filtered.filter((r) => r.raceType === 'best-run-2');
   if (br2Races.length <= 1) return filtered;
 
-  const br2Pattern = /^(.+)_BR[12]_(.+)$/;
   let bestBr2: RaceInfo | null = null;
   let bestSuffix = -1;
 
   for (const r of br2Races) {
-    const match = r.raceId.match(br2Pattern);
-    const suffix = match ? parseInt(match[2], 10) : 0;
+    const match = r.raceId.match(BR_RACE_ID_PATTERN);
+    const suffix = match ? parseInt(match[3], 10) : 0;
     if (suffix > bestSuffix) {
       bestSuffix = suffix;
       bestBr2 = r;

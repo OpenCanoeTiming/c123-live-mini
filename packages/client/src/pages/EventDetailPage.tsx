@@ -14,13 +14,13 @@ import {
   getEventDetails,
   getEventResults,
   getCategories,
-  getStartlist,
+  getStartlistMaybeBr,
   ApiError,
   type EventDetail,
   type RaceInfo,
   type ResultsResponse,
   type CategoryInfo,
-  type StartlistEntry,
+  type StartlistDisplayRow,
 } from '../services/api';
 import { groupRaces, extractDays, getDisplayRaces, type ClassGroup, type DayInfo } from '../utils/groupRaces';
 import { isBestRunRace } from '../utils/raceTypeLabels';
@@ -74,7 +74,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const [viewMode, setViewMode] = useState<ViewMode>('simple');
 
   // Results/startlist state
-  const [startlist, setStartlist] = useState<StartlistEntry[] | null>(null);
+  const [startlist, setStartlist] = useState<StartlistDisplayRow[] | null>(null);
   const [resultsState, setResultsState] = useState<LoadingState>('idle');
   const [currentRaceInfo, setCurrentRaceInfo] = useState<ResultsResponse['race'] | null>(null);
 
@@ -420,7 +420,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           getEventResults(eventId, raceId, {
             catId: selectedCatId ?? undefined,
           }),
-          getStartlist(eventId, raceId).catch(() => [] as StartlistEntry[]),
+          getStartlistMaybeBr(eventId, raceId).catch(() => [] as StartlistDisplayRow[]),
         ]);
 
         if (cancelled) return;
@@ -442,7 +442,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       } catch {
         if (cancelled) return;
         try {
-          const startlistData = await getStartlist(eventId, raceId);
+          const startlistData = await getStartlistMaybeBr(eventId, raceId);
           if (cancelled) return;
           setStartlist(startlistData);
           setDataView('startlist');

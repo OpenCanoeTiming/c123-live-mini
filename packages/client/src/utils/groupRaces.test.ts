@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { groupRaces, type ClassGroup } from './groupRaces';
+import { groupRaces, getPairedBrRaceId, type ClassGroup } from './groupRaces';
 import type { RaceInfo } from '../services/api';
 
 /** Helper to create a minimal RaceInfo stub */
@@ -120,5 +120,36 @@ describe('groupRaces', () => {
       expect(groups[0].displayRaces[0].raceType).toBe('qualification');
       expect(groups[0].displayRaces[1].raceType).toBe('best-run-2');
     });
+  });
+});
+
+describe('getPairedBrRaceId', () => {
+  it('swaps BR1 → BR2', () => {
+    expect(getPairedBrRaceId('K1M_BR1_1')).toBe('K1M_BR2_1');
+  });
+
+  it('swaps BR2 → BR1', () => {
+    expect(getPairedBrRaceId('K1M_BR2_1')).toBe('K1M_BR1_1');
+  });
+
+  it('handles classId with underscores', () => {
+    expect(getPairedBrRaceId('K1M_ST_BR1_6')).toBe('K1M_ST_BR2_6');
+    expect(getPairedBrRaceId('K1M_ST_BR2_6')).toBe('K1M_ST_BR1_6');
+  });
+
+  it('handles non-numeric suffix', () => {
+    expect(getPairedBrRaceId('K1M_BR1_day1')).toBe('K1M_BR2_day1');
+  });
+
+  it('returns null for non-BR races', () => {
+    expect(getPairedBrRaceId('K1M_Q')).toBeNull();
+    expect(getPairedBrRaceId('K1M_F')).toBeNull();
+    expect(getPairedBrRaceId('K1M_HEAT_1')).toBeNull();
+  });
+
+  it('returns null for malformed BR ids', () => {
+    expect(getPairedBrRaceId('K1M_BR3_1')).toBeNull();
+    expect(getPairedBrRaceId('BR1_1')).toBeNull();
+    expect(getPairedBrRaceId('')).toBeNull();
   });
 });
