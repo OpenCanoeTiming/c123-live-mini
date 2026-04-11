@@ -176,7 +176,7 @@ export function EventListPage() {
         variant="compact"
         section="dv"
         title={branding.appSubtitle}
-        titleAccent="kanoistického slalomu"
+        titleAccent={branding.appSubtitleAccent}
         meshBackground
         patternOverlay
         badges={
