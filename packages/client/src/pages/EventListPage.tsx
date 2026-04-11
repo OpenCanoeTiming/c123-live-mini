@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   HeroSection,
-  SectionHeader,
   SkeletonCard,
   Card,
   EmptyState,
@@ -66,6 +65,66 @@ function groupEventsByStatus(events: EventListItem[]): EventGroups {
   return groups;
 }
 
+interface SectionHeadingProps {
+  title: string;
+  description: string;
+  isLive?: boolean;
+}
+
+/**
+ * Custom section heading with stronger visual hierarchy than the
+ * design-system `SectionHeader` (which is intentionally subtle).
+ *
+ * Live sections get a coral accent bar, an inline pulsing live dot,
+ * and a slightly larger title — so spectators immediately spot the
+ * "Probíhá živě" block when they land on the page.
+ */
+function SectionHeading({ title, description, isLive }: SectionHeadingProps) {
+  return (
+    <header
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.25rem',
+        marginBottom: '0.875rem',
+        paddingLeft: isLive ? '0.875rem' : 0,
+        borderLeft: isLive
+          ? '4px solid var(--color-energy-500, #f97316)'
+          : undefined,
+      }}
+    >
+      <h2
+        style={{
+          margin: 0,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.625rem',
+          fontSize: isLive ? '1.5rem' : '1.25rem',
+          fontWeight: 800,
+          letterSpacing: '-0.01em',
+          lineHeight: 1.2,
+          color: 'var(--csk-color-on-surface, var(--color-text-primary))',
+        }}
+      >
+        {title}
+        {isLive && (
+          <LiveIndicator variant="live" size="md" energyGlow pulse />
+        )}
+      </h2>
+      <p
+        style={{
+          margin: 0,
+          fontSize: '0.9375rem',
+          color:
+            'var(--csk-color-on-surface-muted, var(--color-text-secondary))',
+        }}
+      >
+        {description}
+      </p>
+    </header>
+  );
+}
+
 export function EventListPage() {
   const [events, setEvents] = useState<EventListItem[]>([]);
   const [state, setState] = useState<LoadingState>('idle');
@@ -103,6 +162,13 @@ export function EventListPage() {
   const groups = useMemo(() => groupEventsByStatus(events), [events]);
   const hasAnyEvents = events.length > 0;
   const liveCount = groups.running.length;
+  const visibleSectionCount = STATUS_SECTIONS.filter(
+    (s) => groups[s.key].length > 0
+  ).length;
+  // When only a single status group is non-empty, the section heading is
+  // redundant — the hero badge + the cards' own status badges already
+  // tell the user what they're looking at. Skip headings in that case.
+  const showHeadings = visibleSectionCount > 1;
 
   return (
     <>
@@ -128,9 +194,9 @@ export function EventListPage() {
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '1.75rem',
-          paddingBlock: '1.5rem',
-          borderRadius: '12px',
+          gap: '2.25rem',
+          paddingBlock: '2rem',
+          paddingInline: '1rem',
         }}
       >
         {state === 'loading' && <SkeletonCard />}
@@ -162,21 +228,13 @@ export function EventListPage() {
                 key={key}
                 className={`csk-reveal csk-reveal-${idx + 2}`}
               >
-                <SectionHeader
-                  title={title}
-                  size={isLive ? 'lg' : 'md'}
-                  description={SECTION_DESCRIPTIONS[key](groups[key].length)}
-                  badge={
-                    isLive ? (
-                      <LiveIndicator
-                        variant="live"
-                        size="lg"
-                        energyGlow
-                        pulse
-                      />
-                    ) : undefined
-                  }
-                />
+                {showHeadings && (
+                  <SectionHeading
+                    title={title}
+                    description={SECTION_DESCRIPTIONS[key](groups[key].length)}
+                    isLive={isLive}
+                  />
+                )}
                 <EventList
                   events={groups[key]}
                   onSelectEvent={handleSelectEvent}

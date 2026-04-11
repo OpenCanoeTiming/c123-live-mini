@@ -5,7 +5,8 @@ import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, screen, cleanup, waitFor } from '@testing-library/react';
 import App from './App';
 
-// Mock data — updated for Feature #6 types (no id, no disId, uses raceType)
+// Mock data — two events in different status groups so the homepage
+// renders multiple sections (and therefore the section headings).
 const mockEvents = [
   {
     eventId: 'demo-2026',
@@ -16,6 +17,17 @@ const mockEvents = [
     endDate: '2026-02-06',
     discipline: null,
     status: 'running',
+    imageUrl: null,
+  },
+  {
+    eventId: 'demo-upcoming',
+    mainTitle: 'Upcoming Event',
+    subTitle: null,
+    location: 'Brno',
+    startDate: '2026-05-01',
+    endDate: '2026-05-03',
+    discipline: null,
+    status: 'startlist',
     imageUrl: null,
   },
 ];
