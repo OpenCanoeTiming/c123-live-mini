@@ -19,7 +19,7 @@ interface OnCoursePanelProps {
 
 export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps) {
   // Only show competitors that have actually started (#139)
-  const started = oncourse.filter((e) => e.dtStart !== null);
+  const started = oncourse.filter((e) => e.dtStart != null && e.dtStart !== '');
 
   if (started.length === 0) {
     return null;
