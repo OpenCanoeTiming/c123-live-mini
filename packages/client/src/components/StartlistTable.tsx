@@ -4,6 +4,7 @@ import {
   type ColumnDef,
 } from '@czechcanoe/rvp-design-system';
 import type { StartlistDisplayRow } from '../services/api';
+import { StarButton } from './StarButton';
 import styles from './StartlistTable.module.css';
 
 function formatStartTime(isoString: string | null | undefined): string {
@@ -15,7 +16,8 @@ function formatStartTime(isoString: string | null | undefined): string {
 
 function buildColumns(
   hasStartTimes: boolean,
-  hasBothRuns: boolean
+  hasBothRuns: boolean,
+  favorites?: { isFavorite: (bib: number, classId: string) => boolean; onToggle: (bib: number, classId: string) => void; classId: string | null },
 ): ColumnDef<StartlistDisplayRow>[] {
   const cols: ColumnDef<StartlistDisplayRow>[] = [
     {
@@ -76,7 +78,15 @@ function buildColumns(
       header: 'Jméno',
       cell: (row) => (
         <div>
-          <div className={styles.athleteName}>{row.name}</div>
+          <div className={styles.athleteName}>
+            {row.name}
+            {favorites && row.bib != null && favorites.classId && (
+              <StarButton
+                active={favorites.isFavorite(row.bib, favorites.classId)}
+                onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
+              />
+            )}
+          </div>
           {row.club && (
             <div className={styles.athleteClub}>{row.club}</div>
           )}
@@ -101,9 +111,12 @@ function buildColumns(
 
 interface StartlistTableProps {
   entries: StartlistDisplayRow[];
+  isFavorite?: (bib: number, classId: string) => boolean;
+  onToggleFavorite?: (bib: number, classId: string) => void;
+  raceClassId?: string | null;
 }
 
-export function StartlistTable({ entries }: StartlistTableProps) {
+export function StartlistTable({ entries, isFavorite, onToggleFavorite, raceClassId }: StartlistTableProps) {
   if (entries.length === 0) {
     return (
       <EmptyState
@@ -117,7 +130,10 @@ export function StartlistTable({ entries }: StartlistTableProps) {
     (e) => e.run1StartTime !== undefined || e.run2StartTime !== undefined
   );
   const hasStartTimes = entries.some((e) => e.startTime != null);
-  const columns = buildColumns(hasStartTimes, hasBothRuns);
+  const favoritesParam = isFavorite && onToggleFavorite
+    ? { isFavorite, onToggle: onToggleFavorite, classId: raceClassId ?? null }
+    : undefined;
+  const columns = buildColumns(hasStartTimes, hasBothRuns, favoritesParam);
   const entriesWithKey = entries.map((e, i) => ({
     ...e,
     _rowKey: `${e.athleteId ?? 'x'}-${e.catId ?? 'x'}-${e.startOrder ?? i}-${i}`,

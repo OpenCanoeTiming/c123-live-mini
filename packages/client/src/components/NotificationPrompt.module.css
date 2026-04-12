@@ -1,0 +1,48 @@
+.prompt {
+  margin: 0.5rem;
+  padding: 10px 12px;
+  background: var(--csk-color-bg-info, #eff6ff);
+  border: 1px solid var(--csk-color-border-info, #bfdbfe);
+  border-radius: var(--radius-lg, 8px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--csk-color-text-info, #1e40af);
+}
+
+.icon {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.text {
+  flex: 1;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btnAllow {
+  padding: 4px 10px;
+  background: var(--csk-color-primary, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btnDismiss {
+  padding: 4px 10px;
+  background: transparent;
+  color: var(--csk-color-text-secondary, #6b7280);
+  border: 1px solid var(--csk-color-border-secondary, #d1d5db);
+  border-radius: 5px;
+  font-size: 11px;
+  cursor: pointer;
+}

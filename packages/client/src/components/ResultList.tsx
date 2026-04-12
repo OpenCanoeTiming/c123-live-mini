@@ -11,6 +11,8 @@ import { RunDetailExpand } from './RunDetailExpand';
 import { ViewModeToggle, type ViewMode } from './ViewModeToggle';
 import { RoundTabs } from './RoundTabs';
 import { CategoryFilter } from './CategoryFilter';
+import { StarButton } from './StarButton';
+import { FavoritesToggle } from './FavoritesToggle';
 import styles from './ResultList.module.css';
 
 interface Column {
@@ -23,7 +25,10 @@ interface Column {
   render: (row: ResultEntry, index: number) => React.ReactNode;
 }
 
-function buildStandardColumns(selectedCatId: string | null): Column[] {
+function buildStandardColumns(
+  selectedCatId: string | null,
+  favorites?: { isFavorite: (bib: number, classId: string) => boolean; onToggle: (bib: number, classId: string) => void; classId: string | null },
+): Column[] {
   const useCategory = Boolean(selectedCatId);
   const cols: Column[] = [
     {
@@ -45,6 +50,12 @@ function buildStandardColumns(selectedCatId: string | null): Column[] {
           <div className={styles.athleteName}>
             <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
             {row.name}
+            {favorites && row.bib != null && favorites.classId && (
+              <StarButton
+                active={favorites.isFavorite(row.bib, favorites.classId)}
+                onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
+              />
+            )}
             {row.catId && <span className={styles.catTag}>{row.catId}</span>}
           </div>
           {row.club && <div className={styles.athleteClub}>{row.club}</div>}
@@ -130,7 +141,10 @@ function BrRunsCell({ row }: { row: ResultEntry }) {
   );
 }
 
-function buildBestRunColumns(selectedCatId: string | null): Column[] {
+function buildBestRunColumns(
+  selectedCatId: string | null,
+  favorites?: { isFavorite: (bib: number, classId: string) => boolean; onToggle: (bib: number, classId: string) => void; classId: string | null },
+): Column[] {
   const useCategory = Boolean(selectedCatId);
   return [
     {
@@ -152,6 +166,12 @@ function buildBestRunColumns(selectedCatId: string | null): Column[] {
           <div className={styles.athleteName}>
             <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
             {row.name}
+            {favorites && row.bib != null && favorites.classId && (
+              <StarButton
+                active={favorites.isFavorite(row.bib, favorites.classId)}
+                onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
+              />
+            )}
             {row.catId && <span className={styles.catTag}>{row.catId}</span>}
           </div>
           {row.club && <div className={styles.athleteClub}>{row.club}</div>}
@@ -275,6 +295,13 @@ interface ResultListProps {
   // Category
   categories?: CategoryInfo[];
   onCategoryChange?: (catId: string | null) => void;
+  // Favorites
+  isFavorite?: (bib: number, classId: string) => boolean;
+  onToggleFavorite?: (bib: number, classId: string) => void;
+  raceClassId?: string | null;
+  showOnlyFavorites?: boolean;
+  onToggleShowFavorites?: () => void;
+  favoritesCount?: number;
 }
 
 export function ResultList({
@@ -295,6 +322,12 @@ export function ResultList({
   onSearchChange,
   categories = [],
   onCategoryChange,
+  isFavorite,
+  onToggleFavorite,
+  raceClassId,
+  showOnlyFavorites,
+  onToggleShowFavorites,
+  favoritesCount = 0,
 }: ResultListProps) {
   const { results, race } = data;
 
@@ -317,11 +350,15 @@ export function ResultList({
     return 0;
   });
 
-  const columns = isBestRun
-    ? buildBestRunColumns(selectedCatId ?? null)
-    : buildStandardColumns(selectedCatId ?? null);
+  const favoritesParam = isFavorite && onToggleFavorite
+    ? { isFavorite, onToggle: onToggleFavorite, classId: raceClassId ?? null }
+    : undefined;
 
-  const hasToolbar = onViewModeChange || showRoundTabs || onSearchChange || categories.length > 0;
+  const columns = isBestRun
+    ? buildBestRunColumns(selectedCatId ?? null, favoritesParam)
+    : buildStandardColumns(selectedCatId ?? null, favoritesParam);
+
+  const hasToolbar = onViewModeChange || showRoundTabs || onSearchChange || categories.length > 0 || onToggleShowFavorites;
 
   return (
     <div className={styles.tableWrapper}>
@@ -351,6 +388,13 @@ export function ResultList({
                 categories={categories}
                 selectedCatId={selectedCatId ?? null}
                 onCategoryChange={onCategoryChange}
+              />
+            )}
+            {onToggleShowFavorites && (
+              <FavoritesToggle
+                active={showOnlyFavorites ?? false}
+                count={favoritesCount}
+                onToggle={onToggleShowFavorites}
               />
             )}
             {onViewModeChange && (

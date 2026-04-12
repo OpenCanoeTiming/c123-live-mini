@@ -1,0 +1,36 @@
+.starBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  margin-left: 2px;
+  color: var(--csk-color-text-tertiary, #9ca3af);
+  -webkit-tap-highlight-color: transparent;
+  vertical-align: middle;
+}
+
+.starBtn.active {
+  color: var(--csk-color-warning, #f59e0b);
+}
+
+@media (pointer: coarse) {
+  .starBtn {
+    position: relative;
+  }
+  .starBtn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+  }
+}
