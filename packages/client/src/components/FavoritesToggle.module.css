@@ -1,0 +1,44 @@
+.toggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--csk-color-border-secondary, #e5e7eb);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--color-bg-primary, white);
+  color: var(--csk-color-text-secondary, #6b7280);
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.toggleBtn.active {
+  background: var(--csk-color-primary, #2563eb);
+  color: white;
+  border-color: var(--csk-color-primary, #2563eb);
+}
+
+.star {
+  font-size: 13px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--csk-color-primary, #2563eb);
+  color: white;
+}
+
+.toggleBtn.active .badge {
+  background: white;
+  color: var(--csk-color-primary, #2563eb);
+}
