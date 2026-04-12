@@ -34,8 +34,6 @@ import { ScheduleView } from '../components/ScheduleView';
 import type { ViewMode } from '../components/ViewModeToggle';
 import { useEventLiveState } from '../hooks/useEventLiveState';
 import { useFavorites } from '../hooks/useFavorites';
-import { FavoritesToggle } from '../components/FavoritesToggle';
-import { NotificationPrompt } from '../components/NotificationPrompt';
 import { useEventWebSocket } from '../hooks/useEventWebSocket';
 import { getOnCourse } from '../services/api';
 import type { WsMessage } from '@c123-live-mini/shared';
@@ -771,12 +769,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         onToggle={() => setOncoursePanelOpen(!oncoursePanelOpen)}
       />
 
-      <NotificationPrompt
-        favoritesCount={favorites.favoritesCount}
-        notificationsEnabled={favorites.notificationsEnabled}
-        onEnable={favorites.toggleNotifications}
-      />
-
       {/* NAV ROW: Days (left) + ClassTabs (center, desktop only inline) + Data View (right) */}
       <div className={styles.navigationRow}>
         {days.length > 1 && (
@@ -806,13 +798,6 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             tabs={dataViewTabs}
             activeTab={dataView}
             onChange={handleDataViewChange}
-          />
-        )}
-        {resultsState === 'success' && dataView !== 'schedule' && (
-          <FavoritesToggle
-            active={favorites.showOnlyFavorites}
-            count={favorites.favoritesCount}
-            onToggle={() => favorites.setShowOnlyFavorites(!favorites.showOnlyFavorites)}
           />
         )}
       </div>
@@ -859,6 +844,9 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           isFavorite={favorites.isFavorite}
           onToggleFavorite={favorites.toggleFavorite}
           raceClassId={selectedRaceClassId}
+          showOnlyFavorites={favorites.showOnlyFavorites}
+          onToggleShowFavorites={() => favorites.setShowOnlyFavorites(!favorites.showOnlyFavorites)}
+          favoritesCount={favorites.favoritesCount}
         />
       )}
 

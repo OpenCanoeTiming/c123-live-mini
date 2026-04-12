@@ -23,13 +23,11 @@ interface FavoriteEntry {
 
 interface FavoritesData {
   favorites: FavoriteEntry[];
-  notificationsEnabled: boolean;
   showOnlyFavorites: boolean;
 }
 
 const EMPTY_DATA: FavoritesData = {
   favorites: [],
-  notificationsEnabled: false,
   showOnlyFavorites: false,
 };
 
@@ -40,7 +38,6 @@ function loadFromStorage(eventId: string): FavoritesData {
     const parsed = JSON.parse(raw);
     return {
       favorites: Array.isArray(parsed.favorites) ? parsed.favorites : [],
-      notificationsEnabled: Boolean(parsed.notificationsEnabled),
       showOnlyFavorites: Boolean(parsed.showOnlyFavorites),
     };
   } catch {
@@ -121,19 +118,26 @@ export function useFavorites(
     setData((prev) => ({ ...prev, showOnlyFavorites: value }));
   }, []);
 
-  const notificationsEnabled = data.notificationsEnabled;
-
-  const toggleNotifications = useCallback(() => {
-    setData((prev) => ({ ...prev, notificationsEnabled: !prev.notificationsEnabled }));
-  }, []);
+  // Notifications are always enabled — browser permission dialog is the gate
+  const notificationsEnabled = true;
 
   // --- Notification logic ---
 
   const lastNotified = useRef<Map<string, number>>(new Map());
 
+  const permissionRequested = useRef(false);
+
   const sendNotification = useCallback((title: string, body: string, tag: string) => {
     if (typeof Notification === 'undefined') return;
+
+    // Auto-request permission on first notification attempt
+    if (Notification.permission === 'default' && !permissionRequested.current) {
+      permissionRequested.current = true;
+      Notification.requestPermission();
+      return;
+    }
     if (Notification.permission !== 'granted') return;
+
     const now = Date.now();
     const lastTime = lastNotified.current.get(tag) ?? 0;
     if (now - lastTime < COOLDOWN_MS) return;
@@ -185,8 +189,8 @@ export function useFavorites(
 
       const prev = prevMap.get(key);
 
-      if (!prev && !entry.completed) {
-        // Start trigger: favorite appeared on course
+      if (!prev && !entry.completed && entry.dtStart) {
+        // Start trigger: favorite appeared on course with a start time
         sendNotification(
           `${entry.name} startuje`,
           `${entry.club}`,
@@ -272,8 +276,6 @@ export function useFavorites(
     showOnlyFavorites,
     setShowOnlyFavorites,
     isMatchingFavorite,
-    notificationsEnabled,
-    toggleNotifications,
     favorites: data.favorites,
   };
 }

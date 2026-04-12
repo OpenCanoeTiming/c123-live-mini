@@ -142,7 +142,7 @@ function makeOncourse(overrides: Partial<PublicOnCourseEntry> = {}): PublicOnCou
     position: 1,
     gates: [],
     completed: false,
-    dtStart: null,
+    dtStart: '2026-04-12T09:00:00',
     dtFinish: null,
     time: null,
     pen: 0,
@@ -158,7 +158,6 @@ function makeOncourse(overrides: Partial<PublicOnCourseEntry> = {}): PublicOnCou
 function setupFavorites(bibs: Array<{ bib: number; classId: string }>) {
   localStorage.setItem('favorites-event-1', JSON.stringify({
     favorites: bibs,
-    notificationsEnabled: true,
     showOnlyFavorites: false,
   }));
 }
@@ -221,13 +220,17 @@ describe('useFavorites — oncourse notifications', () => {
     expect(notifSpy.mock.calls[0][1].tag).toContain('finish');
   });
 
-  it('does not send notifications when notificationsEnabled is false', () => {
-    // Set up favorites but with notifications disabled
-    localStorage.setItem('favorites-event-1', JSON.stringify({
-      favorites: [{ bib: 5, classId: 'K1M-ZS' }],
-      notificationsEnabled: false,
-      showOnlyFavorites: false,
-    }));
+  it('does not send notifications when browser permission is denied', () => {
+    setupFavorites([{ bib: 5, classId: 'K1M-ZS' }]);
+
+    // Override permission to denied
+    vi.stubGlobal('Notification', class MockNotification {
+      static permission = 'denied';
+      static requestPermission = vi.fn().mockResolvedValue('denied');
+      constructor(title: string, options?: NotificationOptions) {
+        notifSpy(title, options);
+      }
+    });
 
     const { rerender } = renderHook(
       ({ oc }) => useFavorites('event-1', races, oc, []),

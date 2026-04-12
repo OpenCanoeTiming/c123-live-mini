@@ -12,6 +12,7 @@ import { ViewModeToggle, type ViewMode } from './ViewModeToggle';
 import { RoundTabs } from './RoundTabs';
 import { CategoryFilter } from './CategoryFilter';
 import { StarButton } from './StarButton';
+import { FavoritesToggle } from './FavoritesToggle';
 import styles from './ResultList.module.css';
 
 interface Column {
@@ -298,6 +299,9 @@ interface ResultListProps {
   isFavorite?: (bib: number, classId: string) => boolean;
   onToggleFavorite?: (bib: number, classId: string) => void;
   raceClassId?: string | null;
+  showOnlyFavorites?: boolean;
+  onToggleShowFavorites?: () => void;
+  favoritesCount?: number;
 }
 
 export function ResultList({
@@ -321,6 +325,9 @@ export function ResultList({
   isFavorite,
   onToggleFavorite,
   raceClassId,
+  showOnlyFavorites,
+  onToggleShowFavorites,
+  favoritesCount = 0,
 }: ResultListProps) {
   const { results, race } = data;
 
@@ -351,7 +358,7 @@ export function ResultList({
     ? buildBestRunColumns(selectedCatId ?? null, favoritesParam)
     : buildStandardColumns(selectedCatId ?? null, favoritesParam);
 
-  const hasToolbar = onViewModeChange || showRoundTabs || onSearchChange || categories.length > 0;
+  const hasToolbar = onViewModeChange || showRoundTabs || onSearchChange || categories.length > 0 || onToggleShowFavorites;
 
   return (
     <div className={styles.tableWrapper}>
@@ -381,6 +388,13 @@ export function ResultList({
                 categories={categories}
                 selectedCatId={selectedCatId ?? null}
                 onCategoryChange={onCategoryChange}
+              />
+            )}
+            {onToggleShowFavorites && (
+              <FavoritesToggle
+                active={showOnlyFavorites ?? false}
+                count={favoritesCount}
+                onToggle={onToggleShowFavorites}
               />
             )}
             {onViewModeChange && (
