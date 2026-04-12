@@ -186,8 +186,11 @@ export function useFavorites(
 
       const prev = prevMap.get(key);
 
-      if (!prev && !entry.completed && entry.dtStart) {
-        // Start trigger: favorite appeared on course with a start time
+      const prevStarted = prev?.dtStart != null && prev.dtStart !== '';
+      const nowStarted = entry.dtStart != null && entry.dtStart !== '';
+
+      if (!entry.completed && nowStarted && !prevStarted) {
+        // Start trigger: dtStart changed from empty/null to actual time
         sendNotification(
           `${entry.name} startuje`,
           `${entry.club}`,
