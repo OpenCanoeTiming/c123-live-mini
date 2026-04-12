@@ -1,6 +1,21 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { PublicRace, PublicOnCourseEntry, PublicResult } from '@c123-live-mini/shared';
 
+const COOLDOWN_MS = 30_000;
+
+/** Format time in hundredths to MM:SS.hh or SS.hh */
+function formatTime(hundredths: number): string {
+  const totalSeconds = Math.floor(hundredths / 100);
+  const hh = hundredths % 100;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const hhStr = hh.toString().padStart(2, '0');
+  if (minutes > 0) {
+    return `${minutes}:${seconds.toString().padStart(2, '0')}.${hhStr}`;
+  }
+  return `${seconds}.${hhStr}`;
+}
+
 interface FavoriteEntry {
   bib: number;
   classId: string;
@@ -98,6 +113,131 @@ export function useFavorites(
   const toggleNotifications = useCallback(() => {
     setData((prev) => ({ ...prev, notificationsEnabled: !prev.notificationsEnabled }));
   }, []);
+
+  // --- Notification logic ---
+
+  const lastNotified = useRef<Map<string, number>>(new Map());
+
+  const sendNotification = useCallback((title: string, body: string, tag: string) => {
+    if (typeof Notification === 'undefined') return;
+    if (Notification.permission !== 'granted') return;
+    const now = Date.now();
+    const lastTime = lastNotified.current.get(tag) ?? 0;
+    if (now - lastTime < COOLDOWN_MS) return;
+    lastNotified.current.set(tag, now);
+    new Notification(title, { body, tag });
+  }, []);
+
+  // Track previous oncourse state
+  const prevOncourseRef = useRef<Map<string, PublicOnCourseEntry>>(new Map());
+
+  useEffect(() => {
+    if (!notificationsEnabled) {
+      // Still update the ref so we don't fire stale notifications when re-enabled
+      const newMap = new Map<string, PublicOnCourseEntry>();
+      for (const entry of oncourse) {
+        const classId = raceToClass.get(entry.raceId);
+        if (classId) {
+          newMap.set(`${entry.bib}-${classId}`, entry);
+        }
+      }
+      prevOncourseRef.current = newMap;
+      return;
+    }
+
+    const prevMap = prevOncourseRef.current;
+    const newMap = new Map<string, PublicOnCourseEntry>();
+
+    for (const entry of oncourse) {
+      const classId = raceToClass.get(entry.raceId);
+      if (!classId) continue;
+      const key = `${entry.bib}-${classId}`;
+      newMap.set(key, entry);
+
+      const isFav = data.favorites.some((f) => f.bib === entry.bib && f.classId === classId);
+      if (!isFav) continue;
+
+      const prev = prevMap.get(key);
+
+      if (!prev && !entry.completed) {
+        // Start trigger: favorite appeared on course
+        sendNotification(
+          `${entry.name} startuje`,
+          `${entry.club}`,
+          `start-${key}`,
+        );
+      } else if (prev && !prev.completed && entry.completed) {
+        // Finish trigger (completed): completed changed from false to true
+        const timeStr = entry.time != null ? formatTime(entry.time) : '';
+        sendNotification(
+          `${entry.name} v cíli`,
+          timeStr ? `${timeStr}` : '',
+          `finish-${key}`,
+        );
+      }
+    }
+
+    // Check for removals (favorite disappeared without completed=true)
+    for (const [key, prev] of prevMap) {
+      if (newMap.has(key)) continue;
+      const isFav = data.favorites.some((f) => {
+        const classId = key.split('-').slice(1).join('-');
+        return f.bib === prev.bib && f.classId === classId;
+      });
+      if (!isFav) continue;
+      if (!prev.completed) {
+        sendNotification(
+          `${prev.name} dokončil jízdu`,
+          '',
+          `finish-${key}`,
+        );
+      }
+    }
+
+    prevOncourseRef.current = newMap;
+  }, [oncourse, notificationsEnabled, data.favorites, raceToClass, sendNotification]);
+
+  // Track previous race statuses for race status notifications
+  const prevRaceStatusRef = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    if (!notificationsEnabled) {
+      const newMap = new Map<string, number>();
+      for (const race of races) {
+        newMap.set(race.raceId, race.raceStatus);
+      }
+      prevRaceStatusRef.current = newMap;
+      return;
+    }
+
+    const prevMap = prevRaceStatusRef.current;
+    const newMap = new Map<string, number>();
+
+    for (const race of races) {
+      newMap.set(race.raceId, race.raceStatus);
+      const prevStatus = prevMap.get(race.raceId);
+      if (prevStatus === undefined) continue;
+
+      // Only trigger when status CHANGES to 10 or 11
+      if (prevStatus === race.raceStatus) continue;
+      if (race.raceStatus !== 10 && race.raceStatus !== 11) continue;
+
+      // Check if any favorite has this classId
+      const classId = race.classId;
+      if (!classId) continue;
+      const hasFav = data.favorites.some((f) => f.classId === classId);
+      if (!hasFav) continue;
+
+      const statusText = race.raceStatus === 11 ? 'oficiální' : 'neoficiální';
+      sendNotification(
+        `Výsledky ${classId}`,
+        `Výsledky jsou ${statusText}`,
+        `race-status-${race.raceId}-${race.raceStatus}`,
+      );
+    }
+
+    prevRaceStatusRef.current = newMap;
+  }, [races, notificationsEnabled, data.favorites, sendNotification]);
 
   return {
     isFavorite,
