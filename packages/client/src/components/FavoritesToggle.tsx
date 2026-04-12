@@ -7,7 +7,7 @@ interface FavoritesToggleProps {
 }
 
 export function FavoritesToggle({ active, count, onToggle }: FavoritesToggleProps) {
-  if (count === 0) return null;
+  if (count === 0 && !active) return null;
 
   return (
     <button

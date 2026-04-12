@@ -49,7 +49,11 @@ function loadFromStorage(eventId: string): FavoritesData {
 }
 
 function saveToStorage(eventId: string, data: FavoritesData): void {
-  localStorage.setItem(`favorites-${eventId}`, JSON.stringify(data));
+  try {
+    localStorage.setItem(`favorites-${eventId}`, JSON.stringify(data));
+  } catch {
+    // localStorage full or disabled (e.g., private browsing)
+  }
 }
 
 export function useFavorites(
@@ -59,6 +63,15 @@ export function useFavorites(
   _resultsByRace: PublicResult[] | never[],
 ) {
   const [data, setData] = useState<FavoritesData>(() => loadFromStorage(eventId));
+
+  // Re-sync state when eventId changes (SPA navigation without remount)
+  const prevEventIdRef = useRef(eventId);
+  useEffect(() => {
+    if (prevEventIdRef.current !== eventId) {
+      prevEventIdRef.current = eventId;
+      setData(loadFromStorage(eventId));
+    }
+  }, [eventId]);
 
   // Persist on every change
   useEffect(() => {
@@ -130,8 +143,21 @@ export function useFavorites(
 
   // Track previous oncourse state
   const prevOncourseRef = useRef<Map<string, PublicOnCourseEntry>>(new Map());
+  const isInitialOncourseRef = useRef(true);
 
   useEffect(() => {
+    // Skip first render to avoid notification spam for athletes already on course
+    if (isInitialOncourseRef.current) {
+      isInitialOncourseRef.current = false;
+      const initMap = new Map<string, PublicOnCourseEntry>();
+      for (const entry of oncourse) {
+        const classId = raceToClass.get(entry.raceId);
+        if (classId) initMap.set(`${entry.bib}-${classId}`, entry);
+      }
+      prevOncourseRef.current = initMap;
+      return;
+    }
+
     if (!notificationsEnabled) {
       // Still update the ref so we don't fire stale notifications when re-enabled
       const newMap = new Map<string, PublicOnCourseEntry>();
