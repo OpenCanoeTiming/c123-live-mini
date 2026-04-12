@@ -33,6 +33,9 @@ import { OnCoursePanel } from '../components/OnCoursePanel';
 import { ScheduleView } from '../components/ScheduleView';
 import type { ViewMode } from '../components/ViewModeToggle';
 import { useEventLiveState } from '../hooks/useEventLiveState';
+import { useFavorites } from '../hooks/useFavorites';
+import { FavoritesToggle } from '../components/FavoritesToggle';
+import { NotificationPrompt } from '../components/NotificationPrompt';
 import { useEventWebSocket } from '../hooks/useEventWebSocket';
 import { getOnCourse } from '../services/api';
 import type { WsMessage } from '@c123-live-mini/shared';
@@ -85,6 +88,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   // Search — uncontrolled input with deferred filtering
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  // Favorites
+  const selectedRaceResults = selectedRaceId ? (liveState.resultsByRace[selectedRaceId] ?? []) : [];
+  const favorites = useFavorites(eventId, races, liveState.oncourse, selectedRaceResults);
 
   // Day selector state
   const [days, setDays] = useState<DayInfo[]>([]);
@@ -594,26 +601,41 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   // Search filter (uses deferred query for responsiveness)
   const filteredResults: ResultsResponse | null = useMemo(() => {
     if (!results) return null;
-    if (!deferredSearchQuery.trim()) return results;
-    const q = deferredSearchQuery.trim().toLowerCase();
-    const filtered = results.results.filter((r) =>
-      r.name.toLowerCase().includes(q) ||
-      (r.club && r.club.toLowerCase().includes(q)) ||
-      (r.bib != null && String(r.bib).includes(q))
-    );
+    let filtered = results.results;
+    if (deferredSearchQuery.trim()) {
+      const q = deferredSearchQuery.trim().toLowerCase();
+      filtered = filtered.filter((r) =>
+        r.name.toLowerCase().includes(q) ||
+        (r.club && r.club.toLowerCase().includes(q)) ||
+        (r.bib != null && String(r.bib).includes(q))
+      );
+    }
+    if (favorites.showOnlyFavorites && selectedRaceId) {
+      filtered = filtered.filter((r) =>
+        r.bib != null && favorites.isMatchingFavorite(r.bib, selectedRaceId)
+      );
+    }
     return { ...results, results: filtered };
-  }, [results, deferredSearchQuery]);
+  }, [results, deferredSearchQuery, favorites.showOnlyFavorites, favorites.isMatchingFavorite, selectedRaceId]);
 
   const filteredStartlist = useMemo(() => {
     if (!startlist) return null;
-    if (!deferredSearchQuery.trim()) return startlist;
-    const q = deferredSearchQuery.trim().toLowerCase();
-    return startlist.filter((s) =>
-      s.name.toLowerCase().includes(q) ||
-      (s.club && s.club.toLowerCase().includes(q)) ||
-      (s.bib != null && String(s.bib).includes(q))
-    );
-  }, [startlist, deferredSearchQuery]);
+    let filtered = startlist;
+    if (deferredSearchQuery.trim()) {
+      const q = deferredSearchQuery.trim().toLowerCase();
+      filtered = filtered.filter((s) =>
+        s.name.toLowerCase().includes(q) ||
+        (s.club && s.club.toLowerCase().includes(q)) ||
+        (s.bib != null && String(s.bib).includes(q))
+      );
+    }
+    if (favorites.showOnlyFavorites && selectedRaceId) {
+      filtered = filtered.filter((s) =>
+        s.bib != null && favorites.isMatchingFavorite(s.bib, selectedRaceId)
+      );
+    }
+    return filtered;
+  }, [startlist, deferredSearchQuery, favorites.showOnlyFavorites, favorites.isMatchingFavorite, selectedRaceId]);
 
   // Filter categories to only those present in this race — use startlist (always unfiltered)
   // so the dropdown stays stable even when a category filter is active.
@@ -724,6 +746,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   // Find races for selected class
   const selectedGroup = filteredClassGroups.find((g) => g.classId === selectedClassId);
   const selectedRace = races.find((r) => r.raceId === selectedRaceId);
+  const selectedRaceClassId = selectedRace?.classId ?? null;
   const showClassTabs = filteredClassGroups.length > 1;
   const classTabsStandalone = filteredClassGroups.reduce(
     (sum, g) => sum + (classNameMap[g.classId] ?? g.classId).length,
@@ -746,6 +769,12 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         oncourse={liveState.oncourse}
         isOpen={oncoursePanelOpen}
         onToggle={() => setOncoursePanelOpen(!oncoursePanelOpen)}
+      />
+
+      <NotificationPrompt
+        favoritesCount={favorites.favoritesCount}
+        notificationsEnabled={favorites.notificationsEnabled}
+        onEnable={favorites.toggleNotifications}
       />
 
       {/* NAV ROW: Days (left) + ClassTabs (center, desktop only inline) + Data View (right) */}
@@ -777,6 +806,13 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
             tabs={dataViewTabs}
             activeTab={dataView}
             onChange={handleDataViewChange}
+          />
+        )}
+        {resultsState === 'success' && dataView !== 'schedule' && (
+          <FavoritesToggle
+            active={favorites.showOnlyFavorites}
+            count={favorites.favoritesCount}
+            onToggle={() => favorites.setShowOnlyFavorites(!favorites.showOnlyFavorites)}
           />
         )}
       </div>
@@ -820,6 +856,9 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           onSearchChange={setSearchQuery}
           categories={availableCategories}
           onCategoryChange={handleCategoryChange}
+          isFavorite={favorites.isFavorite}
+          onToggleFavorite={favorites.toggleFavorite}
+          raceClassId={selectedRaceClassId}
         />
       )}
 
@@ -836,7 +875,12 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       )}
 
       {resultsState === 'success' && dataView === 'startlist' && filteredStartlist && filteredStartlist.length > 0 && (
-        <StartlistTable entries={filteredStartlist} />
+        <StartlistTable
+          entries={filteredStartlist}
+          isFavorite={favorites.isFavorite}
+          onToggleFavorite={favorites.toggleFavorite}
+          raceClassId={selectedRaceClassId}
+        />
       )}
 
       {resultsState === 'success' && dataView === 'startlist' && (!filteredStartlist || filteredStartlist.length === 0) && (
