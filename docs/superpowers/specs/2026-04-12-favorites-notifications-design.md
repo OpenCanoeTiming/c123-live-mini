@@ -95,8 +95,8 @@ If `completed: true` is observed, use oncourse data for time. If only removed, c
 
 ### StarButton (new)
 
-- Small star icon on each row in ResultList and StartlistTable
-- Position: first column (before rank/bib)
+- Small star icon inline after athlete name (before category tag)
+- No extra column — rendered inside the existing name cell
 - Tap area: min 44x44px for touch, visually compact
 - States: empty star (not favorite) / filled star (favorite)
 - Uses design system icon if available, minimal SVG otherwise
@@ -124,8 +124,8 @@ Everything lives within EventDetailPage — stars on rows, filter toggle in tool
 
 | Component | Change |
 |-----------|--------|
-| ResultList | Add StarButton column, apply `isMatchingFavorite` filter |
-| StartlistTable | Add StarButton column, apply same filter |
+| ResultList | Add StarButton inline after name, apply `isMatchingFavorite` filter |
+| StartlistTable | Add StarButton inline after name, apply same filter |
 | EventDetailPage | Integrate `useFavorites` hook, pass props to children |
 | Toolbar area | Add FavoritesToggle alongside existing filters |
 
@@ -153,7 +153,7 @@ A favorite for bib 5 in class K1M-ZS tracks across all races in that class (BR1,
 
 ### Manual Tests
 
-- Mobile layout: star column doesn't break result row layout
+- Mobile layout: inline star doesn't break result row layout
 - Background notifications: switch tab, wait for start/finish events
 - Persistence: page refresh, favorites remain
 - BR race: favorite athlete, receive notifications from both runs
