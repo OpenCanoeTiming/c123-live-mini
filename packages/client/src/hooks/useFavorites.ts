@@ -97,6 +97,12 @@ export function useFavorites(
         const favorites = exists
           ? prev.favorites.filter((f) => !(f.bib === bib && f.classId === classId))
           : [...prev.favorites, { bib, classId }];
+
+        // Request notification permission on first favorite add (must be in user gesture)
+        if (!exists && typeof Notification !== 'undefined' && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+
         return { ...prev, favorites };
       });
     },
@@ -125,17 +131,8 @@ export function useFavorites(
 
   const lastNotified = useRef<Map<string, number>>(new Map());
 
-  const permissionRequested = useRef(false);
-
   const sendNotification = useCallback((title: string, body: string, tag: string) => {
     if (typeof Notification === 'undefined') return;
-
-    // Auto-request permission on first notification attempt
-    if (Notification.permission === 'default' && !permissionRequested.current) {
-      permissionRequested.current = true;
-      Notification.requestPermission();
-      return;
-    }
     if (Notification.permission !== 'granted') return;
 
     const now = Date.now();
