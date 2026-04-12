@@ -18,7 +18,10 @@ interface OnCoursePanelProps {
 }
 
 export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps) {
-  if (oncourse.length === 0) {
+  // Only show competitors that have actually started (#139)
+  const started = oncourse.filter((e) => e.dtStart !== null);
+
+  if (started.length === 0) {
     return null;
   }
 
@@ -27,7 +30,7 @@ export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps
       <div className={styles.header}>
         <span className={styles.label}>Na trati</span>
         <LiveIndicator variant="live" size="sm" energyGlow />
-        <Badge variant="default" size="sm">{oncourse.length}</Badge>
+        <Badge variant="default" size="sm">{started.length}</Badge>
         <span className={styles.spacer} />
         <button
           className={styles.toggleButton}
@@ -41,7 +44,7 @@ export function OnCoursePanel({ oncourse, isOpen, onToggle }: OnCoursePanelProps
 
       {isOpen && (
         <div className={styles.panelContent}>
-          {oncourse.map((entry) => (
+          {started.map((entry) => (
             <div key={`${entry.raceId}-${entry.bib}`} className={styles.entry}>
               {/* Line 1: bib, name (club) ... time +pen = total #rank */}
               <div className={styles.mainRow}>
