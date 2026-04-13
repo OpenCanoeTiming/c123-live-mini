@@ -22,7 +22,7 @@ export interface CombinedBrResult {
   prevPen: number | null;
   prevTotal: number | null;
   prevRnk: number | null;
-  // Gate data from the better run (populated when detailed=true is requested)
+  // Gate data — same convention as times: primary=BR2, prev=BR1 (chronological)
   dtStart?: string | null;
   dtFinish?: string | null;
   gates?: PublicGate[] | null;
@@ -129,19 +129,17 @@ export class BrCombinedService {
         prevRnk: hasBothRuns ? (br1!.rnk ?? null) : null,
       };
 
-      // Attach gate data from the better run when requested
+      // Attach gate data — same chronological convention as times: primary=BR2, prev=BR1
       if (includeGates) {
-        // betterRunNr tells us which run had the best time; fall back to whatever run exists
-        const betterRun = betterRunNr === 2 ? br2 : (betterRunNr === 1 ? br1 : (br2 ?? br1));
-        entry.dtStart = betterRun?.dt_start ?? null;
-        entry.dtFinish = betterRun?.dt_finish ?? null;
-        entry.gates = parseGates(betterRun?.gates);
+        const run2 = hasBothRuns ? br2 : (br1 ?? null);
+        entry.dtStart = run2?.dt_start ?? null;
+        entry.dtFinish = run2?.dt_finish ?? null;
+        entry.gates = parseGates(run2?.gates);
 
-        // Attach gate data from the non-better (previous) run
-        const prevRun = betterRunNr === 2 ? br1 : (betterRunNr === 1 ? br2 : null);
-        entry.prevDtStart = prevRun?.dt_start ?? null;
-        entry.prevDtFinish = prevRun?.dt_finish ?? null;
-        entry.prevGates = parseGates(prevRun?.gates);
+        const run1 = hasBothRuns ? br1 : null;
+        entry.prevDtStart = run1?.dt_start ?? null;
+        entry.prevDtFinish = run1?.dt_finish ?? null;
+        entry.prevGates = parseGates(run1?.gates);
       }
 
       results.push(entry);
