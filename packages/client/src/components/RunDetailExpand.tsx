@@ -107,16 +107,16 @@ export function RunDetailExpand({ detail, isLoading, isBestRun, athleteName, bet
   }
 
   // BR race — always show two run blocks
+  // Server convention: detail.* = run 2 (latest), detail.prev* = run 1 (first)
+  // betterRunNr indicates which run number was better
   if (isBestRun) {
-    const betterRun = { time: detail.time, pen: detail.pen, total: detail.total, gates: detail.gates };
-    const worseRun = {
+    const run1 = {
       time: detail.prevTime ?? null,
       pen: detail.prevPen ?? null,
       total: detail.prevTotal ?? null,
       gates: detail.prevGates ?? null,
     };
-    const run1 = betterRunNr === 1 ? betterRun : worseRun;
-    const run2 = betterRunNr === 2 ? betterRun : worseRun;
+    const run2 = { time: detail.time, pen: detail.pen, total: detail.total, gates: detail.gates };
 
     const run1HasData = run1.total != null;
     const run2HasData = run2.total != null;
