@@ -22,6 +22,7 @@ interface Column {
   width?: string;
   hideOnMobile?: boolean;
   mobileOnly?: boolean;
+  cellClassName?: string;
   render: (row: ResultEntry, index: number) => React.ReactNode;
 }
 
@@ -79,6 +80,7 @@ function buildStandardColumns(
       key: 'name',
       header: 'Jméno',
       width: '100%',
+      cellClassName: styles.nameCol,
       render: (row) => <NameCell row={row} favorites={favorites} />,
     },
   ];
@@ -180,6 +182,7 @@ function buildBestRunColumns(
       key: 'name',
       header: 'Jméno',
       width: '100%',
+      cellClassName: styles.nameCol,
       render: (row) => <NameCell row={row} favorites={favorites} />,
     },
     {
@@ -416,7 +419,7 @@ export function ResultList({
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`${styles.headerCell} ${getAlignClass(col.align)} ${col.hideOnMobile ? styles.hideOnMobile : ''} ${col.mobileOnly ? styles.mobileOnly : ''}`}
+                  className={`${styles.headerCell} ${getAlignClass(col.align)} ${col.hideOnMobile ? styles.hideOnMobile : ''} ${col.mobileOnly ? styles.mobileOnly : ''} ${col.cellClassName ?? ''}`}
                   style={col.width ? { width: col.width } : undefined}
                 >
                   {col.header}
@@ -456,7 +459,7 @@ export function ResultList({
                     {columns.map((col) => (
                       <td
                         key={col.key}
-                        className={`${styles.cell} ${getAlignClass(col.align)} ${col.hideOnMobile ? styles.hideOnMobile : ''} ${col.mobileOnly ? styles.mobileOnly : ''}`}
+                        className={`${styles.cell} ${getAlignClass(col.align)} ${col.hideOnMobile ? styles.hideOnMobile : ''} ${col.mobileOnly ? styles.mobileOnly : ''} ${col.cellClassName ?? ''}`}
                       >
                         {col.render(row, index)}
                       </td>

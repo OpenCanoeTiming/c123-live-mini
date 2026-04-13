@@ -229,6 +229,13 @@
 
 /* --- Typography --- */
 
+/* Applied to <td>/<th> — forces table cell to shrink instead of expanding
+   to fit content. Required for text-overflow: ellipsis without table-layout: fixed. */
+.nameCol {
+  max-width: 0;
+  overflow: hidden;
+}
+
 .nameCell {
   min-width: 0;
   overflow: hidden;
