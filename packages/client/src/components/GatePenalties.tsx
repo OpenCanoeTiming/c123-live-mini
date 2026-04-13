@@ -2,7 +2,8 @@
  * GatePenalties Component
  *
  * Displays gate-by-gate penalty visualization using compact badges.
- * Each gate shows: number, type (normal/reverse), and penalty status (clean/touch/miss).
+ * Each gate shows: number and penalty status (clean/touch/miss).
+ * Reverse gates are styled with italic number + superscript ↑ arrow.
  *
  * Visual coding:
  * - Green: 0 (clean gate)
@@ -19,22 +20,21 @@ interface GatePenaltiesProps {
   gates: PublicGate[];
 }
 
-/**
- * Determine badge variant based on penalty value
- */
 function getPenaltyVariant(penalty: number | null): 'success' | 'warning' | 'error' | 'default' {
-  if (penalty === null) return 'default'; // Not yet passed
-  if (penalty === 0) return 'success'; // Clean
-  if (penalty === 2) return 'warning'; // Touch
-  return 'error'; // Missed (50)
+  if (penalty === null) return 'default';
+  if (penalty === 0) return 'success';
+  if (penalty === 2) return 'warning';
+  return 'error';
 }
 
-/**
- * Format gate label with number and type indicator
- */
-function getGateLabel(gate: PublicGate): string {
-  const typeIndicator = gate.type === 'reverse' ? 'R' : '';
-  return `${gate.number}${typeIndicator}`;
+function GateLabel({ gate }: { gate: PublicGate }) {
+  const isReverse = gate.type === 'reverse';
+  return (
+    <span className={isReverse ? styles.reverseGate : undefined}>
+      {gate.number}
+      {isReverse && <span className={styles.reverseArrow}>↑</span>}
+    </span>
+  );
 }
 
 export function GatePenalties({ gates }: GatePenaltiesProps) {
@@ -51,7 +51,7 @@ export function GatePenalties({ gates }: GatePenaltiesProps) {
           size="sm"
           title={`Gate ${gate.number} (${gate.type}): ${gate.penalty === null ? 'Not passed' : gate.penalty === 0 ? 'Clean' : `+${gate.penalty}s`}`}
         >
-          {getGateLabel(gate)}
+          <GateLabel gate={gate} />
         </Badge>
       ))}
     </div>

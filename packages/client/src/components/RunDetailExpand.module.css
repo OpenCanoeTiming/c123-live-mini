@@ -1,6 +1,6 @@
 /**
  * RunDetailExpand styles
- * Clean detail panel with clear visual hierarchy.
+ * Clean detail panel with unified time breakdown layout.
  */
 
 .container {
@@ -16,25 +16,27 @@
   margin-bottom: 0.5rem;
 }
 
-.runLabel {
-  font-weight: 400;
+.noData {
+  font-size: var(--csk-font-size-sm, 0.875rem);
   color: var(--csk-color-text-tertiary, #9ca3af);
+  font-style: italic;
 }
 
-.timestamps {
+/* --- Time breakdown row --- */
+.timeBreakdown {
   display: flex;
   flex-wrap: wrap;
   gap: 1rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
-.timestampItem {
+.timeItem {
   display: flex;
   flex-direction: column;
   gap: 0.125rem;
 }
 
-.timestampLabel {
+.timeLabel {
   font-size: var(--csk-font-size-xs, 0.75rem);
   color: var(--csk-color-text-tertiary, #9ca3af);
   text-transform: uppercase;
@@ -42,29 +44,15 @@
   font-weight: 500;
 }
 
-.timestampValue {
+.timeValue {
   font-family: var(--csk-font-mono, monospace);
   font-size: var(--csk-font-size-sm, 0.875rem);
   color: var(--csk-color-text-primary, #111827);
 }
 
+/* --- Gate badges --- */
 .gatesSection {
   margin-top: 0.25rem;
-}
-
-.gatesLabel {
-  font-size: var(--csk-font-size-xs, 0.75rem);
-  color: var(--csk-color-text-tertiary, #9ca3af);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  font-weight: 500;
-  margin-bottom: 0.375rem;
-}
-
-.noData {
-  font-size: var(--csk-font-size-sm, 0.875rem);
-  color: var(--csk-color-text-tertiary, #9ca3af);
-  font-style: italic;
 }
 
 /* --- BR two-run layout --- */
@@ -90,6 +78,10 @@
 .runSectionBetter {
   border-color: var(--csk-color-primary, #2563eb);
   background: rgba(37, 99, 235, 0.04);
+}
+
+.runSectionPlaceholder {
+  opacity: 0.5;
 }
 
 .runSectionLabel {

@@ -8,3 +8,13 @@
   flex-wrap: wrap;
   gap: 0.25rem;
 }
+
+.reverseGate {
+  font-style: italic;
+}
+
+.reverseArrow {
+  font-size: 0.65em;
+  vertical-align: super;
+  line-height: 1;
+}

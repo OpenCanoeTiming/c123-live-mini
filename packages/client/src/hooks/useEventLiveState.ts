@@ -37,13 +37,14 @@ import type {
  * Detailed run data for expanded rows
  */
 export interface RunDetailData {
-  dtStart: string | null;
-  dtFinish: string | null;
-  courseGateCount: number | null;
+  time: number | null;
+  pen: number | null;
+  total: number | null;
   gates: PublicResultDetailed['gates'];
-  // Previous run detail (for BR races)
-  prevDtStart?: string | null;
-  prevDtFinish?: string | null;
+  // Previous run data (for BR races)
+  prevTime?: number | null;
+  prevPen?: number | null;
+  prevTotal?: number | null;
   prevGates?: PublicResultDetailed['gates'];
 }
 
