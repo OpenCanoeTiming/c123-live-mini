@@ -229,15 +229,44 @@
 
 /* --- Typography --- */
 
+.nameCell {
+  min-width: 0;
+  overflow: hidden;
+}
+
 .athleteName {
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
   font-weight: 500;
   color: var(--csk-color-text-primary, #111827);
+  min-width: 0;
+}
+
+.athleteNameText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .athleteClub {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   font-size: var(--csk-font-size-xs, 0.75rem);
   color: var(--csk-color-text-tertiary, #9ca3af);
   margin-top: 0.0625rem;
+  /* Indent to align under name text: bibBadge + starBtn + gaps */
+  padding-left: calc(1.5rem + 0.3rem + 0.375rem + 28px + 0.125rem);
+  min-width: 0;
+}
+
+.athleteClubText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .monoText {
@@ -284,15 +313,15 @@
   color: var(--csk-color-text-secondary, #6b7280);
   vertical-align: middle;
   line-height: 1.4;
+  flex-shrink: 0;
 }
 
 /* --- Category tag after name --- */
 .catTag {
-  margin-left: 0.375rem;
   font-size: 0.625rem;
   font-weight: 500;
   color: var(--csk-color-text-tertiary, #9ca3af);
-  vertical-align: middle;
+  flex-shrink: 0;
 }
 
 /* --- Mobile-only BR runs stacked --- */
