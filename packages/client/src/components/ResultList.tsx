@@ -339,15 +339,6 @@ export function ResultList({
     ? new Set(results.map((r) => `${race.raceId}-${r.bib}`))
     : expandedRows;
 
-  if (results.length === 0) {
-    return (
-      <EmptyState
-        title="Zatím žádné výsledky"
-        description="Výsledky se zobrazí po zahájení závodu."
-      />
-    );
-  }
-
   const sorted = [...results].sort((a, b) => {
     if (a.status && !b.status) return 1;
     if (!a.status && b.status) return -1;
@@ -363,6 +354,15 @@ export function ResultList({
     : buildStandardColumns(selectedCatId ?? null, favoritesParam);
 
   const hasToolbar = onViewModeChange || showRoundTabs || onSearchChange || categories.length > 0 || onToggleShowFavorites;
+
+  if (sorted.length === 0 && !hasToolbar) {
+    return (
+      <EmptyState
+        title="Zatím žádné výsledky"
+        description="Výsledky se zobrazí po zahájení závodu."
+      />
+    );
+  }
 
   return (
     <div className={styles.tableWrapper}>
@@ -425,7 +425,16 @@ export function ResultList({
             </tr>
           </thead>
           <tbody>
-            {sorted.map((row, index) => {
+            {sorted.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length + (onToggleExpand ? 1 : 0)}>
+                  <EmptyState
+                    title="Žádné výsledky"
+                    description="Zkuste upravit hledání nebo filtry."
+                  />
+                </td>
+              </tr>
+            ) : sorted.map((row, index) => {
               const rowKey = `${race.raceId}-${row.bib}`;
               const isExpanded = effectiveExpandedRows.has(rowKey);
               const isLoading = detailedLoading.has(rowKey);
@@ -470,6 +479,7 @@ export function ResultList({
               );
             })}
           </tbody>
+
         </table>
     </div>
   );
