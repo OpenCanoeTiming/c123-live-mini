@@ -76,3 +76,5 @@ npm `overrides` at the root forces every `vite` in the dependency tree — inclu
 **Attempted:** Original code assumed `detail.*` = better run, `detail.prev*` = worse run, then remapped by `betterRunNr`.
 **Solution:** Server convention is `detail.*` = run 2 (latest), `detail.prev*` = run 1 (first), always. `betterRunNr` only indicates which run number is better. Confirmed by checking `BrRunsCell` in ResultList which uses `row.prevTotal` for run 1, `row.total` for run 2.
 **Lesson:** Don't assume "primary" = "better". Check how existing table code maps the same data — `BrRunsCell` was the reference implementation.
+
+**Follow-up:** The server actually uses TWO conventions in the same response object. Time fields (`time/prevTime`) are chronological (run 2 / run 1). Gate fields (`gates/prevGates`) are by quality (better run / worse run). See `BrCombinedService.ts:107-144`. Client must split and recombine to get correct data per run block.
