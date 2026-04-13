@@ -107,16 +107,25 @@ export function RunDetailExpand({ detail, isLoading, isBestRun, athleteName, bet
   }
 
   // BR race — always show two run blocks
-  // Server convention: detail.* = run 2 (latest), detail.prev* = run 1 (first)
-  // betterRunNr indicates which run number was better
+  // Server has TWO conventions in the same object:
+  //   Time fields: detail.time = run 2 (chronological), detail.prevTime = run 1
+  //   Gate fields: detail.gates = better run (by betterRunNr), detail.prevGates = worse run
+  // We must split and recombine to get correct run1/run2 objects.
   if (isBestRun) {
+    // Gates: mapped by betterRunNr
+    const betterGates = detail.gates ?? null;
+    const worseGates = detail.prevGates ?? null;
+    const run1Gates = betterRunNr === 1 ? betterGates : worseGates;
+    const run2Gates = betterRunNr === 2 ? betterGates : worseGates;
+
+    // Times: always chronological (prev* = run 1, detail.* = run 2)
     const run1 = {
       time: detail.prevTime ?? null,
       pen: detail.prevPen ?? null,
       total: detail.prevTotal ?? null,
-      gates: detail.prevGates ?? null,
+      gates: run1Gates,
     };
-    const run2 = { time: detail.time, pen: detail.pen, total: detail.total, gates: detail.gates };
+    const run2 = { time: detail.time, pen: detail.pen, total: detail.total, gates: run2Gates };
 
     const run1HasData = run1.total != null;
     const run2HasData = run2.total != null;
