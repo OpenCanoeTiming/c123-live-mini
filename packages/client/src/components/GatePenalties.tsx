@@ -3,7 +3,7 @@
  *
  * Displays gate-by-gate penalty visualization using compact badges.
  * Each gate shows: number and penalty status (clean/touch/miss).
- * Reverse gates are styled with italic number + superscript ↑ arrow.
+ * Reverse gates are styled with italic + underlined number.
  *
  * Visual coding:
  * - Green: 0 (clean gate)
@@ -32,7 +32,6 @@ function GateLabel({ gate }: { gate: PublicGate }) {
   return (
     <span className={isReverse ? styles.reverseGate : undefined}>
       {gate.number}
-      {isReverse && <span className={styles.reverseArrow}>↑</span>}
     </span>
   );
 }
