@@ -237,32 +237,23 @@
 }
 
 .nameCell {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.25rem;
   min-width: 0;
 }
 
-/* Left block: bib badge + star button */
-.namePrefix {
+.athleteName {
   display: flex;
   align-items: center;
   gap: 0.125rem;
-  flex-shrink: 0;
-}
-
-/* Right block: name + club, fills remaining space */
-.nameContent {
-  flex: 1;
+  font-weight: 500;
+  color: var(--csk-color-text-primary, #111827);
   min-width: 0;
 }
 
 .athleteNameText {
-  font-weight: 500;
-  color: var(--csk-color-text-primary, #111827);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .athleteClub {
@@ -272,6 +263,9 @@
   font-size: var(--csk-font-size-xs, 0.75rem);
   color: var(--csk-color-text-tertiary, #9ca3af);
   margin-top: 0.0625rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   min-width: 0;
 }
 
@@ -317,7 +311,6 @@
   justify-content: center;
   min-width: 1.5rem;
   padding: 0.0625rem 0.3rem;
-  margin-right: 0.375rem;
   border-radius: 3px;
   background: var(--csk-color-bg-secondary, #f3f4f6);
   border: 1px solid var(--csk-color-border-secondary, #e5e7eb);

@@ -40,24 +40,22 @@ function NameCell({
 }) {
   return (
     <div className={styles.nameCell}>
-      <div className={styles.namePrefix}>
-        <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
+      <div className={styles.athleteName}>
         {favorites && row.bib != null && favorites.classId && (
           <StarButton
             active={favorites.isFavorite(row.bib, favorites.classId)}
             onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
           />
         )}
+        <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
+        <span className={styles.athleteNameText}>{row.name}</span>
       </div>
-      <div className={styles.nameContent}>
-        <div className={styles.athleteNameText}>{row.name}</div>
-        {(row.club || row.catId) && (
-          <div className={styles.athleteClub}>
-            {row.catId && <span className={styles.catTag}>{row.catId}</span>}
-            {row.club && <span className={styles.athleteClubText}>{row.club}</span>}
-          </div>
-        )}
-      </div>
+      {(row.club || row.catId) && (
+        <div className={styles.athleteClub}>
+          {row.catId && <span className={styles.catTag}>{row.catId}</span>}
+          {row.club && <span className={styles.athleteClubText}>{row.club}</span>}
+        </div>
+      )}
     </div>
   );
 }
