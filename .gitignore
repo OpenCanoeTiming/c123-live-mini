@@ -48,3 +48,4 @@ _logs/
 .claude/settings.json
 .claude/credentials.json
 .claude/settings.local.json
+.superpowers/
