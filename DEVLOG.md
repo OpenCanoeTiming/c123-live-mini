@@ -69,3 +69,10 @@ npm `overrides` at the root forces every `vite` in the dependency tree — inclu
 5. **npm#4828 is still a landmine in this project.** The `overrides` fix removes the one package that tripped it, not the bug itself. Any future transitive dep with platform-specific optional native bindings (sharp, bcrypt, canvas, …) can reproduce the same class of failure. Regression guard added to CI: fail if `node_modules/rolldown/` re-appears after install or if `npm ls vite` reports more than one resolved version.
 6. **`engines.node` is an npm install check, not a Nixpacks resolver directive.** Pinning it does not force Nixpacks to use that version — Nixpacks picks Node from its Nix channel regardless. For Nixpacks, use `NIXPACKS_NODE_VERSION` env var or a `nixpacks.toml` config, and know that it still picks from the cached channel.
 7. **Second opinions paid off.** The external review pointed out the diagnostic playbook (`npm ls` first) and flagged that `NPM_CONFIG_INCLUDE=optional` not helping was a separate unanswered question — worth investigating if we see npm#4828 again.
+
+## 2026-04-13 — BR run detail mapping: detail.* = run 2, not better run (#143)
+
+**Problem:** Run detail panel showed swapped time/penalty for BR races (e.g. Novák Matyáš had 1st run showing 2nd run data).
+**Attempted:** Original code assumed `detail.*` = better run, `detail.prev*` = worse run, then remapped by `betterRunNr`.
+**Solution:** Server convention is `detail.*` = run 2 (latest), `detail.prev*` = run 1 (first), always. `betterRunNr` only indicates which run number is better. Confirmed by checking `BrRunsCell` in ResultList which uses `row.prevTotal` for run 1, `row.total` for run 2.
+**Lesson:** Don't assume "primary" = "better". Check how existing table code maps the same data — `BrRunsCell` was the reference implementation.
