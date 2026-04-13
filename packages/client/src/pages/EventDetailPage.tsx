@@ -55,6 +55,16 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const races = liveState.races;
   const categories = liveState.categories;
 
+  // Set browser tab title to event name
+  useEffect(() => {
+    if (eventDetail) {
+      document.title = `${eventDetail.mainTitle} — ${import.meta.env.VITE_APP_NAME || 'ČSK Live'}`;
+    }
+    return () => {
+      document.title = import.meta.env.VITE_APP_NAME || 'ČSK Live';
+    };
+  }, [eventDetail?.mainTitle]);
+
   const [classGroups, setClassGroups] = useState<ClassGroup[]>([]);
   const [eventState, setEventState] = useState<LoadingState>('idle');
   const [eventError, setEventError] = useState<string | null>(null);
