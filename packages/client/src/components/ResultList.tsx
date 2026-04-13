@@ -25,6 +25,40 @@ interface Column {
   render: (row: ResultEntry, index: number) => React.ReactNode;
 }
 
+/** Name cell with [bib] ☆ Name / [cat] Club layout */
+function NameCell({
+  row,
+  favorites,
+}: {
+  row: ResultEntry;
+  favorites?: {
+    isFavorite: (bib: number, classId: string) => boolean;
+    onToggle: (bib: number, classId: string) => void;
+    classId: string | null;
+  };
+}) {
+  return (
+    <div className={styles.nameCell}>
+      <div className={styles.athleteName}>
+        <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
+        {favorites && row.bib != null && favorites.classId && (
+          <StarButton
+            active={favorites.isFavorite(row.bib, favorites.classId)}
+            onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
+          />
+        )}
+        <span className={styles.athleteNameText}>{row.name}</span>
+      </div>
+      {(row.club || row.catId) && (
+        <div className={styles.athleteClub}>
+          {row.catId && <span className={styles.catTag}>{row.catId}</span>}
+          {row.club && <span className={styles.athleteClubText}>{row.club}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function buildStandardColumns(
   selectedCatId: string | null,
   favorites?: { isFavorite: (bib: number, classId: string) => boolean; onToggle: (bib: number, classId: string) => void; classId: string | null },
@@ -45,22 +79,7 @@ function buildStandardColumns(
       key: 'name',
       header: 'Jméno',
       width: '100%',
-      render: (row) => (
-        <div>
-          <div className={styles.athleteName}>
-            <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
-            {row.name}
-            {favorites && row.bib != null && favorites.classId && (
-              <StarButton
-                active={favorites.isFavorite(row.bib, favorites.classId)}
-                onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
-              />
-            )}
-            {row.catId && <span className={styles.catTag}>{row.catId}</span>}
-          </div>
-          {row.club && <div className={styles.athleteClub}>{row.club}</div>}
-        </div>
-      ),
+      render: (row) => <NameCell row={row} favorites={favorites} />,
     },
   ];
   cols.push(
@@ -161,22 +180,7 @@ function buildBestRunColumns(
       key: 'name',
       header: 'Jméno',
       width: '100%',
-      render: (row) => (
-        <div>
-          <div className={styles.athleteName}>
-            <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
-            {row.name}
-            {favorites && row.bib != null && favorites.classId && (
-              <StarButton
-                active={favorites.isFavorite(row.bib, favorites.classId)}
-                onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
-              />
-            )}
-            {row.catId && <span className={styles.catTag}>{row.catId}</span>}
-          </div>
-          {row.club && <div className={styles.athleteClub}>{row.club}</div>}
-        </div>
-      ),
+      render: (row) => <NameCell row={row} favorites={favorites} />,
     },
     {
       key: 'brRuns',
