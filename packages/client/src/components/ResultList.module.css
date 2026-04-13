@@ -257,9 +257,6 @@
 }
 
 .athleteClub {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
   font-size: var(--csk-font-size-xs, 0.75rem);
   color: var(--csk-color-text-tertiary, #9ca3af);
   margin-top: 0.0625rem;
@@ -267,6 +264,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+}
+
+/* On desktop, indent club under the name (past star + bib + gaps) */
+@media (min-width: 641px) {
+  .athleteClub {
+    /* star(20px) + gap(0.25rem) + bibBadge + gap(0.25rem) */
+    margin-left: calc(20px + 0.25rem);
+  }
 }
 
 .athleteClubText {

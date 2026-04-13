@@ -49,11 +49,11 @@ function NameCell({
         )}
         <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
         <span className={styles.athleteNameText}>{row.name}</span>
+        {row.catId && <span className={styles.catTag}>{row.catId}</span>}
       </div>
-      {(row.club || row.catId) && (
+      {row.club && (
         <div className={styles.athleteClub}>
-          {row.catId && <span className={styles.catTag}>{row.catId}</span>}
-          {row.club && <span className={styles.athleteClubText}>{row.club}</span>}
+          <span className={styles.athleteClubText}>{row.club}</span>
         </div>
       )}
     </div>
