@@ -118,8 +118,8 @@ export function RunDetailExpand({ detail, isLoading, isBestRun, athleteName, bet
     const run1 = betterRunNr === 1 ? betterRun : worseRun;
     const run2 = betterRunNr === 2 ? betterRun : worseRun;
 
-    const run1HasData = run1.gates != null;
-    const run2HasData = run2.gates != null;
+    const run1HasData = run1.total != null;
+    const run2HasData = run2.total != null;
 
     return (
       <div className={styles.container}>
