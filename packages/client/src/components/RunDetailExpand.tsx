@@ -25,19 +25,16 @@ function TimeBreakdown({ time, pen, total }: {
   pen: number | null;
   total: number | null;
 }) {
-  const penDisplay = formatPenalty(pen);
   return (
     <div className={styles.timeBreakdown}>
       <div className={styles.timeItem}>
         <span className={styles.timeLabel}>Čas</span>
         <span className={styles.timeValue}>{formatTime(time)}</span>
       </div>
-      {penDisplay && (
-        <div className={styles.timeItem}>
-          <span className={styles.timeLabel}>Pen</span>
-          <span className={styles.timeValue}>{penDisplay}</span>
-        </div>
-      )}
+      <div className={styles.timeItem}>
+        <span className={styles.timeLabel}>Pen</span>
+        <span className={styles.timeValue}>{pen != null ? String(pen / 100) : '-'}</span>
+      </div>
       <div className={styles.timeItem}>
         <span className={styles.timeLabel}>Celkem</span>
         <span className={styles.timeValue}>{formatTime(total)}</span>
