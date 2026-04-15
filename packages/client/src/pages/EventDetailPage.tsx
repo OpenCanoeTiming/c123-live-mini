@@ -448,7 +448,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         setCurrentRaceInfo(resultsData.race);
         setStartlist(startlistData.length > 0 ? startlistData : null);
 
-        if (resultsData.results.length > 0) {
+        if (resultsData.results.length > 0 && eventDetail?.status !== 'startlist') {
           setDataView('results');
         } else if (startlistData.length > 0) {
           setDataView('startlist');
@@ -661,11 +661,11 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const hasStartlist = startlist && startlist.length > 0;
   const dataViewTabs: TabItem[] = useMemo(() => {
     const tabs: TabItem[] = [];
-    if (hasResults) tabs.push({ id: 'results', label: 'Výsledky', content: null });
+    if (hasResults && eventDetail?.status !== 'startlist') tabs.push({ id: 'results', label: 'Výsledky', content: null });
     if (hasStartlist) tabs.push({ id: 'startlist', label: 'Startovka', content: null });
     tabs.push({ id: 'schedule', label: 'Program', content: null });
     return tabs;
-  }, [hasResults, hasStartlist]);
+  }, [hasResults, hasStartlist, eventDetail?.status]);
 
   // Search results count for startlist search input
   const searchResultsCount = useMemo(() => {
