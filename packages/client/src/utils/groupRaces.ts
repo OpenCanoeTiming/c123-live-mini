@@ -7,7 +7,7 @@ import type { RaceInfo } from '../services/api';
 
 export interface DayInfo {
   date: string; // YYYY-MM-DD
-  label: string; // "Den 1 (15.3.)" etc.
+  label: string; // "Pá 18.4." etc.
   raceIds: Set<string>;
 }
 
@@ -34,11 +34,14 @@ export function extractDays(races: RaceInfo[]): DayInfo[] {
   if (dayMap.size <= 1) return [];
 
   const sorted = [...dayMap.entries()].sort(([a], [b]) => a.localeCompare(b));
-  return sorted.map(([date, raceIds], i) => {
+  const dayNames = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
+  return sorted.map(([date, raceIds]) => {
+    const d = new Date(date + 'T12:00:00');
+    const dayName = dayNames[d.getDay()];
     const [, m, day] = date.split('-');
     return {
       date,
-      label: `Den ${i + 1} (${parseInt(day)}.${parseInt(m)}.)`,
+      label: `${dayName} ${parseInt(day)}.${parseInt(m)}.`,
       raceIds,
     };
   });
