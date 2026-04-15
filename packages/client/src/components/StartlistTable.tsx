@@ -14,6 +14,22 @@ function formatStartTime(isoString: string | null | undefined): string {
   return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
 }
 
+/** Stacked cell showing both BR start times */
+function BrStartTimesCell({ row }: { row: StartlistDisplayRow }) {
+  return (
+    <div className={styles.brStartStacked}>
+      <div className={styles.brStartLine}>
+        <span className={styles.brStartLabel}>1.</span>
+        <span className={styles.startTime}>{formatStartTime(row.run1StartTime)}</span>
+      </div>
+      <div className={styles.brStartLine}>
+        <span className={styles.brStartLabel}>2.</span>
+        <span className={styles.startTime}>{formatStartTime(row.run2StartTime)}</span>
+      </div>
+    </div>
+  );
+}
+
 function buildColumns(
   hasStartTimes: boolean,
   hasBothRuns: boolean,
@@ -22,45 +38,27 @@ function buildColumns(
   const cols: ColumnDef<StartlistDisplayRow>[] = [
     {
       key: 'startOrder',
-      header: 'Pořadí',
-      width: '60px',
+      header: 'Poř.',
+      width: '44px',
       align: 'center',
       cell: (row, rowIndex) => row.startOrder ?? rowIndex + 1,
     },
     {
       key: 'bib',
       header: 'St.č.',
-      width: '60px',
+      width: '48px',
       align: 'center',
       cell: (row) => <span className={styles.bibBadge}>{row.bib ?? '-'}</span>,
     },
   ];
 
   if (hasBothRuns) {
-    cols.push(
-      {
-        key: 'run1StartTime',
-        header: 'B1',
-        width: '55px',
-        align: 'center',
-        cell: (row) => (
-          <span className={styles.startTime}>
-            {formatStartTime(row.run1StartTime)}
-          </span>
-        ),
-      },
-      {
-        key: 'run2StartTime',
-        header: 'B2',
-        width: '55px',
-        align: 'center',
-        cell: (row) => (
-          <span className={styles.startTime}>
-            {formatStartTime(row.run2StartTime)}
-          </span>
-        ),
-      }
-    );
+    cols.push({
+      key: 'startTimes',
+      header: 'Start',
+      width: '70px',
+      cell: (row) => <BrStartTimesCell row={row} />,
+    });
   } else if (hasStartTimes) {
     cols.push({
       key: 'startTime',
@@ -77,7 +75,7 @@ function buildColumns(
       key: 'name',
       header: 'Jméno',
       cell: (row) => (
-        <div>
+        <div className={styles.nameCell}>
           <div className={styles.athleteName}>
             {row.name}
             {favorites && row.bib != null && favorites.classId && (

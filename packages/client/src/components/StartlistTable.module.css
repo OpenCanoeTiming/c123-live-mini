@@ -3,15 +3,48 @@
  * Aligned visually with ResultList (blue header border, consistent typography).
  */
 
+.nameCell {
+  min-width: 0;
+  overflow: hidden;
+}
+
 .athleteName {
   font-weight: 500;
   color: var(--csk-color-text-primary, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 .athleteClub {
   font-size: var(--csk-font-size-xs, 0.75rem);
   color: var(--csk-color-text-tertiary, #9ca3af);
   margin-top: 0.0625rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* --- BR start times stacked --- */
+.brStartStacked {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.brStartLine {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+  white-space: nowrap;
+}
+
+.brStartLabel {
+  color: var(--csk-color-text-tertiary, #9ca3af);
+  font-size: 0.6875rem;
+  min-width: 1rem;
 }
 
 .startTime {
