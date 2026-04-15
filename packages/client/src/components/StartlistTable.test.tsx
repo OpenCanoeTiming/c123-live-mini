@@ -37,7 +37,7 @@ describe('StartlistTable', () => {
     expect(screen.queryByText('B2')).toBeNull();
   });
 
-  it('renders B1 / B2 columns when rows include both run times', () => {
+  it('renders stacked start times with "1." / "2." labels for BR rows', () => {
     render(
       <StartlistTable
         entries={[
@@ -52,9 +52,11 @@ describe('StartlistTable', () => {
         ]}
       />
     );
-    expect(screen.getByText('B1')).toBeTruthy();
-    expect(screen.getByText('B2')).toBeTruthy();
-    expect(screen.queryByText('Start')).toBeNull();
+    // Single "Start" header for stacked column
+    expect(screen.getByText('Start')).toBeTruthy();
+    // Run labels
+    expect(screen.getByText('1.')).toBeTruthy();
+    expect(screen.getByText('2.')).toBeTruthy();
     // Both formatted times present (HH:MM)
     expect(screen.getByText('08:00')).toBeTruthy();
     expect(screen.getByText('10:00')).toBeTruthy();
