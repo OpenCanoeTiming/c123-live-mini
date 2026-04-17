@@ -64,9 +64,15 @@ export class IngestService {
    */
   async ingestXml(xmlString: string, apiKey: string): Promise<IngestResult> {
     const payloadSize = xmlString.length;
+    const t0 = performance.now();
+    const lap = (label: string) => {
+      const ms = (performance.now() - t0).toFixed(0);
+      console.log(`[IngestTiming] ${ms}ms — ${label}`);
+    };
 
     // Parse XML
     const parsed = parseC123Xml(xmlString);
+    lap('parseXml');
 
     // Validate parsed data
     const errors = validateParsedData(parsed);
@@ -79,6 +85,7 @@ export class IngestService {
     if (!event) {
       throw new Error('Event not found for API key');
     }
+    lap('findEvent');
 
     // Note: XML EventId is intentionally NOT checked against event_id.
     // Pairing is done via API key. This allows eventId in live-mini to be
@@ -95,6 +102,7 @@ export class IngestService {
         discipline: parsed.event.discipline,
       });
     }
+    lap('updateEventMeta');
 
     // Import data in correct order
     const result: IngestResult = {
@@ -111,6 +119,7 @@ export class IngestService {
     // 1. Import classes first (needed for participants and races)
     const classIdMap = await this.importClasses(event.id, parsed);
     result.imported.classes = parsed.classes.length;
+    lap(`importClasses (${parsed.classes.length})`);
 
     // 2. Import participants (needs class IDs)
     const participantIdMap = await this.importParticipants(
@@ -119,21 +128,26 @@ export class IngestService {
       classIdMap
     );
     result.imported.participants = parsed.participants.length;
+    lap(`importParticipants (${parsed.participants.length})`);
 
     // 3. Import races (needs class IDs)
     const raceIdMap = await this.importRaces(event.id, parsed, classIdMap);
     result.imported.races = parsed.races.length;
+    lap(`importRaces (${parsed.races.length})`);
 
     // 4. Import courses (needed for gate transformation in results)
     const courseConfigMap = await this.importCourses(event.id, parsed);
     result.imported.courses = parsed.courses.length;
+    lap(`importCourses (${parsed.courses.length})`);
 
     // 5. Normalize time units (auto-detect ms vs cs from XML)
     parsed.results = normalizeTimesToCentiseconds(parsed.results);
+    lap('normalizeTimesToCs');
 
     // 6. Import results (needs race, participant IDs, and course configs)
     await this.importResults(event.id, parsed, raceIdMap, participantIdMap, courseConfigMap);
     result.imported.results = parsed.results.length;
+    lap(`importResults (${parsed.results.length})`);
 
     // 7. Set has_xml_data flag (enables JSON/TCP ingestion)
     await this.eventRepo.setHasXmlData(event.id);
@@ -153,6 +167,8 @@ export class IngestService {
       payloadSize,
       itemsProcessed: totalItems,
     });
+
+    lap(`done (total ${totalItems} items)`);
 
     return result;
   }
