@@ -1,4 +1,4 @@
-import type { Kysely } from 'kysely';
+import type { Kysely, Transaction } from 'kysely';
 import type { Database } from '../db/schema.js';
 import { EventRepository } from '../db/repositories/EventRepository.js';
 import { ClassRepository } from '../db/repositories/ClassRepository.js';
@@ -104,71 +104,84 @@ export class IngestService {
     }
     lap('updateEventMeta');
 
-    // Import data in correct order
-    const result: IngestResult = {
-      eventId: event.id,
-      imported: {
+    // 5. Normalize time units (auto-detect ms vs cs from XML)
+    parsed.results = normalizeTimesToCentiseconds(parsed.results);
+    lap('normalizeTimesToCs');
+
+    // Import all data inside a single SQLite transaction.
+    // Without this, each upsert autocommits (fsync per write) which is
+    // extremely slow on network-mounted volumes (Railway).
+    const result = await this.db.transaction().execute(async (trx) => {
+      // Create transactional repository instances
+      const txEventRepo = new EventRepository(trx as unknown as Kysely<Database>);
+      const txClassRepo = new ClassRepository(trx as unknown as Kysely<Database>);
+      const txParticipantRepo = new ParticipantRepository(trx as unknown as Kysely<Database>);
+      const txRaceRepo = new RaceRepository(trx as unknown as Kysely<Database>);
+      const txResultRepo = new ResultRepository(trx as unknown as Kysely<Database>);
+      const txCourseRepo = new CourseRepository(trx as unknown as Kysely<Database>);
+      const txIngestRecordRepo = new IngestRecordRepository(trx as unknown as Kysely<Database>);
+
+      const imported = {
         participants: 0,
         classes: 0,
         races: 0,
         results: 0,
         courses: 0,
-      },
-    };
+      };
 
-    // 1. Import classes first (needed for participants and races)
-    const classIdMap = await this.importClasses(event.id, parsed);
-    result.imported.classes = parsed.classes.length;
-    lap(`importClasses (${parsed.classes.length})`);
+      // 1. Import classes first (needed for participants and races)
+      const classIdMap = await this.importClasses(event.id, parsed, txClassRepo);
+      imported.classes = parsed.classes.length;
+      lap(`importClasses (${parsed.classes.length})`);
 
-    // 2. Import participants (needs class IDs)
-    const participantIdMap = await this.importParticipants(
-      event.id,
-      parsed,
-      classIdMap
-    );
-    result.imported.participants = parsed.participants.length;
-    lap(`importParticipants (${parsed.participants.length})`);
+      // 2. Import participants (needs class IDs)
+      const participantIdMap = await this.importParticipants(
+        event.id,
+        parsed,
+        classIdMap,
+        txParticipantRepo
+      );
+      imported.participants = parsed.participants.length;
+      lap(`importParticipants (${parsed.participants.length})`);
 
-    // 3. Import races (needs class IDs)
-    const raceIdMap = await this.importRaces(event.id, parsed, classIdMap);
-    result.imported.races = parsed.races.length;
-    lap(`importRaces (${parsed.races.length})`);
+      // 3. Import races (needs class IDs)
+      const raceIdMap = await this.importRaces(event.id, parsed, classIdMap, txRaceRepo);
+      imported.races = parsed.races.length;
+      lap(`importRaces (${parsed.races.length})`);
 
-    // 4. Import courses (needed for gate transformation in results)
-    const courseConfigMap = await this.importCourses(event.id, parsed);
-    result.imported.courses = parsed.courses.length;
-    lap(`importCourses (${parsed.courses.length})`);
+      // 4. Import courses (needed for gate transformation in results)
+      const courseConfigMap = await this.importCourses(event.id, parsed, txCourseRepo);
+      imported.courses = parsed.courses.length;
+      lap(`importCourses (${parsed.courses.length})`);
 
-    // 5. Normalize time units (auto-detect ms vs cs from XML)
-    parsed.results = normalizeTimesToCentiseconds(parsed.results);
-    lap('normalizeTimesToCs');
+      // 6. Import results (needs race, participant IDs, and course configs)
+      await this.importResults(event.id, parsed, raceIdMap, participantIdMap, courseConfigMap, txResultRepo);
+      imported.results = parsed.results.length;
+      lap(`importResults (${parsed.results.length})`);
 
-    // 6. Import results (needs race, participant IDs, and course configs)
-    await this.importResults(event.id, parsed, raceIdMap, participantIdMap, courseConfigMap);
-    result.imported.results = parsed.results.length;
-    lap(`importResults (${parsed.results.length})`);
+      // 7. Set has_xml_data flag (enables JSON/TCP ingestion)
+      await txEventRepo.setHasXmlData(event.id);
 
-    // 7. Set has_xml_data flag (enables JSON/TCP ingestion)
-    await this.eventRepo.setHasXmlData(event.id);
+      // 8. Log successful ingestion
+      const totalItems =
+        imported.classes +
+        imported.participants +
+        imported.races +
+        imported.results +
+        imported.courses;
 
-    // 8. Log successful ingestion
-    const totalItems =
-      result.imported.classes +
-      result.imported.participants +
-      result.imported.races +
-      result.imported.results +
-      result.imported.courses;
+      await txIngestRecordRepo.insert({
+        eventId: event.id,
+        sourceType: 'xml',
+        status: 'success',
+        payloadSize,
+        itemsProcessed: totalItems,
+      });
 
-    await this.ingestRecordRepo.insert({
-      eventId: event.id,
-      sourceType: 'xml',
-      status: 'success',
-      payloadSize,
-      itemsProcessed: totalItems,
+      lap(`done (total ${totalItems} items)`);
+
+      return { eventId: event.id, imported } as IngestResult;
     });
-
-    lap(`done (total ${totalItems} items)`);
 
     return result;
   }
@@ -178,13 +191,14 @@ export class IngestService {
    */
   private async importClasses(
     eventId: number,
-    parsed: ParsedC123Data
+    parsed: ParsedC123Data,
+    classRepo: ClassRepository = this.classRepo
   ): Promise<Map<string, number>> {
     const classIdMap = new Map<string, number>();
 
     for (const cls of parsed.classes) {
       // Upsert class
-      const classDbId = await this.classRepo.upsert(eventId, {
+      const classDbId = await classRepo.upsert(eventId, {
         class_id: cls.classId,
         name: cls.name,
         long_title: cls.longTitle,
@@ -192,10 +206,10 @@ export class IngestService {
       classIdMap.set(cls.classId, classDbId);
 
       // Delete existing categories for this class and re-insert
-      await this.classRepo.deleteCategoriesByClassId(classDbId);
+      await classRepo.deleteCategoriesByClassId(classDbId);
 
       for (const cat of cls.categories) {
-        await this.classRepo.insertCategory(classDbId, {
+        await classRepo.insertCategory(classDbId, {
           cat_id: cat.catId,
           name: cat.name,
           first_year: cat.firstYear,
@@ -213,14 +227,15 @@ export class IngestService {
   private async importParticipants(
     eventId: number,
     parsed: ParsedC123Data,
-    classIdMap: Map<string, number>
+    classIdMap: Map<string, number>,
+    participantRepo: ParticipantRepository = this.participantRepo
   ): Promise<Map<string, number>> {
     const participantIdMap = new Map<string, number>();
 
     for (const p of parsed.participants) {
       const classDbId = classIdMap.get(p.classId) ?? null;
 
-      const participantDbId = await this.participantRepo.upsert(eventId, {
+      const participantDbId = await participantRepo.upsert(eventId, {
         participant_id: p.participantId,
         class_id: classDbId,
         event_bib: p.eventBib,
@@ -247,14 +262,15 @@ export class IngestService {
   private async importRaces(
     eventId: number,
     parsed: ParsedC123Data,
-    classIdMap: Map<string, number>
+    classIdMap: Map<string, number>,
+    raceRepo: RaceRepository = this.raceRepo
   ): Promise<Map<string, number>> {
     const raceIdMap = new Map<string, number>();
 
     for (const race of parsed.races) {
       const classDbId = classIdMap.get(race.classId) ?? null;
 
-      const raceDbId = await this.raceRepo.upsert(eventId, {
+      const raceDbId = await raceRepo.upsert(eventId, {
         race_id: race.raceId,
         class_id: classDbId,
         race_type: mapDisIdToRaceType(race.disId),
@@ -278,7 +294,8 @@ export class IngestService {
     parsed: ParsedC123Data,
     raceIdMap: Map<string, number>,
     participantIdMap: Map<string, number>,
-    courseConfigMap: Map<number, string | null>
+    courseConfigMap: Map<number, string | null>,
+    resultRepo: ResultRepository = this.resultRepo
   ): Promise<void> {
     // Build map from raceId to courseNr for gate transformation
     const raceCourseMap = new Map<string, number | null>();
@@ -306,7 +323,7 @@ export class IngestService {
         gatesJson = gatesToJson(transformedGates);
       }
 
-      await this.resultRepo.upsert(eventId, raceDbId, {
+      await resultRepo.upsert(eventId, raceDbId, {
         participant_id: participantDbId,
         start_order: result.startOrder,
         bib: result.bib,
@@ -343,12 +360,13 @@ export class IngestService {
    */
   private async importCourses(
     eventId: number,
-    parsed: ParsedC123Data
+    parsed: ParsedC123Data,
+    courseRepo: CourseRepository = this.courseRepo
   ): Promise<Map<number, string | null>> {
     const courseConfigMap = new Map<number, string | null>();
 
     for (const course of parsed.courses) {
-      await this.courseRepo.upsert(eventId, {
+      await courseRepo.upsert(eventId, {
         course_nr: course.courseNr,
         nr_gates: course.nrGates,
         gate_config: course.gateConfig,
