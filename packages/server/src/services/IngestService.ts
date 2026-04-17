@@ -67,7 +67,7 @@ export class IngestService {
     const t0 = performance.now();
     const lap = (label: string) => {
       const ms = (performance.now() - t0).toFixed(0);
-      console.log(`[IngestTiming] ${ms}ms — ${label}`);
+      process.stderr.write(`[IngestTiming] ${ms}ms — ${label}\n`);
     };
 
     // Parse XML

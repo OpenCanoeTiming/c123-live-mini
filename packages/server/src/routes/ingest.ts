@@ -134,10 +134,13 @@ export function registerIngestRoutes(
       const apiKey = request.headers['x-api-key'] as string;
 
       try {
-        // MERGE INTEGRATION (Feature #5): IngestService handles XML import and merging
-        // The merge strategy is configurable per event (ARCHITECTURE.md).
-        // Default: XML authoritative for structure, TCP authoritative for results.
+        const t0 = performance.now();
         const result = await ingestService.ingestXml(xml, apiKey);
+        const ingestMs = (performance.now() - t0).toFixed(0);
+        request.log.info(
+          { ingestMs: Number(ingestMs), ...result.imported },
+          `XML ingest completed in ${ingestMs}ms`
+        );
 
         // Broadcast full state to WebSocket clients after XML import
         // DECISION: Use `full` message for XML import (FR-005)
