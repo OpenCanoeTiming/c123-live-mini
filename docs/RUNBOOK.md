@@ -97,7 +97,48 @@ Project-committed `.npmrc` uses `${NODE_AUTH_TOKEN}` variable expansion, so the 
 
 ## Runtime operations
 
-All three paths below work from this box (token already exported in `~/.bashrc`):
+All three paths below work from this box (token already exported in `~/.bashrc`).
+
+### Quick reference: which tool to reach for
+
+| You want to… | Prefer | Fallback |
+|---|---|---|
+| List deployments / read logs / read or set env vars / redeploy | **Railway MCP** (if invoked from Claude Code) | `railway` CLI |
+| One-off script or cron | `railway` CLI | Raw GraphQL curl |
+| Anything not exposed by MCP or CLI (rare) | Raw GraphQL curl | — |
+
+**For Claude Code sessions:** the Railway MCP server is wired up via committed `.mcp.json` (uses `@railway/mcp-server` over stdio, `npx -y`). Reach for MCP tools **first** — they're faster, type-safe, and don't require memorizing project/service/env IDs. Only fall back to `railway` CLI when the MCP tool doesn't exist (e.g. `railway ssh`).
+
+### Railway CLI & MCP setup
+
+Both share one auth state — run **`railway login --browserless`** once per machine. After that:
+
+- `railway status` — confirm linked project/env
+- `railway link` — interactively pick project + env (typically `staging`)
+- `railway environment <name>` — switch the linked env (e.g. to debug production); MCP tools accept `environment` as an arg so you rarely need this
+- `railway whoami` — check auth
+
+Both tools read `~/.config/railway/` for the session. The `RAILWAY_TOKEN` env var in `~/.bashrc` is a **project-scoped token** used by raw GraphQL calls; it is **independent** of `railway login`. Either path works — MCP uses the login session, raw curl uses the token.
+
+### Common MCP tool calls (from Claude Code)
+
+| Tool | What it does | Key args |
+|---|---|---|
+| `mcp__Railway__check-railway-status` | Verify CLI installed + logged in | — |
+| `mcp__Railway__list-services` | List services in linked project | `workspacePath` |
+| `mcp__Railway__list-deployments` | Recent deployments + statuses (SUCCESS/SLEEPING/FAILED/REMOVED) | `workspacePath`, `environment`, `service`, `limit`, `json` |
+| `mcp__Railway__list-variables` | Env vars for an env (values **not** redacted — do not paste output verbatim into chat) | `workspacePath`, `environment`, `service` |
+| `mcp__Railway__set-variables` | Upsert env vars | `workspacePath`, `environment`, `service`, `variables` |
+| `mcp__Railway__get-logs` | Build or deploy logs; supports `filter` and `lines` on CLI ≥ 4.9 | `workspacePath`, `logType` (`build`\|`deploy`), `environment`, `service`, `lines`, `filter`, `json` |
+| `mcp__Railway__deploy` / redeploy | Trigger a deploy | `workspacePath`, `environment`, `service` |
+| `mcp__Railway__list-variables` + `mcp__Railway__set-variables` | Read-modify-write env config without touching dashboard | — |
+
+`workspacePath` is always the project root (`/workspace/timing/c123-live-mini` on the RPi5). `environment` defaults to whatever `railway link` points at — pass it explicitly (`staging` or `production`) for clarity.
+
+**Gotchas:**
+- `list-variables` prints plaintext secrets (`MASTER_PASSWORDS`, `NODE_AUTH_TOKEN`). Do not paste its raw output anywhere public — summarize instead.
+- MCP tools run the underlying `railway` CLI, so CLI version matters (`lines`/`filter` need CLI ≥ 4.9).
+- The `sleepApplication` flag in deployment metadata tells you if Serverless sleep is on; status `SLEEPING` means the container is currently asleep.
 
 ### Fetching runtime logs
 
