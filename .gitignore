@@ -44,8 +44,9 @@ _logs/
 *.sqlite3
 *.db
 
-# Claude Code credentials (keep commands, ignore credentials)
-.claude/settings.json
-.claude/credentials.json
-.claude/settings.local.json
+# Claude Code per-machine state (settings, credentials, scheduled task locks, etc.)
+.claude/
 .superpowers/
+
+# AI-skill design exploration (mockups, screenshots, throwaway scripts)
+docs/superpowers/
