@@ -10,10 +10,10 @@ For deep architecture see [ARCHITECTURE.md](ARCHITECTURE.md). For historical deb
 
 | Environment | Branch watched | URL | Railway env name | Status |
 |---|---|---|---|---|
-| **staging** | `main` | https://c123-live-mini-staging.up.railway.app | `staging` | ✅ live |
+| **staging** | `staging` | https://c123-live-mini-staging.up.railway.app | `staging` | ✅ live |
 | **production** | `production` | https://c123-live-mini.up.railway.app | `production` | ✅ live |
 
-**Auto-deploy flow:** push to `main` → GitHub Actions CI runs `npm ci && npm run build && npm test` → on green, Railway auto-deploys staging. **Production** deploys from the `production` branch — push to `main` does **not** affect production. Promote to production by opening a release PR `main → production` and merging it; Railway then picks up the new commit on `production` and auto-deploys.
+**Auto-deploy flow:** push to `staging` → GitHub Actions CI runs `npm ci && npm run build && npm test` → on green, Railway auto-deploys staging. `main` is the clean PR-merged trunk and does **not** trigger any deploy. Production deploys from the `production` branch only. Standard promotion path: feature branch → PR → `main` → fast-forward to `production` (release PR or direct ff). Use `staging` freely for WIP / experimental deploys; nothing on `staging` is considered authoritative — it can be force-pushed or reset at any time.
 
 Railway has **Wait for CI = ON** on both environments, so a failed CI check blocks the deploy.
 

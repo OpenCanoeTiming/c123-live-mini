@@ -126,8 +126,10 @@ The project uses **two Railway environments within one Railway project**, each w
 
 | Environment | Watched branch | Purpose |
 |-------------|----------------|---------|
-| `staging` | `main` | Auto-deploys on every merge to `main`. For integration testing and dev feedback. |
-| `production` | `production` | Auto-deploys on every merge to the `production` branch. Release via PR `main → production`. |
+| `staging` | `staging` | Auto-deploys on every push to `staging`. WIP / experimental — can be force-pushed or reset. |
+| `production` | `production` | Auto-deploys on every push to `production`. Release via fast-forward from `main`. |
+
+`main` is the clean PR-merged trunk and does **not** trigger any deploy.
 
 Both environments use their own Railway Volume mounted at `/data` and their own set of environment variables (different `MASTER_PASSWORDS`, same `NODE_AUTH_TOKEN`). See issue [#117](https://github.com/OpenCanoeTiming/c123-live-mini/issues/117) for the step-by-step Railway setup checklist.
 

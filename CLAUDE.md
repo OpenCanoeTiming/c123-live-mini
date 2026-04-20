@@ -66,6 +66,12 @@ cd packages/client && npx vite
 # Client proxies /api → localhost:3000, /ws → localhost:3000
 ```
 
+### Railway access
+
+Railway CLI + MCP server (`@railway/mcp-server`) are wired up via `.mcp.json` (project-scoped, committed). Auth is shared with the local Railway CLI — run `railway login --browserless` once per machine to enable both.
+
+`railway link` should point at the env you're debugging — typically `staging`. Switch with `railway environment <name>`. From the MCP server you can read logs and variables for either env without changing the link (tools take an env arg).
+
 ---
 
 ## Workflow
@@ -104,10 +110,22 @@ Before any code, post an analysis comment to the issue:
 
 ### Branching
 
+**Long-lived branches:**
+
+| Branch | Role | Deploys to | Rules |
+|---|---|---|---|
+| `main` | Clean trunk, source of truth | — | Only via merged PR. Linear history preferred. |
+| `staging` | WIP / experimental | Railway `staging` env | Free-for-all, force-push OK. Disposable — anything valuable must land in `main` via PR. |
+| `production` | Release | Railway `production` env | Fast-forward from `main` only. |
+
+**Feature branches** (created from `main`):
+
 | Issue Type | Branch Pattern | Example |
 |------------|----------------|---------|
 | Feature | `feat/{N}-{slug}` | `feat/103-category-status` |
 | Bug | `fix-{N}-{slug}` | `fix-99-ws-reconnect` |
+
+To test something on the live staging URL before opening a PR: push the feature branch to `staging` (`git push -f origin HEAD:staging`). Don't push WIP to `main`.
 
 ---
 
