@@ -668,23 +668,28 @@ export class ResultRepository extends BaseRepository {
       }
     }
 
-    // Write all updates to DB
-    for (const r of rows) {
-      const rank_ = rankData.get(r.id);
-      const cat_ = catRankData.get(r.id);
-      await this.db
-        .updateTable('results')
-        .set({
-          rnk: rank_?.rnk ?? null,
-          rnk_order: rank_?.rnk_order ?? null,
-          total_behind: rank_?.total_behind ?? null,
-          cat_rnk: cat_?.cat_rnk ?? null,
-          cat_rnk_order: cat_?.cat_rnk_order ?? null,
-          cat_total_behind: cat_?.cat_total_behind ?? null,
-        })
-        .where('id', '=', r.id)
-        .execute();
-    }
+    // Write all updates in one transaction. Without this, each UPDATE is an
+    // autocommit with its own fsync — on Railway's network volume that's
+    // ~30ms per row, so a 150-participant race would block the event loop
+    // for ~4.5s just to refresh rankings after a single results push (#157).
+    await this.db.transaction().execute(async (trx) => {
+      for (const r of rows) {
+        const rank_ = rankData.get(r.id);
+        const cat_ = catRankData.get(r.id);
+        await trx
+          .updateTable('results')
+          .set({
+            rnk: rank_?.rnk ?? null,
+            rnk_order: rank_?.rnk_order ?? null,
+            total_behind: rank_?.total_behind ?? null,
+            cat_rnk: cat_?.cat_rnk ?? null,
+            cat_rnk_order: cat_?.cat_rnk_order ?? null,
+            cat_total_behind: cat_?.cat_total_behind ?? null,
+          })
+          .where('id', '=', r.id)
+          .execute();
+      }
+    });
   }
 
   /**
