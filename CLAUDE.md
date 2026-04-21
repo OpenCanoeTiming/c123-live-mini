@@ -150,3 +150,52 @@ Append-only record of dead ends, surprising problems, and their solutions. Stric
 - **Communication:** Czech or English
 - **Code, commits:** English
 - **Documentation:** English
+
+---
+
+## Versioning & Releases
+
+This project uses **Release Please** (commit-based) for automatic versioning of the whole monorepo. **Never manually bump any `package.json` version or edit `CHANGELOG.md`** — Release Please owns all of them via its rolling release PR.
+
+### How it works
+
+1. Every push to `main` runs `.github/workflows/release-please.yml`.
+2. Release Please keeps a rolling **release PR** open (label `autorelease: pending`) that aggregates pending changes and proposes the next version.
+3. The `linked-versions` plugin keeps all four packages on the **same version**: root `c123-live-mini`, `@c123-live-mini/client`, `@c123-live-mini/server`, `@c123-live-mini/shared`.
+4. Merging the release PR creates:
+   - A commit `chore(main): release X.Y.Z` on `main` that bumps all four `package.json` files
+   - A single git tag `vX.Y.Z` (shared, no per-package tag because `include-component-in-tag: false`)
+   - A GitHub Release with generated CHANGELOG
+5. Railway auto-deploys `main` → staging. Promoting `main` → `production` is a separate manual fast-forward.
+6. `SHARED_VERSION` (shown in the client footer) reads dynamically from `packages/shared/package.json`, so it stays in sync automatically.
+
+### Commit types and bump rules
+
+| Commit type | Bump | Shown in CHANGELOG |
+|---|---|---|
+| `feat:` / `feat(client):` / `feat(server):` | **minor** (see 0.x note) | ✓ Features |
+| `fix:` / `perf:` | **patch** | ✓ Bug Fixes / Performance |
+| `feat!:` or `BREAKING CHANGE:` | **minor** (see 0.x note) | ✓ Features |
+| `revert:` / `docs:` | none | ✓ Reverts / Documentation |
+| `chore:` / `ci:` / `test:` / `style:` / `refactor:` / `build:` | **none** | hidden |
+| `chore(deps):` / `chore(deps-dev):` (dependabot) | **none** | hidden |
+
+**0.x series note:** Project is configured with `bump-minor-pre-major: true`. While in 0.x, `feat!:` bumps **minor** instead of major so breaking changes don't accidentally promote to 1.0.0. See "Graduating to 1.0.0" below.
+
+### Rules for agents preparing PRs
+
+1. **Always use conventional commits** (`feat:`, `fix:`, `chore:`...). Release Please reads commit prefixes to decide bumps.
+2. **Don't edit any `package.json` version or `CHANGELOG.md`** in regular PRs — Release Please owns those.
+3. **Use scopes sparingly and consistently.** `feat(client):`, `feat(server):`, `feat(shared):` are OK (they just show up in the changelog section header). Scopes don't change the bump rule — whole monorepo still bumps together.
+4. **Don't merge the release PR together with feature PRs** — it must be the last to merge in a release cycle.
+5. **PR title should keep the commit prefix** (squash merges — ensure the final merged commit stays conventional).
+6. **Never commit skill state** — `.superpowers/` and `.claude/` are already in `.gitignore`. Still prefer `git add <file>` over `git add -A`.
+7. **Use `packages/shared` for cross-package types** — changes there typically cause `feat:` or `fix:` depending on whether the contract changed. Runtime code in client/server consuming shared follows the same rule.
+
+### Graduating to 1.0.0
+
+To force a release to a specific version (e.g., graduating from 0.x to 1.0.0), add this footer to a commit in the next release cycle:
+
+```
+Release-As: 1.0.0
+```
