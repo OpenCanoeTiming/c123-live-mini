@@ -3,7 +3,8 @@ import { SHARED_VERSION, type Event } from '@c123-live-mini/shared';
 
 describe('server', () => {
   it('can import shared package', () => {
-    expect(SHARED_VERSION).toBe('0.0.1');
+    expect(typeof SHARED_VERSION).toBe('string');
+    expect(SHARED_VERSION).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it('can use Event type from shared package', () => {
