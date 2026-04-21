@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import pkg from '../package.json' with { type: 'json' };
 import {
   SHARED_VERSION,
   type Event,
@@ -8,8 +9,9 @@ import {
 } from './index';
 
 describe('shared package', () => {
-  it('exports SHARED_VERSION', () => {
-    expect(SHARED_VERSION).toBe('0.0.1');
+  it('exports SHARED_VERSION matching package.json', () => {
+    expect(SHARED_VERSION).toBe(pkg.version);
+    expect(SHARED_VERSION).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it('Event type allows valid status values', () => {
