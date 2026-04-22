@@ -58,3 +58,19 @@
 .startlistSearch {
   max-width: 20rem;
 }
+
+/* Prevent iOS Safari viewport zoom on focus of the DS SearchInput.
+ * The design system's `size="sm"` / `size="md"` produce an input with
+ * font-size below 16px (0.75rem and 0.875rem via CSS vars), which triggers
+ * Safari's auto-zoom on any touch device. Only touch/coarse-pointer devices
+ * exhibit the bug, so the override is gated behind `pointer: coarse` and
+ * leaves the mouse-driven desktop design untouched. Specificity matches the
+ * DS compound selector `.csk-search-input--sm .csk-search-input__input`.
+ * TODO: remove once the DS exposes a prop or token for iOS-safe input sizing
+ * (see OpenCanoeTiming/c123-live-mini issue #160).
+ */
+@media (pointer: coarse) {
+  .startlistSearch :global(.csk-search-input .csk-search-input__input) {
+    font-size: 16px;
+  }
+}
