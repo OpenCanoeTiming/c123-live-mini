@@ -490,6 +490,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     (classId: string) => {
       setSelectedClassId(classId);
       setExpandedRows(new Set());
+      // Clear text filter so the search field stays in sync with the predicate (#149).
+      // Without this, switching classes leaves a stale filter applied to results but
+      // hides its value from the (uncontrolled) SearchInput, so the user can't clear it.
+      setSearchQuery('');
       const group = classGroups.find((g) => g.classId === classId);
       if (!group) return;
 
@@ -540,6 +544,8 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const handleCategoryChange = useCallback((catId: string | null) => {
     setSelectedCatId(catId);
     setExpandedRows(new Set());
+    // Clear text filter on category switch so it matches the visible input state (#149).
+    setSearchQuery('');
   }, []);
 
   // Handle row expand/collapse
@@ -851,6 +857,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           hasMergedBR={hasMergedBR}
           showRoundTabs={showRoundTabs}
           onSearchChange={setSearchQuery}
+          searchResetKey={`${selectedClassId ?? ''}|${selectedCatId ?? ''}`}
           categories={availableCategories}
           onCategoryChange={handleCategoryChange}
           isFavorite={favorites.isFavorite}
@@ -865,6 +872,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       {resultsState === 'success' && dataView === 'startlist' && (
         <div className={styles.startlistSearch}>
           <SearchInput
+            key={`startlist|${selectedClassId ?? ''}|${selectedCatId ?? ''}`}
             size="sm"
             placeholder="Hledat závodníka..."
             onChange={setSearchQuery}

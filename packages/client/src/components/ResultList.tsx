@@ -299,6 +299,10 @@ interface ResultListProps {
   showRoundTabs?: boolean;
   // Search (uncontrolled — no value prop, just onChange callback)
   onSearchChange?: (q: string) => void;
+  /** Forces SearchInput to remount, resetting its uncontrolled internal value. Change this
+   *  when the filter context changes (e.g. class/category switch) so a stale query can't
+   *  stay in the DOM input while the parent state has moved on. See #149. */
+  searchResetKey?: string;
   // Category
   categories?: CategoryInfo[];
   onCategoryChange?: (catId: string | null) => void;
@@ -327,6 +331,7 @@ export function ResultList({
   hasMergedBR = false,
   showRoundTabs = false,
   onSearchChange,
+  searchResetKey,
   categories = [],
   onCategoryChange,
   isFavorite,
@@ -382,6 +387,7 @@ export function ResultList({
           {onSearchChange && (
             <div className={styles.searchWrapper}>
               <SearchInput
+                key={searchResetKey}
                 size="sm"
                 placeholder="Hledat závodníka..."
                 onChange={onSearchChange}
