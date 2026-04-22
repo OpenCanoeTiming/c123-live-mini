@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.1](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.10.0...v0.10.1) (2026-04-22)
+
+
+### Bug Fixes
+
+* **client:** trigger class tabs standalone row at 4+ categories ([#174](https://github.com/OpenCanoeTiming/c123-live-mini/issues/174)) ([e027140](https://github.com/OpenCanoeTiming/c123-live-mini/commit/e027140591745c24362cee90df5060c5f05ad097)), closes [#153](https://github.com/OpenCanoeTiming/c123-live-mini/issues/153)
+
 ## [0.10.0](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.9.1...v0.10.0) (2026-04-22)
 
 
