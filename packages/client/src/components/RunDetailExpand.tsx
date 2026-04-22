@@ -104,16 +104,33 @@ export function RunDetailExpand({ detail, isLoading, isBestRun, athleteName, bet
   }
 
   // BR race — always show two run blocks
-  // Server convention (chronological): detail.* = run 2 (BR2), detail.prev* = run 1 (BR1)
-  // betterRunNr indicates which run number was better
+  // Server convention: when both runs exist, detail.prev* = BR1 and detail.* = BR2.
+  // When only one run was ingested, detail.prev* is null and detail.* holds that
+  // single run — betterRunNr indicates whether it was run 1 or run 2 so the data
+  // can be routed into the correct block.
   if (isBestRun) {
-    const run1 = {
-      time: detail.prevTime ?? null,
-      pen: detail.prevPen ?? null,
-      total: detail.prevTotal ?? null,
-      gates: detail.prevGates ?? null,
-    };
-    const run2 = { time: detail.time, pen: detail.pen, total: detail.total, gates: detail.gates };
+    const hasBothRuns = detail.prevTotal != null;
+    const primary = { time: detail.time, pen: detail.pen, total: detail.total, gates: detail.gates };
+    const empty = { time: null, pen: null, total: null, gates: null };
+
+    let run1: { time: number | null; pen: number | null; total: number | null; gates: RunDetailData['gates'] };
+    let run2: { time: number | null; pen: number | null; total: number | null; gates: RunDetailData['gates'] };
+
+    if (hasBothRuns) {
+      run1 = {
+        time: detail.prevTime ?? null,
+        pen: detail.prevPen ?? null,
+        total: detail.prevTotal ?? null,
+        gates: detail.prevGates ?? null,
+      };
+      run2 = primary;
+    } else if (betterRunNr === 2) {
+      run1 = empty;
+      run2 = primary;
+    } else {
+      run1 = primary;
+      run2 = empty;
+    }
 
     const run1HasData = run1.total != null;
     const run2HasData = run2.total != null;

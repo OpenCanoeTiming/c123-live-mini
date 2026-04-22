@@ -131,12 +131,34 @@ function buildStandardColumns(
   return cols;
 }
 
+/**
+ * Resolve BR run 1 / run 2 values from a row.
+ *
+ * Server convention: when both runs exist, `prev*` holds BR1 and `time/pen/total`
+ * holds BR2. When only one run exists, `prev*` is null and `time/pen/total` holds
+ * that single run — the `betterRunNr` field indicates whether it was run 1 or run 2.
+ */
+function resolveBrRuns(row: ResultEntry) {
+  const hasBothRuns = row.prevTotal != null;
+  if (hasBothRuns) {
+    return {
+      run1: { total: row.prevTotal ?? null, pen: row.prevPen ?? null },
+      run2: { total: row.total ?? null, pen: row.pen ?? null },
+    };
+  }
+  // Only one run exists — route by betterRunNr (primary slot holds that run).
+  const single = { total: row.total ?? null, pen: row.pen ?? null };
+  if (row.betterRunNr === 2) {
+    return { run1: { total: null, pen: null }, run2: single };
+  }
+  return { run1: single, run2: { total: null, pen: null } };
+}
+
 /** Mobile-only cell showing both BR runs stacked */
 function BrRunsCell({ row }: { row: ResultEntry }) {
   if (row.status) return <StatusBadge status={row.status} />;
 
-  const run1Total = row.prevTotal != null ? row.prevTotal : row.total;
-  const run2Total = row.prevTotal != null ? row.total : null;
+  const { run1, run2 } = resolveBrRuns(row);
   const isBetter1 = row.betterRunNr === 1;
   const isBetter2 = row.betterRunNr === 2;
 
@@ -144,17 +166,17 @@ function BrRunsCell({ row }: { row: ResultEntry }) {
     <div className={styles.brRunsStacked}>
       <div className={`${styles.brRunLine} ${isBetter1 ? styles.betterRun : ''}`}>
         <span className={styles.brRunLabel}>1.</span>
-        <span className={styles.monoText}>{formatTime(run1Total ?? null)}</span>
-        {row.prevPen != null && row.prevPen > 0 && (
-          <span className={styles.brRunPen}>({formatPenalty(row.prevTotal != null ? row.prevPen : row.pen)})</span>
+        <span className={styles.monoText}>{formatTime(run1.total)}</span>
+        {run1.pen != null && run1.pen > 0 && (
+          <span className={styles.brRunPen}>({formatPenalty(run1.pen)})</span>
         )}
       </div>
-      {run2Total !== null && (
+      {run2.total !== null && (
         <div className={`${styles.brRunLine} ${isBetter2 ? styles.betterRun : ''}`}>
           <span className={styles.brRunLabel}>2.</span>
-          <span className={styles.monoText}>{formatTime(run2Total)}</span>
-          {row.pen != null && row.pen > 0 && (
-            <span className={styles.brRunPen}>({formatPenalty(row.prevTotal != null ? row.pen : null)})</span>
+          <span className={styles.monoText}>{formatTime(run2.total)}</span>
+          {run2.pen != null && run2.pen > 0 && (
+            <span className={styles.brRunPen}>({formatPenalty(run2.pen)})</span>
           )}
         </div>
       )}
@@ -199,11 +221,12 @@ function buildBestRunColumns(
       hideOnMobile: true,
       render: (row) => {
         if (row.status) return <StatusBadge status={row.status} />;
-        const run1Total = row.prevTotal != null ? row.prevTotal : row.total;
+        const { run1 } = resolveBrRuns(row);
         const isBetter = row.betterRunNr === 1;
+        if (run1.total === null) return <span className={styles.monoText}>-</span>;
         return (
           <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
-            {formatTime(run1Total ?? null)}
+            {formatTime(run1.total)}
           </span>
         );
       },
@@ -215,12 +238,12 @@ function buildBestRunColumns(
       hideOnMobile: true,
       render: (row) => {
         if (row.status) return null;
-        const run2Total = row.prevTotal != null ? row.total : null;
+        const { run2 } = resolveBrRuns(row);
         const isBetter = row.betterRunNr === 2;
-        if (run2Total === null) return <span className={styles.monoText}>-</span>;
+        if (run2.total === null) return <span className={styles.monoText}>-</span>;
         return (
           <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
-            {formatTime(run2Total)}
+            {formatTime(run2.total)}
           </span>
         );
       },
