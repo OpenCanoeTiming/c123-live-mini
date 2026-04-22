@@ -758,10 +758,12 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const selectedRace = races.find((r) => r.raceId === selectedRaceId);
   const selectedRaceClassId = selectedRace?.classId ?? null;
   const showClassTabs = filteredClassGroups.length > 1;
-  const classTabsStandalone = filteredClassGroups.reduce(
-    (sum, g) => sum + (classNameMap[g.classId] ?? g.classId).length,
-    0
-  ) > 21;
+  const classTabsStandalone =
+    filteredClassGroups.length > 3 ||
+    filteredClassGroups.reduce(
+      (sum, g) => sum + (classNameMap[g.classId] ?? g.classId).length,
+      0
+    ) > 12;
   const displayRaces = selectedGroup?.displayRaces ?? [];
   const showRoundTabs = displayRaces.length > 1;
   const hasMergedBR = selectedGroup
