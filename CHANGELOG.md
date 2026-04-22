@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.0](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.11.0...v0.12.0) (2026-04-22)
+
+
+### Features
+
+* **client:** priority visual improvements of live results ([#159](https://github.com/OpenCanoeTiming/c123-live-mini/issues/159)) ([#178](https://github.com/OpenCanoeTiming/c123-live-mini/issues/178)) ([e8fe5e6](https://github.com/OpenCanoeTiming/c123-live-mini/commit/e8fe5e659ef1ee44d98ff622f42619d4d5c79d26))
+
 ## [0.11.0](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.10.1...v0.11.0) (2026-04-22)
 
 
