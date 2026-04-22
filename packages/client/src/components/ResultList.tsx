@@ -133,10 +133,21 @@ function buildStandardColumns(
 
 /** Mobile-only cell showing both BR runs stacked */
 function BrRunsCell({ row }: { row: ResultEntry }) {
-  if (row.status) return <StatusBadge status={row.status} />;
-
-  const run1Total = row.prevTotal != null ? row.prevTotal : row.total;
-  const run2Total = row.prevTotal != null ? row.total : null;
+  // #162: Use per-run status fields so each run's DNF/DNS is shown in its
+  // own line even when the combined `status` was cleared by a clean run.
+  const br1Status = row.prevStatus ?? null;
+  const br2Status = row.currStatus ?? null;
+  // `prevTotal != null` used to mean "both runs exist". That's wrong when
+  // BR1 DNF'd (prevTotal=null but BR1 row still exists). Treat BR1 as
+  // present when either its total OR its status is populated.
+  const hasBr1 = row.prevTotal != null || br1Status != null;
+  // When BR2 doesn't exist, the "current" row IS BR1 — display status and
+  // total from the primary fields for Run 1 instead of prev.
+  const br1StatusForRun1 = hasBr1 ? br1Status : br2Status;
+  const run1Total = hasBr1 ? row.prevTotal : row.total;
+  const run1Pen = hasBr1 ? row.prevPen : row.pen;
+  const run2Total = hasBr1 ? row.total : null;
+  const run2HasData = hasBr1 && (run2Total != null || br2Status != null);
   const isBetter1 = row.betterRunNr === 1;
   const isBetter2 = row.betterRunNr === 2;
 
@@ -144,17 +155,29 @@ function BrRunsCell({ row }: { row: ResultEntry }) {
     <div className={styles.brRunsStacked}>
       <div className={`${styles.brRunLine} ${isBetter1 ? styles.betterRun : ''}`}>
         <span className={styles.brRunLabel}>1.</span>
-        <span className={styles.monoText}>{formatTime(run1Total ?? null)}</span>
-        {row.prevPen != null && row.prevPen > 0 && (
-          <span className={styles.brRunPen}>({formatPenalty(row.prevTotal != null ? row.prevPen : row.pen)})</span>
+        {br1StatusForRun1 ? (
+          <StatusBadge status={br1StatusForRun1} />
+        ) : (
+          <>
+            <span className={styles.monoText}>{formatTime(run1Total ?? null)}</span>
+            {run1Pen != null && run1Pen > 0 && (
+              <span className={styles.brRunPen}>({formatPenalty(run1Pen)})</span>
+            )}
+          </>
         )}
       </div>
-      {run2Total !== null && (
+      {run2HasData && (
         <div className={`${styles.brRunLine} ${isBetter2 ? styles.betterRun : ''}`}>
           <span className={styles.brRunLabel}>2.</span>
-          <span className={styles.monoText}>{formatTime(run2Total)}</span>
-          {row.pen != null && row.pen > 0 && (
-            <span className={styles.brRunPen}>({formatPenalty(row.prevTotal != null ? row.pen : null)})</span>
+          {br2Status ? (
+            <StatusBadge status={br2Status} />
+          ) : (
+            <>
+              <span className={styles.monoText}>{formatTime(run2Total ?? null)}</span>
+              {row.pen != null && row.pen > 0 && (
+                <span className={styles.brRunPen}>({formatPenalty(row.pen)})</span>
+              )}
+            </>
           )}
         </div>
       )}
@@ -198,12 +221,22 @@ function buildBestRunColumns(
       align: 'right',
       hideOnMobile: true,
       render: (row) => {
-        if (row.status) return <StatusBadge status={row.status} />;
-        const run1Total = row.prevTotal != null ? row.prevTotal : row.total;
+        // #162: Use per-run status so BR1 DNF/DNS is shown in its own cell
+        // instead of falling back to row.total (which may be BR2's time
+        // when BR1 DNF'd and BR2 is clean).
+        const br1Status = row.prevStatus ?? null;
+        const br2Status = row.currStatus ?? null;
+        const hasBr1 = row.prevTotal != null || br1Status != null;
+        // When BR2 doesn't exist, the "current" row IS BR1 — use currStatus
+        // and row.total for it instead of trying to pull from prev.
+        const br1StatusForRun1 = hasBr1 ? br1Status : br2Status;
+        if (br1StatusForRun1) return <StatusBadge status={br1StatusForRun1} />;
+        const run1Total = hasBr1 ? row.prevTotal : row.total;
         const isBetter = row.betterRunNr === 1;
+        if (run1Total == null) return <span className={styles.monoText}>-</span>;
         return (
           <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
-            {formatTime(run1Total ?? null)}
+            {formatTime(run1Total)}
           </span>
         );
       },
@@ -214,10 +247,17 @@ function buildBestRunColumns(
       align: 'right',
       hideOnMobile: true,
       render: (row) => {
-        if (row.status) return null;
-        const run2Total = row.prevTotal != null ? row.total : null;
+        // #162: Use per-run status so BR2 DNF/DNS is shown in its own cell
+        // even when the combined `status` was cleared by a clean BR1.
+        const br1Status = row.prevStatus ?? null;
+        const br2Status = row.currStatus ?? null;
+        const hasBr1 = row.prevTotal != null || br1Status != null;
+        // When only BR1 has been run, there is no Run 2 to render.
+        if (!hasBr1) return <span className={styles.monoText}>-</span>;
+        if (br2Status) return <StatusBadge status={br2Status} />;
+        const run2Total = row.total;
         const isBetter = row.betterRunNr === 2;
-        if (run2Total === null) return <span className={styles.monoText}>-</span>;
+        if (run2Total == null) return <span className={styles.monoText}>-</span>;
         return (
           <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
             {formatTime(run2Total)}

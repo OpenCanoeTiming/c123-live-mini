@@ -418,6 +418,34 @@ export function registerIngestRoutes(
               // BR race: compute combined results and broadcast for both BR1/BR2
               const combinedResults = await brCombinedService.computeCombined(eventDbId, race.race_id);
 
+              // Map to public payload — include per-run status (#162) so the
+              // client can render Run 1 / Run 2 cells independently even when
+              // the combined `status` is cleared by one clean run.
+              const publicBrResults = combinedResults.map((r) => ({
+                rnk: r.rnk,
+                bib: r.bib,
+                athleteId: r.athleteId,
+                name: r.name,
+                club: r.club,
+                noc: r.noc,
+                catId: r.catId,
+                catRnk: r.catRnk,
+                time: r.time,
+                pen: r.pen,
+                total: r.total,
+                totalBehind: r.totalBehind,
+                catTotalBehind: r.catTotalBehind,
+                status: r.status,
+                prevStatus: r.prevStatus,
+                currStatus: r.currStatus,
+                betterRunNr: r.betterRunNr,
+                totalTotal: r.totalTotal,
+                prevTime: r.prevTime,
+                prevPen: r.prevPen,
+                prevTotal: r.prevTotal,
+                prevRnk: r.prevRnk,
+              }));
+
               // Derive both BR1 and BR2 raceIds using regex (classId may contain underscores)
               const brMatch = race.race_id.match(/^(.+)_(BR[12])_(.+)$/);
               const br1RaceId = brMatch ? `${brMatch[1]}_BR1_${brMatch[3]}` : race.race_id;
@@ -426,12 +454,12 @@ export function registerIngestRoutes(
               // Broadcast combined data for both BR1 and BR2 raceIds
               // so clients viewing either run get correct combined data
               wsManager.broadcastDiff(eventId, {
-                results: combinedResults,
+                results: publicBrResults,
                 raceId: br1RaceId,
               });
               if (br1RaceId !== br2RaceId) {
                 wsManager.broadcastDiff(eventId, {
-                  results: combinedResults,
+                  results: publicBrResults,
                   raceId: br2RaceId,
                 });
               }

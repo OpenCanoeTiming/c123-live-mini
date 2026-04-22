@@ -144,7 +144,7 @@ describe('BrCombinedService', () => {
   }
 
   /** Seed BR1+BR2 results for a participant */
-  async function seedResults(pid: string, br1: { time: number; pen: number; total: number; rnk?: number; status?: string } | null, br2: { time: number; pen: number; total: number; rnk?: number; status?: string } | null) {
+  async function seedResults(pid: string, br1: { time: number | null; pen: number; total: number | null; rnk?: number; status?: string } | null, br2: { time: number | null; pen: number; total: number | null; rnk?: number; status?: string } | null) {
     const participantId = await getParticipantId(pid);
     const br1RaceId = await getRaceId('K1M_ST_BR1_6');
     const br2RaceId = await getRaceId('K1M_ST_BR2_6');
@@ -289,5 +289,92 @@ describe('BrCombinedService', () => {
     const viaBr2 = await service.computeCombined(eventId, 'K1M_ST_BR2_6');
 
     expect(viaBr1).toEqual(viaBr2);
+  });
+
+  // Regression tests for #162 — per-run DNF/DNS visibility during live results.
+  // The combined `status` field alone cannot tell the client WHICH run was DNF/DNS
+  // when at least one clean run exists; we need `prevStatus` (BR1) and
+  // `currStatus` (BR2) so the client can render each run independently.
+  describe('#162 — per-run DNF/DNS status', () => {
+    it('exposes prevStatus when BR1 was DNF and BR2 is clean', async () => {
+      // BR1 DNF (no time/total), BR2 clean — the common case the user reported.
+      await seedResults('P1',
+        { time: null, pen: 0, total: null, status: 'DNF' },
+        { time: 8800, pen: 200, total: 9000 },
+      );
+
+      const results = await service.computeCombined(eventId, 'K1M_ST_BR2_6');
+
+      expect(results).toHaveLength(1);
+      // Combined status stays null (at least one clean run → rankable).
+      expect(results[0].status).toBeNull();
+      expect(results[0].betterRunNr).toBe(2);
+      expect(results[0].totalTotal).toBe(9000);
+      // Primary fields = BR2 (the clean run)
+      expect(results[0].time).toBe(8800);
+      expect(results[0].total).toBe(9000);
+      // Per-run status fields — the fix.
+      expect(results[0].prevStatus).toBe('DNF');
+      expect(results[0].currStatus).toBeNull();
+    });
+
+    it('exposes currStatus when BR1 is clean and BR2 was DNF', async () => {
+      // BR1 clean, BR2 DNF (e.g. bib 206 in xboardtest02_jarni_v1.xml).
+      await seedResults('P1',
+        { time: 10466, pen: 4, total: 10866, rnk: 3 },
+        { time: null, pen: 0, total: null, status: 'DNF' },
+      );
+
+      const results = await service.computeCombined(eventId, 'K1M_ST_BR2_6');
+
+      expect(results[0].status).toBeNull(); // combined: has clean run
+      expect(results[0].betterRunNr).toBe(1);
+      expect(results[0].totalTotal).toBe(10866);
+      // prevTotal carries BR1 clean time
+      expect(results[0].prevTotal).toBe(10866);
+      // Per-run status fields
+      expect(results[0].prevStatus).toBeNull();
+      expect(results[0].currStatus).toBe('DNF');
+    });
+
+    it('exposes both prevStatus and currStatus when both runs DNF/DSQ', async () => {
+      await seedResults('P1',
+        { time: null, pen: 0, total: null, status: 'DNF' },
+        { time: null, pen: 0, total: null, status: 'DSQ' },
+      );
+
+      const results = await service.computeCombined(eventId, 'K1M_ST_BR1_6');
+
+      // Combined status reflects BR2 (infoSource) when no clean run exists.
+      expect(results[0].status).toBe('DSQ');
+      expect(results[0].betterRunNr).toBeNull();
+      expect(results[0].prevStatus).toBe('DNF');
+      expect(results[0].currStatus).toBe('DSQ');
+    });
+
+    it('exposes null prev fields when only BR1 exists (no BR2 row yet)', async () => {
+      // BR1 running, BR2 not yet created. Client uses prevStatus=null as
+      // "BR1 is the primary run, there is no BR2 yet".
+      await seedResults('P1', { time: 8300, pen: 200, total: 8500 }, null);
+
+      const results = await service.computeCombined(eventId, 'K1M_ST_BR1_6');
+
+      expect(results[0].prevStatus).toBeNull();
+      expect(results[0].currStatus).toBeNull(); // BR1 clean, no status
+      expect(results[0].prevTotal).toBeNull();
+    });
+
+    it('exposes currStatus when only BR1 exists and was DNF', async () => {
+      // Purely BR1-only mode, DNF.
+      await seedResults('P1', { time: null, pen: 0, total: null, status: 'DNS' }, null);
+
+      const results = await service.computeCombined(eventId, 'K1M_ST_BR1_6');
+
+      // infoSource is BR1 → combined status = 'DNS'
+      expect(results[0].status).toBe('DNS');
+      // currStatus mirrors "the run that occurred" — BR1 here.
+      expect(results[0].currStatus).toBe('DNS');
+      expect(results[0].prevStatus).toBeNull();
+    });
   });
 });

@@ -15,7 +15,27 @@ export interface CombinedBrResult {
   total: number | null;
   totalBehind: string | null;
   catTotalBehind: string | null;
+  /**
+   * Combined row status — cleared to `null` as soon as the participant has
+   * at least one clean run (so they stay rankable). Only populated when
+   * BOTH runs are DNF/DNS/DSQ (or the single existing run is). Used for
+   * the overall row badge and for sort/rank behaviour.
+   */
   status: string | null;
+  /**
+   * Status of BR1 specifically, regardless of BR2.
+   * `null` when BR1 was clean OR when BR1 does not yet exist.
+   * Use this to render the Run 1 cell independently of the combined status.
+   * (#162)
+   */
+  prevStatus: string | null;
+  /**
+   * Status of BR2 when both runs exist; when only BR1 exists this mirrors
+   * BR1's status (there is no "previous" run to distinguish).
+   * Use this to render the Run 2 cell independently of the combined status.
+   * (#162)
+   */
+  currStatus: string | null;
   betterRunNr: number | null;
   totalTotal: number | null;
   prevTime: number | null;
@@ -104,6 +124,16 @@ export class BrCombinedService {
       // Only show status (DSQ etc.) when NO clean run exists
       const combinedStatus = betterRunNr != null ? null : (infoSource.status || null);
 
+      // #162: Per-run status fields. The combined `status` above is cleared
+      // to null as soon as a participant has one clean run, which makes the
+      // client unable to distinguish "BR1 DNF + BR2 clean" from
+      // "only BR2 ran". prevStatus/currStatus surface the raw per-run status
+      // so the Run 1 / Run 2 cells can be rendered independently.
+      const prevStatus: string | null = hasBothRuns ? (br1!.status || null) : null;
+      const currStatus: string | null = hasBothRuns
+        ? (br2!.status || null)
+        : (infoSource.status || null);
+
       const entry: CombinedBrResult = {
         rnk: null, // will be recalculated
         bib: infoSource.bib,
@@ -120,6 +150,8 @@ export class BrCombinedService {
         totalBehind: null, // will be recalculated
         catTotalBehind: null, // will be recalculated
         status: combinedStatus,
+        prevStatus,
+        currStatus,
         betterRunNr,
         totalTotal,
         // Previous run: BR1 data when both exist, null when only one run

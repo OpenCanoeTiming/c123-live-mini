@@ -213,6 +213,9 @@ export const resultsSchema = {
               prevPen: { type: ['integer', 'null'] },
               prevTotal: { type: ['integer', 'null'] },
               prevRnk: { type: ['integer', 'null'] },
+              // Per-run status fields for BR combined results (#162)
+              prevStatus: { type: ['string', 'null'] },
+              currStatus: { type: ['string', 'null'] },
               // Previous run detailed fields (BR with detailed=true)
               prevDtStart: { type: ['string', 'null'] },
               prevDtFinish: { type: ['string', 'null'] },
