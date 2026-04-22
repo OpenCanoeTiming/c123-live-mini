@@ -379,6 +379,30 @@
   display: none;
 }
 
+/* Split-span time value for mobile BR stacked cell — aligns on decimal
+ * across rows regardless of integer width (85.20 / 100.50). */
+.timeValue {
+  font-family: var(--csk-font-mono, 'JetBrains Mono', 'Fira Code', monospace);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.timeInt {
+  display: inline-block;
+  min-width: 3ch;
+  text-align: right;
+}
+
+.timeFrac {
+  display: inline-block;
+  text-align: left;
+}
+
+.timeDash {
+  color: var(--csk-color-text-tertiary, #9ca3af);
+  font-family: var(--csk-font-mono, 'JetBrains Mono', 'Fira Code', monospace);
+}
+
 
 /* --- Responsive --- */
 @media (max-width: 640px) {

@@ -60,6 +60,23 @@ function NameCell({
   );
 }
 
+/** Split-span time value for decimal-point alignment in stacked mobile cells.
+ *  The integer part right-aligns in a fixed 3ch box, the fraction part left-aligns;
+ *  the decimal point therefore sits at a consistent offset across stacked rows. */
+function TimeValue({ centis }: { centis: number | null }) {
+  if (centis == null) {
+    return <span className={styles.timeDash}>—</span>;
+  }
+  const formatted = (centis / 100).toFixed(2);
+  const [intPart, fracPart] = formatted.split('.');
+  return (
+    <span className={styles.timeValue}>
+      <span className={styles.timeInt}>{intPart}</span>
+      <span className={styles.timeFrac}>.{fracPart}</span>
+    </span>
+  );
+}
+
 function buildStandardColumns(
   selectedCatId: string | null,
   favorites?: { isFavorite: (bib: number, classId: string) => boolean; onToggle: (bib: number, classId: string) => void; classId: string | null },
