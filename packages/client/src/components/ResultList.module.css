@@ -41,6 +41,19 @@
   max-width: 14rem;
 }
 
+/* Prevent iOS Safari viewport zoom on focus of the DS SearchInput.
+ * Context: see EventDetailPage.module.css — same override, co-located with the
+ * other SearchInput usage in the table toolbar. Gated to touch devices via
+ * `pointer: coarse`. Specificity matches the DS compound selector.
+ * TODO: remove once the DS exposes a prop or token for iOS-safe input sizing
+ * (see OpenCanoeTiming/c123-live-mini issue #160).
+ */
+@media (pointer: coarse) {
+  .searchWrapper :global(.csk-search-input .csk-search-input__input) {
+    font-size: 16px;
+  }
+}
+
 /* ViewMode hidden on mobile — marginal feature */
 .viewModeDesktopOnly {
   display: none;
