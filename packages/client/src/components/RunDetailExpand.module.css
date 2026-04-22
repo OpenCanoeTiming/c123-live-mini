@@ -34,8 +34,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 1.5rem;
-  padding: 0.0625rem 0.3rem;
+  min-width: 1.25rem;
+  padding: 0.0625rem 0.2rem;
   border-radius: 3px;
   background: var(--csk-color-bg-primary, #fff);
   border: 1px solid var(--csk-color-border-secondary, #e5e7eb);
@@ -46,8 +46,8 @@
 }
 
 .detailHeaderMeta {
-  font-weight: 500;
-  color: var(--csk-color-text-primary, #111827);
+  font-weight: 400;
+  color: var(--csk-color-text-secondary, #6b7280);
 }
 
 .noData {

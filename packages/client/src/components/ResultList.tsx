@@ -87,7 +87,7 @@ function buildStandardColumns(
     {
       key: 'rnk',
       header: 'Poř.',
-      width: '36px',
+      width: '32px',
       align: 'center',
       cellClassName: styles.rankCol,
       render: (row) => {
@@ -226,7 +226,7 @@ function buildBestRunColumns(
     {
       key: 'rnk',
       header: 'Poř.',
-      width: '36px',
+      width: '32px',
       align: 'center',
       cellClassName: styles.rankCol,
       render: (row) => {

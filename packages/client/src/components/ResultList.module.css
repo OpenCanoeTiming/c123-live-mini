@@ -169,11 +169,11 @@
   text-align: center;
 }
 
-/* Rank column — tighter horizontal padding than default cell padding so the
- * 26px podium circle (or plain number) isn't surrounded by empty space. */
+/* Rank column — zero horizontal cell padding; the 26px podium circle and
+ * plain numbers get centred inside the 32px column header/cell. */
 .rankCol {
-  padding-left: 0.125rem;
-  padding-right: 0.125rem;
+  padding-left: 0;
+  padding-right: 0;
 }
 
 .chevron {
