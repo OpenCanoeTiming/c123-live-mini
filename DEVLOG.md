@@ -2,6 +2,44 @@
 
 Append-only record of dead ends, surprising problems, and their solutions.
 
+## 2026-04-21 — Live push errors and bumpy oncourse (#150, #157)
+
+**Problem:** Two persistent race-day symptoms.
+
+1. **#150 "bumpy oncourse"** — during multi-competitor runs, per-rider times visibly froze for seconds and then jumped several seconds at once. The effect worsened the more riders were on course.
+2. **#157 "recurring live push errors / circuit breaker"** — the c123-server admin UI flashed red for long stretches of the day, the circuit breaker opened and locked out live-mini pushes for 30 s, and only a manual "Force push XML" cleared the sticky error.
+
+**Attempted (what didn't fully fix it):**
+- Initial hypothesis for #150 was the oncourse WebSocket duplication (burst of 5–7 identical snapshots within 100 ms). Tightening the c123-server throttle and adding fingerprint dedup helped WS dedup ratio 68 % → 16 %, but per-rider gaps still showed 2–3 s jumps on multi-competitor heats.
+- Initial hypothesis for #157 was Railway proxy 503 blips. Adding 5xx retry + transient-error CB exemption in c123-server survived staging blips cleanly, but a second-opinion Gemini review called out that exempting the very errors CBs exist for was "lying to the architecture" and that the Results channel had no in-flight guard — a long outage would stack 60-s retry loops per push per race.
+
+**Solution (server-side — the actual root causes):**
+1. **`ResultIngestService.ingestResults` wrapped in a single SQLite transaction.** Before, each result in a push drove 3–4 autocommits (SELECT race / SELECT participant / optional SELECT course / UPSERT result) — ~172 disk `fsync`s for an 80-result payload. On Railway's network-mounted volume each `fsync` is ~30 ms → ~5 s of blocked Node event loop per push. During that stall the oncourse `wsManager.broadcastDiff` couldn't flush, oncourse POSTs piled up in the TCP buffer, and when the loop finally unblocked all the stale data was blasted out at once — exactly the "times freeze then jump" pattern from #150.
+2. **`ResultRepository.recalculateRankingFields` wrapped in a transaction.** Same pattern: one SELECT plus N UPDATE statements in a loop after every results push. On a 150-rider class that's another 4.5 s of blocked event loop, running immediately after the ingest transaction we just fixed.
+3. **`PRAGMA journal_mode=WAL` + `synchronous=NORMAL` set in DB init.** Halves the per-commit `fsync` count (WAL does one, the default DELETE journal does two) and lets reads proceed during writes. Confirmed via PRAGMA inspection post-deploy.
+4. **Dropped the `ingest_records` audit row for `json_oncourse` and `json_results`.** At race peak the audit insert was a per-push autocommit that competed with real writes for disk I/O, and on prod the table had grown to 108 k rows (~98 % oncourse) — useless audit that was the single biggest disk user on the volume.
+
+**Solution (client-side — observability + transient-failure resilience):**
+5. **c123-server retries HTTP 5xx and 429 with exponential backoff.** Railway's edge proxy periodically returns empty 503 during LB rotation; these are not app errors and the retry budget absorbs them.
+6. **Pulse circuit breaker.** Threshold tightened from 5 → 3 and open-timeout shortened from 30 s → 3 s. A real infra blip still trips the CB, but recovery probes arrive in 3 s not 30 s, so spectators lose ~3 s of data not 30 s.
+7. **`handleSuccess` clears `status.lastError` and resets `state='connected'`.** The admin UI's red error badge now disappears automatically once traffic recovers, instead of requiring a manual Force-push XML.
+8. **In-flight guards per channel.** OnCourse and XML drop duplicate-in-flight pushes (next snapshot fully replaces data). Results uses a latest-wins queue (pending slot is drained once in-flight completes) so no race's final results can ever be lost even if a push hangs.
+9. **`EventState.updateOnCourse` merges by bib instead of replacing the array.** C123 sends one competitor per TCP OnCourse message cycling through the field; the old code overwrote `state.onCourse` with each single-rider message, so every outgoing live-mini push carried only one rider. A dropped push silently lost that one rider's update until the next time C123 happened to rebroadcast them. With a per-bib map the snapshot always carries every rider seen in the last 10 s.
+
+**Test evidence:**
+- Staging 1 h 15 min clean with phase 2 client fixes (Railway 503 blips absorbed silently).
+- Prod 9 h 50 min clean after all server-side fixes landed: 0 circuit-breaker opens, Results push p50 90 ms / p90 156 ms (pre-fix was p50 4072 ms / p90 7587 ms — ~45× faster), per-rider WS gap p90 dropped from 2–3 s to ~1–1.5 s.
+
+**Lessons:**
+- "Retry to hide the symptom" is a valid first stabilization move during a race, but a follow-up second opinion on the underlying failure mode is worth it — the real cost of this bug was server-side write amplification, not network flakiness.
+- `better-sqlite3` on a network-mounted volume is harsh: if a path writes N rows it should do N-in-one-transaction, never a loop of autocommits. Audit every write-in-a-loop and wrap it.
+- Circuit breakers that exempt transient errors "to be nice to brief blips" stop doing their actual job. Better to keep the CB honest and tune it fast (short timeout, low threshold) so brief blips cost only a few seconds, not 30.
+- One C123 TCP "OnCourse" message is one rider, not the full snapshot. Anything downstream that replaces state instead of merging will drop per-rider updates silently.
+
+Commits: 4a50e7e, 9ba0f98 (server-side tx + WAL + audit cleanup), c123-server 237a740 (client-side resilience + state merge).
+
+Closes #150. Closes #157.
+
 ## 2026-04-10 — Railway deploy rolldown rabbit hole (#117, PR #127)
 
 **Problem:** First Railway staging deploy under #117 failed on the client build step with:
