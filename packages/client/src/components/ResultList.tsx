@@ -514,6 +514,8 @@ export function ResultList({
                           isBestRun={isBestRun}
                           athleteName={row.name}
                           betterRunNr={row.betterRunNr}
+                          prevStatus={row.prevStatus}
+                          currStatus={row.currStatus}
                         />
                       </td>
                     </tr>

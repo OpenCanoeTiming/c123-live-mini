@@ -18,6 +18,11 @@ interface RunDetailExpandProps {
   isBestRun?: boolean;
   athleteName?: string;
   betterRunNr?: number | null;
+  // Per-run status (#162): when set, render DNS/DNF/DSQ in place of
+  // time/total. Distinguishes "run attempted but didn't finish" from
+  // "run hasn't happened yet" (both-null → dashed placeholder).
+  prevStatus?: string | null;
+  currStatus?: string | null;
 }
 
 function TimeBreakdown({ time, pen, total }: {
@@ -67,25 +72,25 @@ function RunBlock({ label, isBetter, time, pen, total, gates }: {
   );
 }
 
-function RunPlaceholder({ label }: { label: string }) {
+function RunPlaceholder({ label, status }: { label: string; status?: string | null }) {
   return (
     <div className={`${styles.runSection} ${styles.runSectionPlaceholder}`}>
       <div className={styles.runSectionLabel}>{label}</div>
       <div className={styles.timeBreakdown}>
         <div className={styles.timeItem}>
           <span className={styles.timeLabel}>Čas</span>
-          <span className={styles.timeValue}>-</span>
+          <span className={styles.timeValue}>{status ?? '-'}</span>
         </div>
         <div className={styles.timeItem}>
           <span className={styles.timeLabel}>Celkem</span>
-          <span className={styles.timeValue}>-</span>
+          <span className={styles.timeValue}>{status ?? '-'}</span>
         </div>
       </div>
     </div>
   );
 }
 
-export function RunDetailExpand({ detail, isLoading, isBestRun, athleteName, betterRunNr }: RunDetailExpandProps) {
+export function RunDetailExpand({ detail, isLoading, isBestRun, athleteName, betterRunNr, prevStatus, currStatus }: RunDetailExpandProps) {
   if (isLoading) {
     return (
       <div className={styles.container}>
@@ -125,12 +130,12 @@ export function RunDetailExpand({ detail, isLoading, isBestRun, athleteName, bet
           {run1HasData ? (
             <RunBlock label="1. jízda" isBetter={betterRunNr === 1} time={run1.time} pen={run1.pen} total={run1.total} gates={run1.gates} />
           ) : (
-            <RunPlaceholder label="1. jízda" />
+            <RunPlaceholder label="1. jízda" status={prevStatus} />
           )}
           {run2HasData ? (
             <RunBlock label="2. jízda" isBetter={betterRunNr === 2} time={run2.time} pen={run2.pen} total={run2.total} gates={run2.gates} />
           ) : (
-            <RunPlaceholder label="2. jízda" />
+            <RunPlaceholder label="2. jízda" status={currStatus} />
           )}
         </div>
       </div>
