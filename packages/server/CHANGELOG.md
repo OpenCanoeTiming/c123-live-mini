@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.9.2](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.9.1...v0.9.2) (2026-04-22)
+
+
+### Bug Fixes
+
+* route BR result to correct run column when only one run exists ([#170](https://github.com/OpenCanoeTiming/c123-live-mini/issues/170)) ([ec2cc2a](https://github.com/OpenCanoeTiming/c123-live-mini/commit/ec2cc2a77feae794f69bb3b0a3a589f52d76e029)), closes [#155](https://github.com/OpenCanoeTiming/c123-live-mini/issues/155)
+* **server:** surface per-run DNF/DNS status in BR combined results ([#171](https://github.com/OpenCanoeTiming/c123-live-mini/issues/171)) ([aff6ad3](https://github.com/OpenCanoeTiming/c123-live-mini/commit/aff6ad3d67ada029a6e8ff41ba2ee739911ce2dd))
+
 ## [0.9.1](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.9.0...v0.9.1) (2026-04-22)
 
 
