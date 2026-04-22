@@ -29,6 +29,7 @@ import { ClassTabs } from '../components/ClassTabs';
 import { DataViewSelector } from '../components/DataViewSelector';
 import { ResultList } from '../components/ResultList';
 import { StartlistTable } from '../components/StartlistTable';
+import { FavoritesToggle } from '../components/FavoritesToggle';
 import { OnCoursePanel } from '../components/OnCoursePanel';
 import { ScheduleView } from '../components/ScheduleView';
 import type { ViewMode } from '../components/ViewModeToggle';
@@ -874,14 +875,21 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       )}
 
       {resultsState === 'success' && dataView === 'startlist' && (
-        <div className={styles.startlistSearch}>
-          <SearchInput
-            key={`startlist|${selectedClassId ?? ''}|${selectedCatId ?? ''}`}
-            size="sm"
-            placeholder="Hledat závodníka..."
-            onChange={setSearchQuery}
-            debounceMs={200}
-            resultsCount={searchResultsCount}
+        <div className={styles.startlistToolbar}>
+          <div className={styles.startlistSearch}>
+            <SearchInput
+              key={`startlist|${selectedClassId ?? ''}|${selectedCatId ?? ''}`}
+              size="sm"
+              placeholder="Hledat závodníka..."
+              onChange={setSearchQuery}
+              debounceMs={200}
+              resultsCount={searchResultsCount}
+            />
+          </div>
+          <FavoritesToggle
+            active={favorites.showOnlyFavorites}
+            count={favorites.favoritesCount}
+            onToggle={() => favorites.setShowOnlyFavorites(!favorites.showOnlyFavorites)}
           />
         </div>
       )}
@@ -895,7 +903,16 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         />
       )}
 
-      {resultsState === 'success' && dataView === 'startlist' && (!filteredStartlist || filteredStartlist.length === 0) && (
+      {resultsState === 'success' && dataView === 'startlist' && startlist && startlist.length > 0 && (!filteredStartlist || filteredStartlist.length === 0) && (
+        <Card>
+          <EmptyState
+            title={favorites.showOnlyFavorites ? 'Žádní oblíbení v této startovce' : 'Žádný závodník neodpovídá hledání'}
+            description="Zkuste upravit filtry nebo hledání."
+          />
+        </Card>
+      )}
+
+      {resultsState === 'success' && dataView === 'startlist' && (!startlist || startlist.length === 0) && (
         <Card>
           <EmptyState
             title="Startovní listina není k dispozici"
