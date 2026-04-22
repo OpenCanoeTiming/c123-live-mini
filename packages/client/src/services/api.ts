@@ -86,6 +86,12 @@ export interface ResultEntry extends PublicResult {
   prevPen?: number | null;
   prevTotal?: number | null;
   prevRnk?: number | null;
+  // Per-run status fields for BR combined results (#162).
+  // `status` is the combined status (null when any clean run exists);
+  // these carry per-run status so the Run 1 / Run 2 cells can render
+  // DNF/DNS badges independently.
+  prevStatus?: string | null;
+  currStatus?: string | null;
   // Detailed fields (when detailed=true)
   dtStart?: string | null;
   dtFinish?: string | null;

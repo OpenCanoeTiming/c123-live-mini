@@ -139,44 +139,63 @@ function buildStandardColumns(
  * that single run — the `betterRunNr` field indicates whether it was run 1 or run 2.
  */
 function resolveBrRuns(row: ResultEntry) {
-  const hasBothRuns = row.prevTotal != null;
-  if (hasBothRuns) {
+  const br1Status = row.prevStatus ?? null;
+  const br2Status = row.currStatus ?? null;
+  // BR1 is "present" when it has either a time or a status.
+  const hasBr1 = row.prevTotal != null || br1Status != null;
+  if (hasBr1) {
     return {
-      run1: { total: row.prevTotal ?? null, pen: row.prevPen ?? null },
-      run2: { total: row.total ?? null, pen: row.pen ?? null },
+      run1: { total: row.prevTotal ?? null, pen: row.prevPen ?? null, status: br1Status },
+      run2: { total: row.total ?? null, pen: row.pen ?? null, status: br2Status },
     };
   }
-  // Only one run exists — route by betterRunNr (primary slot holds that run).
-  const single = { total: row.total ?? null, pen: row.pen ?? null };
+  // Only one run exists — route by betterRunNr (#155). For all-DNF singletons
+  // betterRunNr is null; fall back to run1 (matches pre-#155 behavior).
+  const single = { total: row.total ?? null, pen: row.pen ?? null, status: br2Status };
+  const empty = { total: null, pen: null, status: null };
   if (row.betterRunNr === 2) {
-    return { run1: { total: null, pen: null }, run2: single };
+    return { run1: empty, run2: single };
   }
-  return { run1: single, run2: { total: null, pen: null } };
+  return { run1: single, run2: empty };
 }
 
 /** Mobile-only cell showing both BR runs stacked */
 function BrRunsCell({ row }: { row: ResultEntry }) {
-  if (row.status) return <StatusBadge status={row.status} />;
-
   const { run1, run2 } = resolveBrRuns(row);
   const isBetter1 = row.betterRunNr === 1;
   const isBetter2 = row.betterRunNr === 2;
+  const run1HasData = run1.total != null || run1.status != null;
+  const run2HasData = run2.total != null || run2.status != null;
 
   return (
     <div className={styles.brRunsStacked}>
-      <div className={`${styles.brRunLine} ${isBetter1 ? styles.betterRun : ''}`}>
-        <span className={styles.brRunLabel}>1.</span>
-        <span className={styles.monoText}>{formatTime(run1.total)}</span>
-        {run1.pen != null && run1.pen > 0 && (
-          <span className={styles.brRunPen}>({formatPenalty(run1.pen)})</span>
-        )}
-      </div>
-      {run2.total !== null && (
+      {run1HasData && (
+        <div className={`${styles.brRunLine} ${isBetter1 ? styles.betterRun : ''}`}>
+          <span className={styles.brRunLabel}>1.</span>
+          {run1.status ? (
+            <StatusBadge status={run1.status} />
+          ) : (
+            <>
+              <span className={styles.monoText}>{formatTime(run1.total)}</span>
+              {run1.pen != null && run1.pen > 0 && (
+                <span className={styles.brRunPen}>({formatPenalty(run1.pen)})</span>
+              )}
+            </>
+          )}
+        </div>
+      )}
+      {run2HasData && (
         <div className={`${styles.brRunLine} ${isBetter2 ? styles.betterRun : ''}`}>
           <span className={styles.brRunLabel}>2.</span>
-          <span className={styles.monoText}>{formatTime(run2.total)}</span>
-          {run2.pen != null && run2.pen > 0 && (
-            <span className={styles.brRunPen}>({formatPenalty(run2.pen)})</span>
+          {run2.status ? (
+            <StatusBadge status={run2.status} />
+          ) : (
+            <>
+              <span className={styles.monoText}>{formatTime(run2.total)}</span>
+              {run2.pen != null && run2.pen > 0 && (
+                <span className={styles.brRunPen}>({formatPenalty(run2.pen)})</span>
+              )}
+            </>
           )}
         </div>
       )}
@@ -220,10 +239,10 @@ function buildBestRunColumns(
       align: 'right',
       hideOnMobile: true,
       render: (row) => {
-        if (row.status) return <StatusBadge status={row.status} />;
         const { run1 } = resolveBrRuns(row);
+        if (run1.status) return <StatusBadge status={run1.status} />;
+        if (run1.total == null) return <span className={styles.monoText}>-</span>;
         const isBetter = row.betterRunNr === 1;
-        if (run1.total === null) return <span className={styles.monoText}>-</span>;
         return (
           <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
             {formatTime(run1.total)}
@@ -237,10 +256,10 @@ function buildBestRunColumns(
       align: 'right',
       hideOnMobile: true,
       render: (row) => {
-        if (row.status) return null;
         const { run2 } = resolveBrRuns(row);
+        if (run2.status) return <StatusBadge status={run2.status} />;
+        if (run2.total == null) return <span className={styles.monoText}>-</span>;
         const isBetter = row.betterRunNr === 2;
-        if (run2.total === null) return <span className={styles.monoText}>-</span>;
         return (
           <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
             {formatTime(run2.total)}
@@ -503,6 +522,8 @@ export function ResultList({
                           isBestRun={isBestRun}
                           athleteName={row.name}
                           betterRunNr={row.betterRunNr}
+                          prevStatus={row.prevStatus}
+                          currStatus={row.currStatus}
                         />
                       </td>
                     </tr>

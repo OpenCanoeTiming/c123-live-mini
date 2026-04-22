@@ -40,6 +40,9 @@ interface ResultEntry {
   prevPen?: number | null;
   prevTotal?: number | null;
   prevRnk?: number | null;
+  // Per-run status fields for BR combined results (#162)
+  prevStatus?: string | null;
+  currStatus?: string | null;
   // Previous run detailed fields (BR with detailed=true)
   prevDtStart?: string | null;
   prevDtFinish?: string | null;
@@ -203,6 +206,8 @@ export function registerResultsRoutes(
             totalBehind: r.totalBehind,
             catTotalBehind: r.catTotalBehind,
             status: r.status,
+            prevStatus: r.prevStatus,
+            currStatus: r.currStatus,
             betterRunNr: r.betterRunNr,
             totalTotal: r.totalTotal,
             prevTime: r.prevTime,

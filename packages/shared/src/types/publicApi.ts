@@ -245,6 +245,21 @@ export interface PublicResultMultiRun extends PublicResult {
   prevTotal: number | null;
   /** Other run rank */
   prevRnk: number | null;
+  /**
+   * Status of BR1 specifically (#162).
+   * `null` when BR1 was clean OR when BR1 does not yet exist.
+   * Unlike `status` (which is cleared when any run is clean so the
+   * participant remains rankable), this carries BR1's raw status so
+   * the client can render the Run 1 cell as a DNF/DNS badge even when
+   * BR2 is a clean run.
+   */
+  prevStatus: string | null;
+  /**
+   * Status of BR2 when both runs exist; mirrors BR1's status when only
+   * BR1 has been run. Companion to `prevStatus` for rendering the
+   * Run 2 cell independently (#162).
+   */
+  currStatus: string | null;
   /** Other run start timestamp */
   prevDtStart: string | null;
   /** Other run finish timestamp */
