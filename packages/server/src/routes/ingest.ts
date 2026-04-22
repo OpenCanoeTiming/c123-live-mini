@@ -7,7 +7,6 @@ import {
 } from '../middleware/apiKeyAuth.js';
 import { IngestService, type IngestResult } from '../services/IngestService.js';
 import { ResultIngestService } from '../services/ResultIngestService.js';
-import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
 import { getOnCourseStore } from '../services/OnCourseStore.js';
 import type {
   OnCourseInput,
@@ -84,7 +83,6 @@ export function registerIngestRoutes(
   const apiKeyAuth = createApiKeyAuth(db);
   const ingestService = new IngestService(db);
   const resultIngestService = new ResultIngestService(db);
-  const ingestRecordRepo = new IngestRecordRepository(db);
   const eventRepo = new EventRepository(db);
   const classRepo = new ClassRepository(db);
   const raceRepo = new RaceRepository(db);
@@ -235,15 +233,6 @@ export function registerIngestRoutes(
 
       // Check if XML has been ingested - silently ignore if not
       if (!hasXmlData) {
-        // Log the ignored ingestion
-        await ingestRecordRepo.insert({
-          eventId: eventDbId,
-          sourceType: 'json_oncourse',
-          status: 'success',
-          payloadSize: JSON.stringify(request.body).length,
-          itemsProcessed: 0,
-        });
-
         return { active: 0, ignored: true };
       }
 
@@ -288,14 +277,10 @@ export function registerIngestRoutes(
 
       const active = allActive.length;
 
-      // Log successful ingestion
-      await ingestRecordRepo.insert({
-        eventId: eventDbId,
-        sourceType: 'json_oncourse',
-        status: 'success',
-        payloadSize: JSON.stringify(request.body).length,
-        itemsProcessed: oncourse.length,
-      });
+      // Note: ingest_records audit was removed for 'json_oncourse' (#157).
+      // Each autocommit insert was an fsync on Railway's network volume, and
+      // at 10 Hz during racing this was ~36k rows/hour of useless audit
+      // competing with real ingest writes for disk I/O.
 
       // Broadcast full oncourse snapshot to WebSocket clients.
       // Always send the complete list so client can replace its state.
@@ -398,15 +383,6 @@ export function registerIngestRoutes(
 
       // Check if XML has been ingested - silently ignore if not
       if (!hasXmlData) {
-        // Log the ignored ingestion
-        await ingestRecordRepo.insert({
-          eventId: eventDbId,
-          sourceType: 'json_results',
-          status: 'success',
-          payloadSize: JSON.stringify(request.body).length,
-          itemsProcessed: 0,
-        });
-
         return { updated: 0, ignored: true };
       }
 

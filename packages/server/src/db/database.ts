@@ -56,6 +56,16 @@ export function createDatabase(dbPath?: string): Kysely<Database> {
 
   const sqliteDb = new SQLite(path);
   sqliteDb.pragma('foreign_keys = ON');
+  // WAL journal mode: reads and writes don't block each other, and a write
+  // is one fsync instead of two. Massive win on Railway's network volume
+  // where fsync is ~30ms per call (#157). The pragma is persistent in the DB
+  // header, but we set it on every boot so a new DB starts in WAL too.
+  sqliteDb.pragma('journal_mode = WAL');
+  // synchronous=NORMAL keeps durability across app crashes (WAL is still
+  // fsynced on COMMIT), and trades only resistance-to-power-loss for speed.
+  // Appropriate for a race-day service where losing the last ~1s of audit
+  // data on a sudden power cut is acceptable.
+  sqliteDb.pragma('synchronous = NORMAL');
 
   const dialect = new SqliteDialect({
     database: sqliteDb,

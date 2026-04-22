@@ -4,7 +4,6 @@ import { RaceRepository } from '../db/repositories/RaceRepository.js';
 import { ParticipantRepository } from '../db/repositories/ParticipantRepository.js';
 import { ResultRepository } from '../db/repositories/ResultRepository.js';
 import { CourseRepository } from '../db/repositories/CourseRepository.js';
-import { IngestRecordRepository } from '../db/repositories/IngestRecordRepository.js';
 import type { LiveResultInput, ResultsIngestResult } from '../types/ingest.js';
 import { createLogger } from '../utils/logger.js';
 import { transformTcpGates, gatesToJson } from '../utils/gateTransform.js';
@@ -15,104 +14,93 @@ const log = createLogger('ResultIngestService');
  * Service for ingesting live results from TCP stream via JSON
  */
 export class ResultIngestService {
-  private readonly raceRepo: RaceRepository;
-  private readonly participantRepo: ParticipantRepository;
-  private readonly resultRepo: ResultRepository;
-  private readonly courseRepo: CourseRepository;
-  private readonly ingestRecordRepo: IngestRecordRepository;
+  private readonly db: Kysely<Database>;
 
   constructor(db: Kysely<Database>) {
-    this.raceRepo = new RaceRepository(db);
-    this.participantRepo = new ParticipantRepository(db);
-    this.resultRepo = new ResultRepository(db);
-    this.courseRepo = new CourseRepository(db);
-    this.ingestRecordRepo = new IngestRecordRepository(db);
+    this.db = db;
   }
 
   /**
-   * Ingest live results from JSON
+   * Ingest live results from JSON.
    *
-   * @param eventId - Internal event ID
-   * @param results - Array of result updates
-   * @param payloadSize - Size of original request payload
-   * @returns Number of results updated
+   * #157: The loop runs inside a single SQLite transaction so all SELECTs and
+   * UPSERTs share one fsync instead of ~3-4 per result. On Railway's network
+   * volume each autocommit fsync is ~30ms; without this wrapping an 80-result
+   * payload would block the Node event loop for several seconds, causing
+   * cascading client timeouts and the "bumpy oncourse" perception (OnCourse
+   * POSTs queue in TCP buffer until the event loop unblocks, then flush in a
+   * burst).
    */
   async ingestResults(
     eventId: number,
     results: LiveResultInput[],
-    payloadSize: number
+    _payloadSize: number
   ): Promise<ResultsIngestResult> {
-    let updated = 0;
+    return this.db.transaction().execute(async (trx) => {
+      const raceRepo = new RaceRepository(trx as unknown as Kysely<Database>);
+      const participantRepo = new ParticipantRepository(trx as unknown as Kysely<Database>);
+      const resultRepo = new ResultRepository(trx as unknown as Kysely<Database>);
+      const courseRepo = new CourseRepository(trx as unknown as Kysely<Database>);
 
-    for (const input of results) {
-      // Find the race by race_id string
-      const race = await this.raceRepo.findByEventAndRaceId(
-        eventId,
-        input.raceId
-      );
-      if (!race) {
-        log.debug('Skipping result for unknown race', {
-          eventId,
-          raceId: input.raceId,
-          bib: input.bib,
-        });
-        continue;
-      }
+      let updated = 0;
 
-      // Find the participant by participant_id string
-      const participant = await this.participantRepo.findByEventAndParticipantId(
-        eventId,
-        input.participantId
-      );
-      if (!participant) {
-        log.debug('Skipping result for unknown participant', {
-          eventId,
-          participantId: input.participantId,
-          bib: input.bib,
-        });
-        continue;
-      }
-
-      // Transform gates to self-describing format if provided
-      let gatesJson: string | undefined;
-      if (input.gates && input.gates.length > 0) {
-        // Get course config for gate type information
-        let gateConfig: string | null = null;
-        if (race.course_nr !== null) {
-          const course = await this.courseRepo.findByEventAndCourseNr(
+      for (const input of results) {
+        const race = await raceRepo.findByEventAndRaceId(eventId, input.raceId);
+        if (!race) {
+          log.debug('Skipping result for unknown race', {
             eventId,
-            race.course_nr
-          );
-          gateConfig = course?.gate_config ?? null;
+            raceId: input.raceId,
+            bib: input.bib,
+          });
+          continue;
         }
-        const transformedGates = transformTcpGates(input.gates, gateConfig);
-        gatesJson = gatesToJson(transformedGates);
+
+        const participant = await participantRepo.findByEventAndParticipantId(
+          eventId,
+          input.participantId
+        );
+        if (!participant) {
+          log.debug('Skipping result for unknown participant', {
+            eventId,
+            participantId: input.participantId,
+            bib: input.bib,
+          });
+          continue;
+        }
+
+        // Transform gates to self-describing format if provided
+        let gatesJson: string | undefined;
+        if (input.gates && input.gates.length > 0) {
+          let gateConfig: string | null = null;
+          if (race.course_nr !== null) {
+            const course = await courseRepo.findByEventAndCourseNr(
+              eventId,
+              race.course_nr
+            );
+            gateConfig = course?.gate_config ?? null;
+          }
+          const transformedGates = transformTcpGates(input.gates, gateConfig);
+          gatesJson = gatesToJson(transformedGates);
+        }
+
+        await resultRepo.upsert(eventId, race.id, {
+          participant_id: participant.id,
+          bib: input.bib,
+          time: input.time ?? null,
+          pen: input.pen ?? null,
+          total: input.total ?? null,
+          status: input.status || null,
+          rnk: input.rnk ?? null,
+          gates: gatesJson ?? null,
+        });
+
+        updated++;
       }
 
-      // Upsert the result
-      await this.resultRepo.upsert(eventId, race.id, {
-        participant_id: participant.id,
-        bib: input.bib,
-        time: input.time ?? null,
-        pen: input.pen ?? null,
-        total: input.total ?? null,
-        status: input.status || null,
-        rnk: input.rnk ?? null,
-        gates: gatesJson ?? null,
-      });
-
-      updated++;
-    }
-
-    // Log the ingestion
-    await this.ingestRecordRepo.insert({
-      eventId,
-      sourceType: 'json_results',
-      status: 'success',
-      payloadSize,
-      itemsProcessed: updated,
+      // Note: ingest_records audit was removed for 'json_results' (#157).
+      // At race peak the audit insert itself was another autocommit fsync per
+      // push, and the table grew ~1k rows per race with no operational value.
+      return { updated, ignored: false };
     });
-
-    return { updated, ignored: false };
   }
 }
