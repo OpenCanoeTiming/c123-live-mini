@@ -48,5 +48,8 @@ _logs/
 .claude/
 .superpowers/
 
+# Git worktrees for parallel development
+.worktrees/
+
 # AI-skill design exploration (mockups, screenshots, throwaway scripts)
 docs/superpowers/
