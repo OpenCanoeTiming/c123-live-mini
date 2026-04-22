@@ -47,7 +47,6 @@ function NameCell({
             onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
           />
         )}
-        <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
         <span className={styles.athleteNameText}>{row.name}</span>
         {row.catId && <span className={styles.catTag}>{row.catId}</span>}
       </div>
