@@ -255,8 +255,11 @@ function buildBestRunColumns(
         if (run1.total == null) return <span className={styles.monoText}>-</span>;
         const isBetter = row.betterRunNr === 1;
         return (
-          <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
-            {formatTime(run1.total)}
+          <span className={isBetter ? styles.betterRun : ''}>
+            <span className={styles.monoText}>{formatTime(run1.total)}</span>
+            {run1.pen != null && run1.pen > 0 && (
+              <span className={styles.brRunPen}> ({formatPenalty(run1.pen)})</span>
+            )}
           </span>
         );
       },
@@ -272,8 +275,11 @@ function buildBestRunColumns(
         if (run2.total == null) return <span className={styles.monoText}>-</span>;
         const isBetter = row.betterRunNr === 2;
         return (
-          <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
-            {formatTime(run2.total)}
+          <span className={isBetter ? styles.betterRun : ''}>
+            <span className={styles.monoText}>{formatTime(run2.total)}</span>
+            {run2.pen != null && run2.pen > 0 && (
+              <span className={styles.brRunPen}> ({formatPenalty(run2.pen)})</span>
+            )}
           </span>
         );
       },
