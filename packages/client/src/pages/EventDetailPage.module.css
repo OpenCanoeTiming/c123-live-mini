@@ -56,8 +56,18 @@
   }
 }
 
+/* Toolbar row above startlist: search input + favorites toggle */
+.startlistToolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
 /* Standalone search for startlist view */
 .startlistSearch {
+  flex: 1;
+  min-width: 8rem;
   max-width: 20rem;
 }
 
