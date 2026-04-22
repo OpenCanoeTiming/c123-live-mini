@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { groupRaces, getPairedBrRaceId, type ClassGroup } from './groupRaces';
+import {
+  groupRaces,
+  getPairedBrRaceId,
+  pickDefaultDay,
+  formatLocalDateYMD,
+  type ClassGroup,
+  type DayInfo,
+} from './groupRaces';
 import type { RaceInfo } from '../services/api';
 
 /** Helper to create a minimal RaceInfo stub */
@@ -151,5 +158,152 @@ describe('getPairedBrRaceId', () => {
     expect(getPairedBrRaceId('K1M_BR3_1')).toBeNull();
     expect(getPairedBrRaceId('BR1_1')).toBeNull();
     expect(getPairedBrRaceId('')).toBeNull();
+  });
+});
+
+describe('formatLocalDateYMD', () => {
+  it('formats local date as YYYY-MM-DD', () => {
+    const d = new Date(2026, 3, 22, 10, 30); // April 22, 2026 (month is 0-indexed)
+    expect(formatLocalDateYMD(d)).toBe('2026-04-22');
+  });
+
+  it('zero-pads single-digit month and day', () => {
+    const d = new Date(2026, 0, 5, 12, 0); // Jan 5, 2026
+    expect(formatLocalDateYMD(d)).toBe('2026-01-05');
+  });
+});
+
+describe('pickDefaultDay', () => {
+  /** Helper to make a DayInfo stub */
+  function makeDay(date: string, raceIds: string[] = []): DayInfo {
+    const [, m, day] = date.split('-');
+    return {
+      date,
+      label: `${parseInt(day)}.${parseInt(m)}.`,
+      raceIds: new Set(raceIds),
+    };
+  }
+
+  it('returns null for empty day list', () => {
+    expect(pickDefaultDay([], [])).toBeNull();
+  });
+
+  it("picks today when today's date matches a day", () => {
+    const days = [
+      makeDay('2026-04-21', ['race-day1']),
+      makeDay('2026-04-22', ['race-day2']),
+      makeDay('2026-04-23', ['race-day3']),
+    ];
+    const now = new Date(2026, 3, 22, 14, 0); // April 22
+    expect(pickDefaultDay(days, [], now)).toBe('2026-04-22');
+  });
+
+  it('picks today even if another day has a running race', () => {
+    const days = [
+      makeDay('2026-04-21', ['race-running']),
+      makeDay('2026-04-22', ['race-today']),
+    ];
+    const races: RaceInfo[] = [
+      {
+        raceId: 'race-running',
+        classId: 'K1M',
+        raceType: 'final',
+        raceOrder: 1,
+        raceStatus: 2,
+        startTime: null,
+      },
+      {
+        raceId: 'race-today',
+        classId: 'K1M',
+        raceType: 'final',
+        raceOrder: 2,
+        raceStatus: 0,
+        startTime: null,
+      },
+    ];
+    const now = new Date(2026, 3, 22, 10, 0);
+    expect(pickDefaultDay(days, races, now)).toBe('2026-04-22');
+  });
+
+  it('picks day with running race when today does not match', () => {
+    const days = [
+      makeDay('2026-04-20', ['race-idle']),
+      makeDay('2026-04-21', ['race-running']),
+    ];
+    const races: RaceInfo[] = [
+      {
+        raceId: 'race-idle',
+        classId: 'K1M',
+        raceType: 'final',
+        raceOrder: 1,
+        raceStatus: 0,
+        startTime: null,
+      },
+      {
+        raceId: 'race-running',
+        classId: 'K1M',
+        raceType: 'final',
+        raceOrder: 2,
+        raceStatus: 3,
+        startTime: null,
+      },
+    ];
+    const now = new Date(2026, 3, 22, 10, 0); // April 22 — no match
+    expect(pickDefaultDay(days, races, now)).toBe('2026-04-21');
+  });
+
+  it('picks first upcoming day when today is before the event', () => {
+    const days = [
+      makeDay('2026-05-01', ['race-d1']),
+      makeDay('2026-05-02', ['race-d2']),
+      makeDay('2026-05-03', ['race-d3']),
+    ];
+    const now = new Date(2026, 3, 22, 10, 0); // April 22 — before event
+    expect(pickDefaultDay(days, [], now)).toBe('2026-05-01');
+  });
+
+  it('picks first day when today is after the event (past event)', () => {
+    const days = [
+      makeDay('2026-04-10', ['race-d1']),
+      makeDay('2026-04-11', ['race-d2']),
+    ];
+    const now = new Date(2026, 3, 22, 10, 0); // April 22 — after event
+    expect(pickDefaultDay(days, [], now)).toBe('2026-04-10');
+  });
+
+  it('ignores raceStatus=1 (not yet running)', () => {
+    const days = [
+      makeDay('2026-04-20', ['race-pending']),
+      makeDay('2026-04-21', ['race-future']),
+    ];
+    const races: RaceInfo[] = [
+      {
+        raceId: 'race-pending',
+        classId: 'K1M',
+        raceType: 'final',
+        raceOrder: 1,
+        raceStatus: 1,
+        startTime: null,
+      },
+    ];
+    const now = new Date(2026, 3, 22, 10, 0);
+    // No today match, no running race — fall through to "first upcoming" (none), then first day
+    expect(pickDefaultDay(days, races, now)).toBe('2026-04-20');
+  });
+
+  it('handles single-day event (returned as empty by extractDays, but defensive)', () => {
+    const days = [makeDay('2026-04-22', ['race-only'])];
+    const now = new Date(2026, 3, 22, 10, 0);
+    expect(pickDefaultDay(days, [], now)).toBe('2026-04-22');
+  });
+
+  it('prefers today over upcoming when both could apply', () => {
+    // Today falls on first day of event; don't accidentally pick "upcoming" (second day).
+    const days = [
+      makeDay('2026-04-22', ['race-d1']),
+      makeDay('2026-04-23', ['race-d2']),
+    ];
+    const now = new Date(2026, 3, 22, 8, 0);
+    expect(pickDefaultDay(days, [], now)).toBe('2026-04-22');
   });
 });
