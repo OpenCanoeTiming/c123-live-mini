@@ -537,7 +537,9 @@ export function ResultList({
                           detail={detail}
                           isLoading={isLoading}
                           isBestRun={isBestRun}
-                          athleteName={row.name}
+                          bib={row.bib}
+                          catRnk={row.catRnk}
+                          catId={row.catId}
                           betterRunNr={row.betterRunNr}
                           prevStatus={row.prevStatus}
                           currStatus={row.currStatus}
