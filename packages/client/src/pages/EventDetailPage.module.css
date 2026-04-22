@@ -45,8 +45,10 @@
   flex: none;
 }
 
-/* Mobile: always standalone */
-@media (max-width: 640px) {
+/* Mobile + tablet/medium: always standalone.
+ * Below ~1024px the middle flex column is too narrow for pills to sit comfortably
+ * next to the day tabs and data-view tabs; force class tabs onto their own row. */
+@media (max-width: 1023px) {
   .classTabs {
     order: 10;
     width: 100%;
