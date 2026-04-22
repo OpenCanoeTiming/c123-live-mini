@@ -12,6 +12,57 @@ export interface DayInfo {
 }
 
 /**
+ * Format a Date as YYYY-MM-DD in the browser's local timezone.
+ * Matches the `date` field format produced by {@link extractDays}.
+ */
+export function formatLocalDateYMD(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * Pick the day to auto-select when the user opens a multi-day event.
+ *
+ * Priority:
+ *   1. Day whose date equals today (spectator at the venue — most common case).
+ *   2. Day containing a race that's currently running (`raceStatus >= 2`).
+ *   3. First upcoming day (today is before the event).
+ *   4. First day (today is after the event, or no other signal).
+ *
+ * @param days      Sorted list of event days (from {@link extractDays}). Must be non-empty.
+ * @param races     All races in the event (used to look up raceStatus for priority 2).
+ * @param now       Current time — injected for testability.
+ * @returns         `DayInfo.date` of the day to auto-select, or `null` if `days` is empty.
+ */
+export function pickDefaultDay(
+  days: DayInfo[],
+  races: RaceInfo[],
+  now: Date = new Date()
+): string | null {
+  if (days.length === 0) return null;
+
+  const today = formatLocalDateYMD(now);
+
+  // 1. Today matches one of the event days
+  const todayDay = days.find((d) => d.date === today);
+  if (todayDay) return todayDay.date;
+
+  // 2. A race is currently running on some day
+  const runningDay = days.find((d) =>
+    races.some(
+      (r) => d.raceIds.has(r.raceId) && r.raceStatus != null && r.raceStatus >= 2
+    )
+  );
+  if (runningDay) return runningDay.date;
+
+  // 3. First upcoming day (today is before the event — days are sorted ascending)
+  const upcomingDay = days.find((d) => d.date > today);
+  if (upcomingDay) return upcomingDay.date;
+
+  // 4. Fallback: first day
+  return days[0].date;
+}
+
+/**
  * Extract unique days from race startTimes.
  * Returns sorted array of DayInfo. If all races fall on same day, returns empty array.
  */
