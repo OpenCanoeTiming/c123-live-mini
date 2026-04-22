@@ -169,6 +169,13 @@
   text-align: center;
 }
 
+/* Rank column — zero horizontal cell padding; the 26px podium circle and
+ * plain numbers get centred inside the 32px column header/cell. */
+.rankCol {
+  padding-left: 0;
+  padding-right: 0;
+}
+
 .chevron {
   display: inline-block;
   font-size: 1rem;
@@ -250,6 +257,14 @@
 }
 
 .nameCell {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.nameCellBody {
+  flex: 1;
   min-width: 0;
 }
 
@@ -277,14 +292,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
-}
-
-/* On desktop, indent club under the name (past star + bib + gaps) */
-@media (min-width: 641px) {
-  .athleteClub {
-    /* star(20px) + gap(0.25rem) + bibBadge + gap(0.25rem) */
-    margin-left: calc(20px + 0.25rem);
-  }
 }
 
 .athleteClubText {
@@ -322,24 +329,6 @@
   font-size: var(--csk-font-size-xs, 0.75rem);
 }
 
-/* --- Bib badge inside name cell --- */
-.bibBadge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 1.5rem;
-  padding: 0.0625rem 0.3rem;
-  border-radius: 3px;
-  background: var(--csk-color-bg-secondary, #f3f4f6);
-  border: 1px solid var(--csk-color-border-secondary, #e5e7eb);
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: var(--csk-color-text-secondary, #6b7280);
-  vertical-align: middle;
-  line-height: 1.4;
-  flex-shrink: 0;
-}
-
 /* --- Category tag after name --- */
 .catTag {
   font-size: 0.625rem;
@@ -363,10 +352,9 @@
   white-space: nowrap;
 }
 
-.brRunLabel {
-  color: var(--csk-color-text-tertiary, #9ca3af);
-  font-size: 0.6875rem;
-  min-width: 1rem;
+/* Muted placeholder for a missing BR run slot (em-dash shows instead of a time). */
+.brRunLineDim {
+  opacity: 0.45;
 }
 
 .brRunPen {
@@ -374,9 +362,39 @@
   color: var(--csk-color-warning, #d97706);
 }
 
+/* Desktop BR run column wrapper — keep time + penalty on a single line so
+ * the column grows to fit instead of wrapping "(54)" onto its own line. */
+.brRunDesktop {
+  white-space: nowrap;
+}
+
 /* Mobile-only columns (hidden on desktop, shown on mobile) */
 .mobileOnly {
   display: none;
+}
+
+/* Split-span time value for mobile BR stacked cell — aligns on decimal
+ * across rows regardless of integer width (85.20 / 100.50). */
+.timeValue {
+  font-family: var(--csk-font-mono, 'JetBrains Mono', 'Fira Code', monospace);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.timeInt {
+  display: inline-block;
+  min-width: 3ch;
+  text-align: right;
+}
+
+.timeFrac {
+  display: inline-block;
+  text-align: left;
+}
+
+.timeDash {
+  color: var(--csk-color-text-tertiary, #9ca3af);
+  font-family: var(--csk-font-mono, 'JetBrains Mono', 'Fira Code', monospace);
 }
 
 

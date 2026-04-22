@@ -16,7 +16,12 @@ interface RunDetailExpandProps {
   detail: RunDetailData | null;
   isLoading: boolean;
   isBestRun?: boolean;
-  athleteName?: string;
+  /** Bib of the athlete for the detail header. */
+  bib?: number | null;
+  /** Age category rank — shown as "N." prefix when both catRnk and catId exist. */
+  catRnk?: number | null;
+  /** Age category id (e.g. "DM") — required for catRnk to render. */
+  catId?: string | null;
   betterRunNr?: number | null;
   // Per-run status (#162): when set, render DNS/DNF/DSQ in place of
   // time/total. Distinguishes "run attempted but didn't finish" from
@@ -72,6 +77,30 @@ function RunBlock({ label, isBetter, time, pen, total, gates }: {
   );
 }
 
+/** Compact header for the detail panel: "St.č. [25], 3. DM".
+ *  - catRnk without catId is suppressed (no orphan "3." without a category label).
+ *  - catId without catRnk renders as "St.č. [25], DM".
+ *  - bib missing falls back to "-". */
+function DetailHeader({ bib, catRnk, catId }: {
+  bib?: number | null;
+  catRnk?: number | null;
+  catId?: string | null;
+}) {
+  const showCat = Boolean(catId);
+  const showRank = showCat && catRnk != null;
+  return (
+    <div className={styles.detailHeader}>
+      <span className={styles.detailHeaderLabel}>St.č.</span>
+      <span className={styles.detailHeaderBib}>{bib ?? '-'}</span>
+      {showCat && (
+        <span className={styles.detailHeaderMeta}>
+          {showRank ? `, ${catRnk}. ${catId}` : `, ${catId}`}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function RunPlaceholder({ label, status }: { label: string; status?: string | null }) {
   return (
     <div className={`${styles.runSection} ${styles.runSectionPlaceholder}`}>
@@ -90,7 +119,7 @@ function RunPlaceholder({ label, status }: { label: string; status?: string | nu
   );
 }
 
-export function RunDetailExpand({ detail, isLoading, isBestRun, athleteName, betterRunNr, prevStatus, currStatus }: RunDetailExpandProps) {
+export function RunDetailExpand({ detail, isLoading, isBestRun, bib, catRnk, catId, betterRunNr, prevStatus, currStatus }: RunDetailExpandProps) {
   if (isLoading) {
     return (
       <div className={styles.container}>
@@ -142,7 +171,7 @@ export function RunDetailExpand({ detail, isLoading, isBestRun, athleteName, bet
 
     return (
       <div className={styles.container}>
-        {athleteName && <div className={styles.detailHeader}>{athleteName}</div>}
+        <DetailHeader bib={bib} catRnk={catRnk} catId={catId} />
         <div className={styles.runsGrid}>
           {run1HasData ? (
             <RunBlock label="1. jízda" isBetter={betterRunNr === 1} time={run1.time} pen={run1.pen} total={run1.total} gates={run1.gates} />
@@ -162,7 +191,7 @@ export function RunDetailExpand({ detail, isLoading, isBestRun, athleteName, bet
   // Single-run race — one block
   return (
     <div className={styles.container}>
-      {athleteName && <div className={styles.detailHeader}>{athleteName}</div>}
+      <DetailHeader bib={bib} catRnk={catRnk} catId={catId} />
       <TimeBreakdown time={detail.time} pen={detail.pen} total={detail.total} />
       {detail.gates && detail.gates.length > 0 && (
         <div className={styles.gatesSection}>

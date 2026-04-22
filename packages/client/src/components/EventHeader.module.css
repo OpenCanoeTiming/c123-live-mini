@@ -5,6 +5,18 @@
  * Rounded avatars (uploaded image): larger rectangular area, no ring shadow.
  */
 
+/* Negative horizontal margin cancels .pageWrapper padding so the hero
+ * bleeds edge-to-edge while tables keep their outer margin (#159). */
+.wrapper {
+  margin: 0 -0.5rem;
+}
+
+@media (min-width: 641px) {
+  .wrapper {
+    margin: 0 -1rem;
+  }
+}
+
 /* Rectangular image avatar — bigger than the circle, no ring */
 .wrapper :global(.csk-hero-section__avatar .csk-avatar--rounded) {
   width: 100px;

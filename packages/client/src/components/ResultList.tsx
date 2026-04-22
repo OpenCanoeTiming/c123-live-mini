@@ -26,7 +26,7 @@ interface Column {
   render: (row: ResultEntry, index: number) => React.ReactNode;
 }
 
-/** Name cell with [bib] ☆ Name / [cat] Club layout */
+/** Name cell with ☆ [Name / [cat] | Club] layout — star vertically centered across row. */
 function NameCell({
   row,
   favorites,
@@ -40,23 +40,41 @@ function NameCell({
 }) {
   return (
     <div className={styles.nameCell}>
-      <div className={styles.athleteName}>
-        {favorites && row.bib != null && favorites.classId && (
-          <StarButton
-            active={favorites.isFavorite(row.bib, favorites.classId)}
-            onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
-          />
-        )}
-        <span className={styles.bibBadge}>{row.bib ?? '-'}</span>
-        <span className={styles.athleteNameText}>{row.name}</span>
-        {row.catId && <span className={styles.catTag}>{row.catId}</span>}
-      </div>
-      {row.club && (
-        <div className={styles.athleteClub}>
-          <span className={styles.athleteClubText}>{row.club}</span>
-        </div>
+      {favorites && row.bib != null && favorites.classId && (
+        <StarButton
+          active={favorites.isFavorite(row.bib, favorites.classId)}
+          onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
+        />
       )}
+      <div className={styles.nameCellBody}>
+        <div className={styles.athleteName}>
+          <span className={styles.athleteNameText}>{row.name}</span>
+          {row.catId && <span className={styles.catTag}>{row.catId}</span>}
+        </div>
+        {row.club && (
+          <div className={styles.athleteClub}>
+            <span className={styles.athleteClubText}>{row.club}</span>
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+/** Split-span time value for decimal-point alignment in stacked mobile cells.
+ *  The integer part right-aligns in a fixed 3ch box, the fraction part left-aligns;
+ *  the decimal point therefore sits at a consistent offset across stacked rows. */
+function TimeValue({ centis }: { centis: number | null }) {
+  if (centis == null) {
+    return <span className={styles.timeDash}>—</span>;
+  }
+  const formatted = (centis / 100).toFixed(2);
+  const [intPart, fracPart] = formatted.split('.');
+  return (
+    <span className={styles.timeValue}>
+      <span className={styles.timeInt}>{intPart}</span>
+      <span className={styles.timeFrac}>.{fracPart}</span>
+    </span>
   );
 }
 
@@ -69,8 +87,9 @@ function buildStandardColumns(
     {
       key: 'rnk',
       header: 'Poř.',
-      width: '44px',
+      width: '32px',
       align: 'center',
+      cellClassName: styles.rankCol,
       render: (row) => {
         const rank = useCategory ? (row.catRnk ?? row.rnk) : row.rnk;
         return <RankCell rank={rank} status={row.status} />;
@@ -159,46 +178,41 @@ function resolveBrRuns(row: ResultEntry) {
   return { run1: single, run2: empty };
 }
 
-/** Mobile-only cell showing both BR runs stacked */
+/** Mobile-only cell showing both BR runs stacked.
+ *  Position = run number (no label). Missing slot renders as em-dash placeholder
+ *  so the "top = run 1" convention is preserved even when only one run has data. */
 function BrRunsCell({ row }: { row: ResultEntry }) {
   const { run1, run2 } = resolveBrRuns(row);
   const isBetter1 = row.betterRunNr === 1;
   const isBetter2 = row.betterRunNr === 2;
-  const run1HasData = run1.total != null || run1.status != null;
-  const run2HasData = run2.total != null || run2.status != null;
+
+  const renderLine = (
+    run: { total: number | null; pen: number | null; status: string | null },
+    isBetter: boolean,
+    key: string,
+  ) => {
+    const hasData = run.total != null || run.status != null;
+    const dimClass = hasData ? '' : styles.brRunLineDim;
+    return (
+      <div key={key} className={`${styles.brRunLine} ${isBetter ? styles.betterRun : ''} ${dimClass}`}>
+        {run.status ? (
+          <StatusBadge status={run.status} />
+        ) : (
+          <>
+            <TimeValue centis={run.total} />
+            {run.pen != null && run.pen > 0 && (
+              <span className={styles.brRunPen}>({formatPenalty(run.pen)})</span>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className={styles.brRunsStacked}>
-      {run1HasData && (
-        <div className={`${styles.brRunLine} ${isBetter1 ? styles.betterRun : ''}`}>
-          <span className={styles.brRunLabel}>1.</span>
-          {run1.status ? (
-            <StatusBadge status={run1.status} />
-          ) : (
-            <>
-              <span className={styles.monoText}>{formatTime(run1.total)}</span>
-              {run1.pen != null && run1.pen > 0 && (
-                <span className={styles.brRunPen}>({formatPenalty(run1.pen)})</span>
-              )}
-            </>
-          )}
-        </div>
-      )}
-      {run2HasData && (
-        <div className={`${styles.brRunLine} ${isBetter2 ? styles.betterRun : ''}`}>
-          <span className={styles.brRunLabel}>2.</span>
-          {run2.status ? (
-            <StatusBadge status={run2.status} />
-          ) : (
-            <>
-              <span className={styles.monoText}>{formatTime(run2.total)}</span>
-              {run2.pen != null && run2.pen > 0 && (
-                <span className={styles.brRunPen}>({formatPenalty(run2.pen)})</span>
-              )}
-            </>
-          )}
-        </div>
-      )}
+      {renderLine(run1, isBetter1, 'run1')}
+      {renderLine(run2, isBetter2, 'run2')}
     </div>
   );
 }
@@ -212,8 +226,9 @@ function buildBestRunColumns(
     {
       key: 'rnk',
       header: 'Poř.',
-      width: '44px',
+      width: '32px',
       align: 'center',
+      cellClassName: styles.rankCol,
       render: (row) => {
         const rank = useCategory ? (row.catRnk ?? row.rnk) : row.rnk;
         return <RankCell rank={rank} status={row.status} />;
@@ -244,8 +259,11 @@ function buildBestRunColumns(
         if (run1.total == null) return <span className={styles.monoText}>-</span>;
         const isBetter = row.betterRunNr === 1;
         return (
-          <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
-            {formatTime(run1.total)}
+          <span className={`${styles.brRunDesktop} ${isBetter ? styles.betterRun : ''}`}>
+            <span className={styles.monoText}>{formatTime(run1.total)}</span>
+            {run1.pen != null && run1.pen > 0 && (
+              <span className={styles.brRunPen}>&nbsp;({formatPenalty(run1.pen)})</span>
+            )}
           </span>
         );
       },
@@ -261,8 +279,11 @@ function buildBestRunColumns(
         if (run2.total == null) return <span className={styles.monoText}>-</span>;
         const isBetter = row.betterRunNr === 2;
         return (
-          <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
-            {formatTime(run2.total)}
+          <span className={`${styles.brRunDesktop} ${isBetter ? styles.betterRun : ''}`}>
+            <span className={styles.monoText}>{formatTime(run2.total)}</span>
+            {run2.pen != null && run2.pen > 0 && (
+              <span className={styles.brRunPen}>&nbsp;({formatPenalty(run2.pen)})</span>
+            )}
           </span>
         );
       },
@@ -520,7 +541,9 @@ export function ResultList({
                           detail={detail}
                           isLoading={isLoading}
                           isBestRun={isBestRun}
-                          athleteName={row.name}
+                          bib={row.bib}
+                          catRnk={row.catRnk}
+                          catId={row.catId}
                           betterRunNr={row.betterRunNr}
                           prevStatus={row.prevStatus}
                           currStatus={row.currStatus}

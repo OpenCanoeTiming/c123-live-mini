@@ -158,3 +158,115 @@ describe('ResultList — BR per-run status (#162)', () => {
     expect(screen.queryAllByText('90.00').length).toBe(0);
   });
 });
+
+describe('ResultList — BR mobile stacked cell (#159)', () => {
+  afterEach(() => cleanup());
+
+  it('does not render "1." / "2." labels in the mobile stacked cell', () => {
+    const { container } = render(
+      <ResultList
+        isBestRun
+        data={wrap([
+          row({
+            name: 'Novak J.',
+            bib: 1,
+            rnk: 1,
+            total: 9000,
+            totalTotal: 9000,
+            betterRunNr: 2,
+            prevTotal: 8500,
+            prevStatus: null,
+            currStatus: null,
+            status: null,
+          }),
+        ])}
+      />
+    );
+
+    // The old `.brRunLabel` spans no longer exist in the mobile stacked cell.
+    const mobileCell = container.querySelector('[class*="brRunsStacked"]');
+    expect(mobileCell).not.toBeNull();
+    expect(mobileCell!.querySelector('[class*="brRunLabel"]')).toBeNull();
+  });
+
+  it('renders a dash placeholder for the missing run slot', () => {
+    const { container } = render(
+      <ResultList
+        isBestRun
+        data={wrap([
+          row({
+            name: 'Novak J.',
+            bib: 1,
+            rnk: 1,
+            total: 8500,
+            totalTotal: 8500,
+            betterRunNr: 1,
+            prevTotal: null,    // only run 1 has data
+            prevStatus: null,
+            currStatus: null,
+            status: null,
+          }),
+        ])}
+      />
+    );
+
+    const mobileCell = container.querySelector('[class*="brRunsStacked"]');
+    expect(mobileCell).not.toBeNull();
+    // Missing run 2 slot renders as em-dash placeholder.
+    expect(mobileCell!.textContent).toContain('—');
+  });
+});
+
+describe('ResultList — BR desktop penalty in run columns (#159)', () => {
+  afterEach(() => cleanup());
+
+  it('renders penalty in parens next to the run1 time', () => {
+    const { container } = render(
+      <ResultList
+        isBestRun
+        data={wrap([
+          row({
+            name: 'Novak J.',
+            bib: 1,
+            rnk: 1,
+            total: 9000,
+            totalTotal: 9000,
+            betterRunNr: 2,
+            prevTotal: 8500,
+            prevPen: 200,        // 2s penalty on run 1
+            prevStatus: null,
+            currStatus: null,
+            status: null,
+          }),
+        ])}
+      />
+    );
+
+    expect(container.textContent).toContain('85.00');
+    expect(container.textContent).toContain('(2)');
+  });
+
+  it('does not render penalty parens when pen is 0', () => {
+    const { container } = render(
+      <ResultList
+        isBestRun
+        data={wrap([
+          row({
+            name: 'Novak J.',
+            bib: 1,
+            rnk: 1,
+            total: 9000,
+            totalTotal: 9000,
+            betterRunNr: 2,
+            prevTotal: 8500,
+            prevPen: 0,          // clean
+            prevStatus: null,
+            currStatus: null,
+            status: null,
+          }),
+        ])}
+      />
+    );
+    expect(container.textContent).not.toContain('(0)');
+  });
+});
