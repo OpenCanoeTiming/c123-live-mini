@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.10.1...v0.11.0) (2026-04-22)
+
+
+### Features
+
+* **client:** add favorites filter toggle to startlist view ([#176](https://github.com/OpenCanoeTiming/c123-live-mini/issues/176)) ([cf533ef](https://github.com/OpenCanoeTiming/c123-live-mini/commit/cf533efe0641dd1ed7a37415ffbc293270c162ee)), closes [#152](https://github.com/OpenCanoeTiming/c123-live-mini/issues/152)
+
 ## [0.10.1](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.10.0...v0.10.1) (2026-04-22)
 
 
