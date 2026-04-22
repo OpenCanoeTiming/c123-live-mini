@@ -169,6 +169,13 @@
   text-align: center;
 }
 
+/* Rank column — tighter horizontal padding than default cell padding so the
+ * 26px podium circle (or plain number) isn't surrounded by empty space. */
+.rankCol {
+  padding-left: 0.125rem;
+  padding-right: 0.125rem;
+}
+
 .chevron {
   display: inline-block;
   font-size: 1rem;
@@ -250,6 +257,14 @@
 }
 
 .nameCell {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.nameCellBody {
+  flex: 1;
   min-width: 0;
 }
 
@@ -277,14 +292,6 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
-}
-
-/* On desktop, indent club under the name (past star + gap) */
-@media (min-width: 641px) {
-  .athleteClub {
-    /* star(20px) + gap(0.25rem) */
-    margin-left: calc(20px + 0.25rem);
-  }
 }
 
 .athleteClubText {
@@ -353,6 +360,12 @@
 .brRunPen {
   font-size: 0.6875rem;
   color: var(--csk-color-warning, #d97706);
+}
+
+/* Desktop BR run column wrapper — keep time + penalty on a single line so
+ * the column grows to fit instead of wrapping "(54)" onto its own line. */
+.brRunDesktop {
+  white-space: nowrap;
 }
 
 /* Mobile-only columns (hidden on desktop, shown on mobile) */

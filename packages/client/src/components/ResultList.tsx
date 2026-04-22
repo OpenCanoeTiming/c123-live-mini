@@ -26,7 +26,7 @@ interface Column {
   render: (row: ResultEntry, index: number) => React.ReactNode;
 }
 
-/** Name cell with [bib] ☆ Name / [cat] Club layout */
+/** Name cell with ☆ [Name / [cat] | Club] layout — star vertically centered across row. */
 function NameCell({
   row,
   favorites,
@@ -40,21 +40,23 @@ function NameCell({
 }) {
   return (
     <div className={styles.nameCell}>
-      <div className={styles.athleteName}>
-        {favorites && row.bib != null && favorites.classId && (
-          <StarButton
-            active={favorites.isFavorite(row.bib, favorites.classId)}
-            onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
-          />
-        )}
-        <span className={styles.athleteNameText}>{row.name}</span>
-        {row.catId && <span className={styles.catTag}>{row.catId}</span>}
-      </div>
-      {row.club && (
-        <div className={styles.athleteClub}>
-          <span className={styles.athleteClubText}>{row.club}</span>
-        </div>
+      {favorites && row.bib != null && favorites.classId && (
+        <StarButton
+          active={favorites.isFavorite(row.bib, favorites.classId)}
+          onClick={() => favorites.onToggle(row.bib!, favorites.classId!)}
+        />
       )}
+      <div className={styles.nameCellBody}>
+        <div className={styles.athleteName}>
+          <span className={styles.athleteNameText}>{row.name}</span>
+          {row.catId && <span className={styles.catTag}>{row.catId}</span>}
+        </div>
+        {row.club && (
+          <div className={styles.athleteClub}>
+            <span className={styles.athleteClubText}>{row.club}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -85,8 +87,9 @@ function buildStandardColumns(
     {
       key: 'rnk',
       header: 'Poř.',
-      width: '44px',
+      width: '36px',
       align: 'center',
+      cellClassName: styles.rankCol,
       render: (row) => {
         const rank = useCategory ? (row.catRnk ?? row.rnk) : row.rnk;
         return <RankCell rank={rank} status={row.status} />;
@@ -223,8 +226,9 @@ function buildBestRunColumns(
     {
       key: 'rnk',
       header: 'Poř.',
-      width: '44px',
+      width: '36px',
       align: 'center',
+      cellClassName: styles.rankCol,
       render: (row) => {
         const rank = useCategory ? (row.catRnk ?? row.rnk) : row.rnk;
         return <RankCell rank={rank} status={row.status} />;
@@ -255,10 +259,10 @@ function buildBestRunColumns(
         if (run1.total == null) return <span className={styles.monoText}>-</span>;
         const isBetter = row.betterRunNr === 1;
         return (
-          <span className={isBetter ? styles.betterRun : ''}>
+          <span className={`${styles.brRunDesktop} ${isBetter ? styles.betterRun : ''}`}>
             <span className={styles.monoText}>{formatTime(run1.total)}</span>
             {run1.pen != null && run1.pen > 0 && (
-              <span className={styles.brRunPen}> ({formatPenalty(run1.pen)})</span>
+              <span className={styles.brRunPen}>&nbsp;({formatPenalty(run1.pen)})</span>
             )}
           </span>
         );
@@ -275,10 +279,10 @@ function buildBestRunColumns(
         if (run2.total == null) return <span className={styles.monoText}>-</span>;
         const isBetter = row.betterRunNr === 2;
         return (
-          <span className={isBetter ? styles.betterRun : ''}>
+          <span className={`${styles.brRunDesktop} ${isBetter ? styles.betterRun : ''}`}>
             <span className={styles.monoText}>{formatTime(run2.total)}</span>
             {run2.pen != null && run2.pen > 0 && (
-              <span className={styles.brRunPen}> ({formatPenalty(run2.pen)})</span>
+              <span className={styles.brRunPen}>&nbsp;({formatPenalty(run2.pen)})</span>
             )}
           </span>
         );
