@@ -345,10 +345,9 @@
   white-space: nowrap;
 }
 
-.brRunLabel {
-  color: var(--csk-color-text-tertiary, #9ca3af);
-  font-size: 0.6875rem;
-  min-width: 1rem;
+/* Muted placeholder for a missing BR run slot (em-dash shows instead of a time). */
+.brRunLineDim {
+  opacity: 0.45;
 }
 
 .brRunPen {

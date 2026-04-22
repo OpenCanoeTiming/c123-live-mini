@@ -175,46 +175,41 @@ function resolveBrRuns(row: ResultEntry) {
   return { run1: single, run2: empty };
 }
 
-/** Mobile-only cell showing both BR runs stacked */
+/** Mobile-only cell showing both BR runs stacked.
+ *  Position = run number (no label). Missing slot renders as em-dash placeholder
+ *  so the "top = run 1" convention is preserved even when only one run has data. */
 function BrRunsCell({ row }: { row: ResultEntry }) {
   const { run1, run2 } = resolveBrRuns(row);
   const isBetter1 = row.betterRunNr === 1;
   const isBetter2 = row.betterRunNr === 2;
-  const run1HasData = run1.total != null || run1.status != null;
-  const run2HasData = run2.total != null || run2.status != null;
+
+  const renderLine = (
+    run: { total: number | null; pen: number | null; status: string | null },
+    isBetter: boolean,
+    key: string,
+  ) => {
+    const hasData = run.total != null || run.status != null;
+    const dimClass = hasData ? '' : styles.brRunLineDim;
+    return (
+      <div key={key} className={`${styles.brRunLine} ${isBetter ? styles.betterRun : ''} ${dimClass}`}>
+        {run.status ? (
+          <StatusBadge status={run.status} />
+        ) : (
+          <>
+            <TimeValue centis={run.total} />
+            {run.pen != null && run.pen > 0 && (
+              <span className={styles.brRunPen}>({formatPenalty(run.pen)})</span>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className={styles.brRunsStacked}>
-      {run1HasData && (
-        <div className={`${styles.brRunLine} ${isBetter1 ? styles.betterRun : ''}`}>
-          <span className={styles.brRunLabel}>1.</span>
-          {run1.status ? (
-            <StatusBadge status={run1.status} />
-          ) : (
-            <>
-              <span className={styles.monoText}>{formatTime(run1.total)}</span>
-              {run1.pen != null && run1.pen > 0 && (
-                <span className={styles.brRunPen}>({formatPenalty(run1.pen)})</span>
-              )}
-            </>
-          )}
-        </div>
-      )}
-      {run2HasData && (
-        <div className={`${styles.brRunLine} ${isBetter2 ? styles.betterRun : ''}`}>
-          <span className={styles.brRunLabel}>2.</span>
-          {run2.status ? (
-            <StatusBadge status={run2.status} />
-          ) : (
-            <>
-              <span className={styles.monoText}>{formatTime(run2.total)}</span>
-              {run2.pen != null && run2.pen > 0 && (
-                <span className={styles.brRunPen}>({formatPenalty(run2.pen)})</span>
-              )}
-            </>
-          )}
-        </div>
-      )}
+      {renderLine(run1, isBetter1, 'run1')}
+      {renderLine(run2, isBetter2, 'run2')}
     </div>
   );
 }
