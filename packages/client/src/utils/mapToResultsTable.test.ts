@@ -82,6 +82,7 @@ describe('mapResultToDS', () => {
         total: 9400,
         prevTotal: null,
         totalTotal: null,
+        betterRunNr: 1,
       });
       const ds = mapResultToDS(result, true);
 
@@ -89,6 +90,27 @@ describe('mapResultToDS', () => {
       expect(ds.run1Penalty).toBe(2);
       expect(ds.run2Time).toBeUndefined();
       expect(ds.totalTime).toBe(94);       // falls back to total
+    });
+
+    // Regression test for issue #155: when a competitor only completed BR2
+    // (e.g. DNS in BR1), the primary slot carries Run 2 data and betterRunNr=2
+    // tells the mapper to route it into run2, not run1.
+    it('maps to run2 slot when only BR2 available (issue #155)', () => {
+      const result = makeResult({
+        time: 9200,
+        pen: 200,
+        total: 9400,
+        prevTotal: null,
+        totalTotal: 9400,
+        betterRunNr: 2,
+      });
+      const ds = mapResultToDS(result, true);
+
+      expect(ds.run1Time).toBeUndefined();
+      expect(ds.run1Penalty).toBeUndefined();
+      expect(ds.run2Time).toBe(92);
+      expect(ds.run2Penalty).toBe(2);
+      expect(ds.totalTime).toBe(94);
     });
   });
 

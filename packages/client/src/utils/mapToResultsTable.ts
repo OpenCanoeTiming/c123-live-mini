@@ -86,10 +86,12 @@ export function mapResultToDS(
   let totalTime: number | undefined;
 
   if (isBestRun) {
-    // Server convention: primary run is BR2.
+    // Server convention: primary run is BR2 when both exist.
     //   result.time / result.pen / result.total  → Run 2 (current / primary)
     //   result.prevTime / result.prevPen / result.prevTotal → Run 1 (previous)
-    // When only BR1 has been run, prevTotal is null and total holds Run 1 data.
+    // When only one run has been ingested, prevTotal is null and the primary
+    // slot holds that single run — betterRunNr indicates which run it is so we
+    // can route the value to the correct run1/run2 column.
     const hasBothRuns = result.prevTotal != null;
 
     if (hasBothRuns) {
@@ -97,14 +99,18 @@ export function mapResultToDS(
       run1Penalty = hundredthsToSeconds(result.prevPen);
       run2Time = hundredthsToSeconds(result.time);
       run2Penalty = hundredthsToSeconds(result.pen);
+    } else if (result.betterRunNr === 2) {
+      // Only Run 2 available (athlete DNS'd Run 1) — map to run2 slot.
+      run2Time = hundredthsToSeconds(result.time);
+      run2Penalty = hundredthsToSeconds(result.pen);
     } else {
-      // Only Run 1 available — map to run1 slot.
+      // Only Run 1 available (or no clean run yet) — map to run1 slot.
       run1Time = hundredthsToSeconds(result.time);
       run1Penalty = hundredthsToSeconds(result.pen);
     }
 
     // Best-of-both-runs aggregate total (totalTotal), or fall back to the
-    // single-run total when BR2 hasn't been ingested yet.
+    // single-run total when only one run has been ingested yet.
     totalTime = hundredthsToSeconds(result.totalTotal ?? result.total);
   } else {
     // Single-run race: straightforward mapping.

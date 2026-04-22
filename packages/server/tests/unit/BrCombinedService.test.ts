@@ -217,6 +217,28 @@ describe('BrCombinedService', () => {
     expect(results[0].prevPen).toBeNull();
   });
 
+  // Regression test for issue #155: when a competitor runs only BR2 (e.g. DNS in
+  // BR1), the combined entry must carry BR2 data in the primary slot so the client
+  // can render it in the 2nd-run column (betterRunNr=2 disambiguates).
+  it('should handle single run only (BR2 exists, no BR1) — issue #155', async () => {
+    await seedResults('P1', null, { time: 8800, pen: 400, total: 9200 });
+
+    const results = await service.computeCombined(eventId, 'K1M_ST_BR2_6');
+
+    expect(results).toHaveLength(1);
+    // Primary slot carries the only existing run (BR2).
+    expect(results[0].time).toBe(8800);
+    expect(results[0].pen).toBe(400);
+    expect(results[0].total).toBe(9200);
+    expect(results[0].totalTotal).toBe(9200);
+    // betterRunNr=2 signals to the client that the primary slot holds Run 2.
+    expect(results[0].betterRunNr).toBe(2);
+    // prev* must be null — BR1 did not run.
+    expect(results[0].prevTime).toBeNull();
+    expect(results[0].prevPen).toBeNull();
+    expect(results[0].prevTotal).toBeNull();
+  });
+
   it('should handle DSQ on one run — use other run as best', async () => {
     // P1: BR1=DSQ, BR2=9000 → BR2 is the only clean run
     await seedResults('P1',
