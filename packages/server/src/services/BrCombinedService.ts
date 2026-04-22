@@ -124,6 +124,12 @@ export class BrCombinedService {
       // Only show status (DSQ etc.) when NO clean run exists
       const combinedStatus = betterRunNr != null ? null : (infoSource.status || null);
 
+      // Primary slot holds the single existing run when only one ran (BR1 or BR2),
+      // and BR2 when both ran. The run number carried in the primary slot is
+      // disambiguated by betterRunNr when only one run exists, so the client
+      // can route the value into the correct run1/run2 column. (#155)
+      const primarySource = hasBothRuns ? br2! : infoSource;
+
       // #162: Per-run status fields. The combined `status` above is cleared
       // to null as soon as a participant has one clean run, which makes the
       // client unable to distinguish "BR1 DNF + BR2 clean" from
@@ -143,10 +149,10 @@ export class BrCombinedService {
         noc: infoSource.noc,
         catId: infoSource.cat_id,
         catRnk: null, // will be recalculated
-        // Primary run: BR2 when both exist, else BR1
-        time: hasBothRuns ? (br2!.time ?? null) : (br1?.time ?? null),
-        pen: hasBothRuns ? (br2!.pen ?? null) : (br1?.pen ?? null),
-        total: hasBothRuns ? (br2!.total ?? null) : (br1?.total ?? null),
+        // Primary run: BR2 when both exist, else whichever single run was ingested
+        time: primarySource.time ?? null,
+        pen: primarySource.pen ?? null,
+        total: primarySource.total ?? null,
         totalBehind: null, // will be recalculated
         catTotalBehind: null, // will be recalculated
         status: combinedStatus,
@@ -161,12 +167,13 @@ export class BrCombinedService {
         prevRnk: hasBothRuns ? (br1!.rnk ?? null) : null,
       };
 
-      // Attach gate data — same chronological convention as times: primary=BR2, prev=BR1
+      // Attach gate data — mirrors the primary/prev convention above:
+      //   primary = BR2 when both exist, else the single ingested run (BR1 or BR2)
+      //   prev    = BR1 when both exist, null when only one run ran
       if (includeGates) {
-        const run2 = hasBothRuns ? br2 : (br1 ?? null);
-        entry.dtStart = run2?.dt_start ?? null;
-        entry.dtFinish = run2?.dt_finish ?? null;
-        entry.gates = parseGates(run2?.gates);
+        entry.dtStart = primarySource.dt_start ?? null;
+        entry.dtFinish = primarySource.dt_finish ?? null;
+        entry.gates = parseGates(primarySource.gates);
 
         const run1 = hasBothRuns ? br1 : null;
         entry.prevDtStart = run1?.dt_start ?? null;

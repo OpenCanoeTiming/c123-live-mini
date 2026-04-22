@@ -22,7 +22,7 @@ import {
   type CategoryInfo,
   type StartlistDisplayRow,
 } from '../services/api';
-import { groupRaces, extractDays, getDisplayRaces, type ClassGroup, type DayInfo } from '../utils/groupRaces';
+import { groupRaces, extractDays, getDisplayRaces, pickDefaultDay, type ClassGroup, type DayInfo } from '../utils/groupRaces';
 import { isBestRunRace } from '../utils/raceTypeLabels';
 import { EventHeader } from '../components/EventHeader';
 import { ClassTabs } from '../components/ClassTabs';
@@ -332,13 +332,15 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         const dayInfos = extractDays(eventData.races);
         setDays(dayInfos);
 
-        // Auto-select active day
+        // Auto-select day on first load:
+        //   1. Today (if today is one of the event days) — most common at the venue
+        //   2. Day with a running race (raceStatus >= 2)
+        //   3. First upcoming day (event hasn't started yet)
+        //   4. First day (past event fallback)
         if (dayInfos.length > 1 && !dayAutoSelectedRef.current) {
           dayAutoSelectedRef.current = true;
-          const runningDay = dayInfos.find((d) =>
-            eventData.races.some((r) => d.raceIds.has(r.raceId) && r.raceStatus != null && r.raceStatus >= 2)
-          );
-          setSelectedDay(runningDay ? runningDay.date : dayInfos[0].date);
+          const defaultDay = pickDefaultDay(dayInfos, eventData.races);
+          if (defaultDay) setSelectedDay(defaultDay);
         }
 
         // Handle deep link with raceId from URL
@@ -490,6 +492,10 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     (classId: string) => {
       setSelectedClassId(classId);
       setExpandedRows(new Set());
+      // Clear text filter so the search field stays in sync with the predicate (#149).
+      // Without this, switching classes leaves a stale filter applied to results but
+      // hides its value from the (uncontrolled) SearchInput, so the user can't clear it.
+      setSearchQuery('');
       const group = classGroups.find((g) => g.classId === classId);
       if (!group) return;
 
@@ -540,6 +546,8 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
   const handleCategoryChange = useCallback((catId: string | null) => {
     setSelectedCatId(catId);
     setExpandedRows(new Set());
+    // Clear text filter on category switch so it matches the visible input state (#149).
+    setSearchQuery('');
   }, []);
 
   // Handle row expand/collapse
@@ -851,6 +859,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           hasMergedBR={hasMergedBR}
           showRoundTabs={showRoundTabs}
           onSearchChange={setSearchQuery}
+          searchResetKey={`${selectedClassId ?? ''}|${selectedCatId ?? ''}`}
           categories={availableCategories}
           onCategoryChange={handleCategoryChange}
           isFavorite={favorites.isFavorite}
@@ -865,6 +874,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       {resultsState === 'success' && dataView === 'startlist' && (
         <div className={styles.startlistSearch}>
           <SearchInput
+            key={`startlist|${selectedClassId ?? ''}|${selectedCatId ?? ''}`}
             size="sm"
             placeholder="Hledat závodníka..."
             onChange={setSearchQuery}

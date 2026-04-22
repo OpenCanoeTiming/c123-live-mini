@@ -131,51 +131,69 @@ function buildStandardColumns(
   return cols;
 }
 
-/** Mobile-only cell showing both BR runs stacked */
-function BrRunsCell({ row }: { row: ResultEntry }) {
-  // #162: Use per-run status fields so each run's DNF/DNS is shown in its
-  // own line even when the combined `status` was cleared by a clean run.
+/**
+ * Resolve BR run 1 / run 2 values from a row.
+ *
+ * Server convention: when both runs exist, `prev*` holds BR1 and `time/pen/total`
+ * holds BR2. When only one run exists, `prev*` is null and `time/pen/total` holds
+ * that single run — the `betterRunNr` field indicates whether it was run 1 or run 2.
+ */
+function resolveBrRuns(row: ResultEntry) {
   const br1Status = row.prevStatus ?? null;
   const br2Status = row.currStatus ?? null;
-  // `prevTotal != null` used to mean "both runs exist". That's wrong when
-  // BR1 DNF'd (prevTotal=null but BR1 row still exists). Treat BR1 as
-  // present when either its total OR its status is populated.
+  // BR1 is "present" when it has either a time or a status.
   const hasBr1 = row.prevTotal != null || br1Status != null;
-  // When BR2 doesn't exist, the "current" row IS BR1 — display status and
-  // total from the primary fields for Run 1 instead of prev.
-  const br1StatusForRun1 = hasBr1 ? br1Status : br2Status;
-  const run1Total = hasBr1 ? row.prevTotal : row.total;
-  const run1Pen = hasBr1 ? row.prevPen : row.pen;
-  const run2Total = hasBr1 ? row.total : null;
-  const run2HasData = hasBr1 && (run2Total != null || br2Status != null);
+  if (hasBr1) {
+    return {
+      run1: { total: row.prevTotal ?? null, pen: row.prevPen ?? null, status: br1Status },
+      run2: { total: row.total ?? null, pen: row.pen ?? null, status: br2Status },
+    };
+  }
+  // Only one run exists — route by betterRunNr (#155). For all-DNF singletons
+  // betterRunNr is null; fall back to run1 (matches pre-#155 behavior).
+  const single = { total: row.total ?? null, pen: row.pen ?? null, status: br2Status };
+  const empty = { total: null, pen: null, status: null };
+  if (row.betterRunNr === 2) {
+    return { run1: empty, run2: single };
+  }
+  return { run1: single, run2: empty };
+}
+
+/** Mobile-only cell showing both BR runs stacked */
+function BrRunsCell({ row }: { row: ResultEntry }) {
+  const { run1, run2 } = resolveBrRuns(row);
   const isBetter1 = row.betterRunNr === 1;
   const isBetter2 = row.betterRunNr === 2;
+  const run1HasData = run1.total != null || run1.status != null;
+  const run2HasData = run2.total != null || run2.status != null;
 
   return (
     <div className={styles.brRunsStacked}>
-      <div className={`${styles.brRunLine} ${isBetter1 ? styles.betterRun : ''}`}>
-        <span className={styles.brRunLabel}>1.</span>
-        {br1StatusForRun1 ? (
-          <StatusBadge status={br1StatusForRun1} />
-        ) : (
-          <>
-            <span className={styles.monoText}>{formatTime(run1Total ?? null)}</span>
-            {run1Pen != null && run1Pen > 0 && (
-              <span className={styles.brRunPen}>({formatPenalty(run1Pen)})</span>
-            )}
-          </>
-        )}
-      </div>
+      {run1HasData && (
+        <div className={`${styles.brRunLine} ${isBetter1 ? styles.betterRun : ''}`}>
+          <span className={styles.brRunLabel}>1.</span>
+          {run1.status ? (
+            <StatusBadge status={run1.status} />
+          ) : (
+            <>
+              <span className={styles.monoText}>{formatTime(run1.total)}</span>
+              {run1.pen != null && run1.pen > 0 && (
+                <span className={styles.brRunPen}>({formatPenalty(run1.pen)})</span>
+              )}
+            </>
+          )}
+        </div>
+      )}
       {run2HasData && (
         <div className={`${styles.brRunLine} ${isBetter2 ? styles.betterRun : ''}`}>
           <span className={styles.brRunLabel}>2.</span>
-          {br2Status ? (
-            <StatusBadge status={br2Status} />
+          {run2.status ? (
+            <StatusBadge status={run2.status} />
           ) : (
             <>
-              <span className={styles.monoText}>{formatTime(run2Total ?? null)}</span>
-              {row.pen != null && row.pen > 0 && (
-                <span className={styles.brRunPen}>({formatPenalty(row.pen)})</span>
+              <span className={styles.monoText}>{formatTime(run2.total)}</span>
+              {run2.pen != null && run2.pen > 0 && (
+                <span className={styles.brRunPen}>({formatPenalty(run2.pen)})</span>
               )}
             </>
           )}
@@ -221,22 +239,13 @@ function buildBestRunColumns(
       align: 'right',
       hideOnMobile: true,
       render: (row) => {
-        // #162: Use per-run status so BR1 DNF/DNS is shown in its own cell
-        // instead of falling back to row.total (which may be BR2's time
-        // when BR1 DNF'd and BR2 is clean).
-        const br1Status = row.prevStatus ?? null;
-        const br2Status = row.currStatus ?? null;
-        const hasBr1 = row.prevTotal != null || br1Status != null;
-        // When BR2 doesn't exist, the "current" row IS BR1 — use currStatus
-        // and row.total for it instead of trying to pull from prev.
-        const br1StatusForRun1 = hasBr1 ? br1Status : br2Status;
-        if (br1StatusForRun1) return <StatusBadge status={br1StatusForRun1} />;
-        const run1Total = hasBr1 ? row.prevTotal : row.total;
+        const { run1 } = resolveBrRuns(row);
+        if (run1.status) return <StatusBadge status={run1.status} />;
+        if (run1.total == null) return <span className={styles.monoText}>-</span>;
         const isBetter = row.betterRunNr === 1;
-        if (run1Total == null) return <span className={styles.monoText}>-</span>;
         return (
           <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
-            {formatTime(run1Total)}
+            {formatTime(run1.total)}
           </span>
         );
       },
@@ -247,20 +256,13 @@ function buildBestRunColumns(
       align: 'right',
       hideOnMobile: true,
       render: (row) => {
-        // #162: Use per-run status so BR2 DNF/DNS is shown in its own cell
-        // even when the combined `status` was cleared by a clean BR1.
-        const br1Status = row.prevStatus ?? null;
-        const br2Status = row.currStatus ?? null;
-        const hasBr1 = row.prevTotal != null || br1Status != null;
-        // When only BR1 has been run, there is no Run 2 to render.
-        if (!hasBr1) return <span className={styles.monoText}>-</span>;
-        if (br2Status) return <StatusBadge status={br2Status} />;
-        const run2Total = row.total;
+        const { run2 } = resolveBrRuns(row);
+        if (run2.status) return <StatusBadge status={run2.status} />;
+        if (run2.total == null) return <span className={styles.monoText}>-</span>;
         const isBetter = row.betterRunNr === 2;
-        if (run2Total == null) return <span className={styles.monoText}>-</span>;
         return (
           <span className={`${styles.monoText} ${isBetter ? styles.betterRun : ''}`}>
-            {formatTime(run2Total)}
+            {formatTime(run2.total)}
           </span>
         );
       },
@@ -339,6 +341,10 @@ interface ResultListProps {
   showRoundTabs?: boolean;
   // Search (uncontrolled — no value prop, just onChange callback)
   onSearchChange?: (q: string) => void;
+  /** Forces SearchInput to remount, resetting its uncontrolled internal value. Change this
+   *  when the filter context changes (e.g. class/category switch) so a stale query can't
+   *  stay in the DOM input while the parent state has moved on. See #149. */
+  searchResetKey?: string;
   // Category
   categories?: CategoryInfo[];
   onCategoryChange?: (catId: string | null) => void;
@@ -367,6 +373,7 @@ export function ResultList({
   hasMergedBR = false,
   showRoundTabs = false,
   onSearchChange,
+  searchResetKey,
   categories = [],
   onCategoryChange,
   isFavorite,
@@ -422,6 +429,7 @@ export function ResultList({
           {onSearchChange && (
             <div className={styles.searchWrapper}>
               <SearchInput
+                key={searchResetKey}
                 size="sm"
                 placeholder="Hledat závodníka..."
                 onChange={onSearchChange}
