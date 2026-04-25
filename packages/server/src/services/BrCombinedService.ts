@@ -92,13 +92,52 @@ export class BrCombinedService {
       if (catId && firstRun.cat_id !== catId) continue;
 
       const br1 = runs.find((r) => r.race_type === 'best-run-1');
-      const br2 = runs.find((r) => r.race_type === 'best-run-2');
+      const br2Raw = runs.find((r) => r.race_type === 'best-run-2');
 
-      // Calculate totalTotal and betterRunNr
+      // #180: Detect C123 TCP "best-run" pollution. When BR1 was the better
+      // run, the BR2 Results frame from Canoe123 carries BR1's pen/total in
+      // the BR2 row's pen/total fields (verified empirically against a 30 min
+      // recording chunk: 1142/1142 inconsistent rows had br2.pen exactly
+      // equal to br1.pen). c123-server mitigates this with an OnCourse
+      // penalty cache (10 s TTL) and an XML fallback; when both miss, the
+      // corruption arrives here.
+      //
+      // Pattern: br2 row not self-consistent (total ≠ time + pen) AND
+      // br2.total ≈ br1.total (BR1's "best total" leaked into the BR2 row).
+      // The 2 cs tolerance absorbs C123's internal rounding noise.
+      const br2IsPolluted =
+        br1 != null &&
+        br2Raw != null &&
+        !br1.status &&
+        !br2Raw.status &&
+        br1.total != null &&
+        br2Raw.time != null &&
+        br2Raw.pen != null &&
+        br2Raw.total != null &&
+        Math.abs(br2Raw.total - (br2Raw.time + br2Raw.pen)) > 2 &&
+        Math.abs(br2Raw.total - br1.total) <= 2;
+
+      // For display, distrust BR2's pen and rebase total to br2.time.
+      // Naively recomputing total = time + pen would Frankenstein BR2's actual
+      // time with BR1's penalty (e.g. competitor ran a missed gate but UI
+      // reports a clean run). Reporting just the time is honest about
+      // unknown pen and never wrong about the BR2 finishing time.
+      const br2 = br2IsPolluted
+        ? { ...br2Raw, pen: null, total: br2Raw.time }
+        : br2Raw;
+
+      // Calculate totalTotal and betterRunNr.
+      // When pollution is detected we already KNOW BR1 was the better run
+      // (br1.total is what BR2's frame had carried as its "best total").
+      // Short-circuit ranking so a sanitised br2.total = br2.time can't
+      // accidentally beat br1.total when BR2's actual penalty was large.
       let totalTotal: number | null = null;
       let betterRunNr: number | null = null;
 
-      if (br1?.total != null && br2?.total != null && !br1.status && !br2.status) {
+      if (br2IsPolluted) {
+        totalTotal = br1!.total;
+        betterRunNr = 1;
+      } else if (br1?.total != null && br2?.total != null && !br1.status && !br2.status) {
         // Both runs completed successfully
         if (br1.total <= br2.total) {
           totalTotal = br1.total;
