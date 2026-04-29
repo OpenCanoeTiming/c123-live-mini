@@ -18,28 +18,16 @@
     { "type": "ci", "section": "Continuous Integration", "hidden": true }
   ],
   "packages": {
-    "packages/client": {
-      "package-name": "@c123-live-mini/client",
-      "component": "client"
-    },
-    "packages/server": {
-      "package-name": "@c123-live-mini/server",
-      "component": "server"
-    },
-    "packages/shared": {
-      "package-name": "@c123-live-mini/shared",
-      "component": "shared"
-    },
     ".": {
       "package-name": "c123-live-mini",
-      "component": "root"
+      "extra-files": [
+        "packages/client/package.json",
+        "packages/server/package.json",
+        "packages/shared/package.json",
+        { "type": "json", "path": "package-lock.json", "jsonpath": "$.packages['packages/client'].version" },
+        { "type": "json", "path": "package-lock.json", "jsonpath": "$.packages['packages/server'].version" },
+        { "type": "json", "path": "package-lock.json", "jsonpath": "$.packages['packages/shared'].version" }
+      ]
     }
-  },
-  "plugins": [
-    {
-      "type": "linked-versions",
-      "groupName": "c123-live-mini",
-      "components": ["client", "server", "shared", "root"]
-    }
-  ]
+  }
 }

@@ -161,10 +161,10 @@ This project uses **Release Please** (commit-based) for automatic versioning of 
 
 1. Every push to `main` runs `.github/workflows/release-please.yml`.
 2. Release Please keeps a rolling **release PR** open (label `autorelease: pending`) that aggregates pending changes and proposes the next version.
-3. The `linked-versions` plugin keeps all four packages on the **same version**: root `c123-live-mini`, `@c123-live-mini/client`, `@c123-live-mini/server`, `@c123-live-mini/shared`.
+3. release-please tracks **only the root** `c123-live-mini` package. The three workspace `package.json` files (`packages/client`, `packages/server`, `packages/shared`) and their `package-lock.json` workspace entries are bumped via `extra-files`, so all four stay on the **same version** automatically. There is one root `CHANGELOG.md` for the whole repo (per-package CHANGELOG files in `packages/*/` are frozen historical records from the pre-2026-04-29 multi-package config — not updated anymore).
 4. Merging the release PR creates:
-   - A commit `chore(main): release X.Y.Z` on `main` that bumps all four `package.json` files
-   - A single git tag `vX.Y.Z` (shared, no per-package tag because `include-component-in-tag: false`)
+   - A commit `chore(main): release X.Y.Z` on `main` that bumps all four `package.json` files plus the matching `package-lock.json` entries
+   - A single git tag `vX.Y.Z` (no per-package tag because `include-component-in-tag: false`)
    - A GitHub Release with generated CHANGELOG
 5. Railway auto-deploys `main` → staging. Promoting `main` → `production` is a separate manual fast-forward.
 6. `SHARED_VERSION` (shown in the client footer) reads dynamically from `packages/shared/package.json`, so it stays in sync automatically.
