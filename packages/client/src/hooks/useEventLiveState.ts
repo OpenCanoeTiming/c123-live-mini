@@ -139,11 +139,12 @@ function eventLiveStateReducer(state: EventLiveState, action: EventLiveStateActi
         classes,
         races,
         categories,
-        // HACK(stale-results): Keep resultsByRace to avoid flash/scroll reset.
-        // Trade-off: non-selected races may hold stale data until navigated to.
+        // HACK(stale-results): Keep resultsByRace and detailedCache to avoid flash/scroll
+        // reset and a blank "Detail není k dispozici" panel for open detail rows.
+        // Trade-off: non-selected races and previously-cached detail rows may hold stale
+        // data until the page-level handler re-fetches.
         // Upgrade path: "fetch first" — await re-fetch before dispatching WS_FULL.
-        // See #82 for full analysis.
-        detailedCache: {},
+        // See #82 (resultsByRace) and #182 (detailedCache).
       };
     }
 
@@ -182,12 +183,12 @@ function eventLiveStateReducer(state: EventLiveState, action: EventLiveStateActi
     }
 
     case 'WS_REFRESH': {
-      // Clear oncourse and detailed cache, but keep resultsByRace
-      // to avoid flash of empty state. Re-fetch will replace data.
+      // Clear oncourse only. Keep resultsByRace and detailedCache to avoid a flash
+      // of empty state in the table or the open detail panel — the page-level handler
+      // re-fetches both. See #82 (resultsByRace) and #182 (detailedCache).
       return {
         ...state,
         oncourse: [],
-        detailedCache: {},
       };
     }
 
