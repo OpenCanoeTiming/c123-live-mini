@@ -84,7 +84,8 @@ export type EventLiveStateAction =
   | { type: 'WS_REFRESH' }
   | { type: 'SET_RESULTS'; payload: { raceId: string; results: PublicResult[] } }
   | { type: 'SET_ONCOURSE'; payload: PublicOnCourseEntry[] }
-  | { type: 'CACHE_DETAILED'; payload: { raceId: string; bib: number; detail: RunDetailData } };
+  | { type: 'CACHE_DETAILED'; payload: { raceId: string; bib: number; detail: RunDetailData } }
+  | { type: 'CACHE_DETAILED_BULK'; payload: { raceId: string; entries: Array<{ bib: number; detail: RunDetailData }> } };
 
 /**
  * Upsert results by bib into existing race results
@@ -220,6 +221,16 @@ function eventLiveStateReducer(state: EventLiveState, action: EventLiveStateActi
           [key]: detail,
         },
       };
+    }
+
+    case 'CACHE_DETAILED_BULK': {
+      const { raceId, entries } = action.payload;
+      if (entries.length === 0) return state;
+      const detailedCache = { ...state.detailedCache };
+      for (const { bib, detail } of entries) {
+        detailedCache[`${raceId}-${bib}`] = detail;
+      }
+      return { ...state, detailedCache };
     }
 
     default:
