@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.1](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.12.0...v0.12.1) (2026-04-29)
+
+
+### Bug Fixes
+
+* **server:** sanitise C123 TCP best-run pollution in BR2 results ([#181](https://github.com/OpenCanoeTiming/c123-live-mini/issues/181)) ([d5630da](https://github.com/OpenCanoeTiming/c123-live-mini/commit/d5630da3e58b17b2ef05fb105085bfdd32c7c1b9))
+
 ## [0.12.0](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.11.0...v0.12.0) (2026-04-22)
 
 

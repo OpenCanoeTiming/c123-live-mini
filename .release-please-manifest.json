@@ -1,6 +1,6 @@
 {
-  ".": "0.12.0",
+  ".": "0.12.1",
   "packages/client": "0.12.0",
-  "packages/server": "0.10.0",
+  "packages/server": "0.10.1",
   "packages/shared": "0.10.0"
 }
