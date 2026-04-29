@@ -33,7 +33,7 @@ import { FavoritesToggle } from '../components/FavoritesToggle';
 import { OnCoursePanel } from '../components/OnCoursePanel';
 import { ScheduleView } from '../components/ScheduleView';
 import type { ViewMode } from '../components/ViewModeToggle';
-import { useEventLiveState } from '../hooks/useEventLiveState';
+import { useEventLiveState, type EventLiveStateAction } from '../hooks/useEventLiveState';
 import { useFavorites } from '../hooks/useFavorites';
 import { useEventWebSocket } from '../hooks/useEventWebSocket';
 import { getOnCourse } from '../services/api';
@@ -44,6 +44,32 @@ type LoadingState = 'idle' | 'loading' | 'success' | 'error';
 interface EventDetailPageProps {
   eventId: string;
   raceId?: string;
+}
+
+/** Bulk-cache the detail breakdown for every result row that has a bib in one reducer dispatch. */
+function dispatchDetailedBulk(
+  dispatch: React.Dispatch<EventLiveStateAction>,
+  raceId: string,
+  results: ResultsResponse['results']
+): void {
+  const entries = results
+    .filter((r) => r.bib !== null)
+    .map((r) => ({
+      bib: r.bib as number,
+      detail: {
+        time: r.time ?? null,
+        pen: r.pen ?? null,
+        total: r.total ?? null,
+        gates: r.gates ?? null,
+        prevTime: r.prevTime ?? null,
+        prevPen: r.prevPen ?? null,
+        prevTotal: r.prevTotal ?? null,
+        prevGates: r.prevGates ?? null,
+      },
+    }));
+  if (entries.length > 0) {
+    dispatch({ type: 'CACHE_DETAILED_BULK', payload: { raceId, entries } });
+  }
 }
 
 export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageProps) {
@@ -119,30 +145,37 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
   // WebSocket message handler
   const handleWsMessage = useCallback((message: WsMessage) => {
+    // Re-fetch results for the active race after WS_FULL/WS_REFRESH. When detail is
+    // currently shown for any row (manual expand or detailed view mode) request the
+    // detailed=true flavour so the cache replaces stale entries in place — avoids the
+    // blank "Detail není k dispozici" panel that the previous wipe-on-snapshot
+    // strategy produced (#182).
+    const refetchResultsAndMaybeDetailed = (logTag: string) => {
+      if (!selectedRaceId || !eventId) return;
+      const wantsDetailed = expandedRows.size > 0 || viewMode === 'detailed';
+      getEventResults(eventId, selectedRaceId, {
+        detailed: wantsDetailed,
+        catId: selectedCatId ?? undefined,
+      })
+        .then((resultsData) => {
+          dispatch({
+            type: 'SET_RESULTS',
+            payload: { raceId: selectedRaceId, results: resultsData.results },
+          });
+          setCurrentRaceInfo(resultsData.race);
+          if (wantsDetailed) {
+            dispatchDetailedBulk(dispatch, selectedRaceId, resultsData.results);
+          }
+        })
+        .catch((err) => {
+          console.error(`[EventDetailPage] Failed to re-fetch results after ${logTag}:`, err);
+        });
+    };
+
     switch (message.type) {
       case 'full':
-        dispatch({
-          type: 'WS_FULL',
-          payload: message.data,
-        });
-        if (selectedRaceId && eventId) {
-          getEventResults(eventId, selectedRaceId, {
-            catId: selectedCatId ?? undefined,
-          })
-            .then((resultsData) => {
-              dispatch({
-                type: 'SET_RESULTS',
-                payload: {
-                  raceId: selectedRaceId,
-                  results: resultsData.results,
-                },
-              });
-              setCurrentRaceInfo(resultsData.race);
-            })
-            .catch((err) => {
-              console.error('[EventDetailPage] Failed to re-fetch results after WS_FULL:', err);
-            });
-        }
+        dispatch({ type: 'WS_FULL', payload: message.data });
+        refetchResultsAndMaybeDetailed('WS_FULL');
         if (eventId) {
           getOnCourse(eventId)
             .then((oncourseData) => {
@@ -155,39 +188,16 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         break;
 
       case 'diff':
-        dispatch({
-          type: 'WS_DIFF',
-          payload: message.data,
-        });
+        dispatch({ type: 'WS_DIFF', payload: message.data });
         break;
 
       case 'refresh':
         dispatch({ type: 'WS_REFRESH' });
-        if (selectedRaceId && eventId) {
-          getEventResults(eventId, selectedRaceId, {
-            catId: selectedCatId ?? undefined,
-          })
-            .then((resultsData) => {
-              dispatch({
-                type: 'SET_RESULTS',
-                payload: {
-                  raceId: selectedRaceId,
-                  results: resultsData.results,
-                },
-              });
-              setCurrentRaceInfo(resultsData.race);
-            })
-            .catch((err) => {
-              console.error('[EventDetailPage] Failed to re-fetch results:', err);
-            });
-        }
+        refetchResultsAndMaybeDetailed('WS_REFRESH');
         if (eventId) {
           getOnCourse(eventId)
             .then((oncourseData) => {
-              dispatch({
-                type: 'SET_ONCOURSE',
-                payload: oncourseData,
-              });
+              dispatch({ type: 'SET_ONCOURSE', payload: oncourseData });
             })
             .catch((err) => {
               console.error('[EventDetailPage] Failed to re-fetch oncourse:', err);
@@ -195,7 +205,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
         }
         break;
     }
-  }, [dispatch, eventId, selectedRaceId, selectedCatId]);
+  }, [dispatch, eventId, selectedRaceId, selectedCatId, expandedRows, viewMode]);
 
   // Connect WebSocket for running/startlist events
   const shouldConnect = eventDetail && (eventDetail.status === 'running' || eventDetail.status === 'startlist');
@@ -206,11 +216,19 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
 
   // REST polling fallback
   const pollingIntervalRef = useRef<number | null>(null);
-  const pollingParamsRef = useRef({ raceId: selectedRaceId, catId: selectedCatId });
+  const pollingParamsRef = useRef({
+    raceId: selectedRaceId,
+    catId: selectedCatId,
+    wantsDetailed: false,
+  });
 
   useEffect(() => {
-    pollingParamsRef.current = { raceId: selectedRaceId, catId: selectedCatId };
-  }, [selectedRaceId, selectedCatId]);
+    pollingParamsRef.current = {
+      raceId: selectedRaceId,
+      catId: selectedCatId,
+      wantsDetailed: expandedRows.size > 0 || viewMode === 'detailed',
+    };
+  }, [selectedRaceId, selectedCatId, expandedRows, viewMode]);
 
   useEffect(() => {
     if (connectionState === 'disconnected' && shouldConnect && selectedRaceId) {
@@ -219,10 +237,12 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
       const poll = async () => {
         const currentRaceId = pollingParamsRef.current.raceId;
         const currentCatId = pollingParamsRef.current.catId;
+        const wantsDetailed = pollingParamsRef.current.wantsDetailed;
         if (!currentRaceId) return;
 
         try {
           const resultsData = await getEventResults(eventId, currentRaceId, {
+            detailed: wantsDetailed,
             catId: currentCatId ?? undefined,
           });
           if (pollingParamsRef.current.raceId === currentRaceId && pollingParamsRef.current.catId === currentCatId) {
@@ -230,6 +250,9 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
               type: 'SET_RESULTS',
               payload: { raceId: currentRaceId, results: resultsData.results },
             });
+            if (wantsDetailed) {
+              dispatchDetailedBulk(dispatch, currentRaceId, resultsData.results);
+            }
           }
           const oncourseData = await getOnCourse(eventId);
           dispatch({ type: 'SET_ONCOURSE', payload: oncourseData });
@@ -270,27 +293,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
           catId: selectedCatId ?? undefined,
         })
           .then((resultsData) => {
-            resultsData.results.forEach((result) => {
-              if (result.bib !== null) {
-                dispatch({
-                  type: 'CACHE_DETAILED',
-                  payload: {
-                    raceId: selectedRaceId,
-                    bib: result.bib,
-                    detail: {
-                      time: result.time ?? null,
-                      pen: result.pen ?? null,
-                      total: result.total ?? null,
-                      gates: result.gates ?? null,
-                      prevTime: result.prevTime ?? null,
-                      prevPen: result.prevPen ?? null,
-                      prevTotal: result.prevTotal ?? null,
-                      prevGates: result.prevGates ?? null,
-                    },
-                  },
-                });
-              }
-            });
+            dispatchDetailedBulk(dispatch, selectedRaceId, resultsData.results);
           })
           .catch((err) => {
             console.error('[EventDetailPage] Failed to fetch detailed data for view mode:', err);
@@ -572,27 +575,7 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
               catId: selectedCatId ?? undefined,
             });
 
-            resultsData.results.forEach((result) => {
-              if (result.bib !== null) {
-                dispatch({
-                  type: 'CACHE_DETAILED',
-                  payload: {
-                    raceId: selectedRaceId,
-                    bib: result.bib,
-                    detail: {
-                      time: result.time ?? null,
-                      pen: result.pen ?? null,
-                      total: result.total ?? null,
-                      gates: result.gates ?? null,
-                      prevTime: result.prevTime ?? null,
-                      prevPen: result.prevPen ?? null,
-                      prevTotal: result.prevTotal ?? null,
-                      prevGates: result.prevGates ?? null,
-                    },
-                  },
-                });
-              }
-            });
+            dispatchDetailedBulk(dispatch, selectedRaceId, resultsData.results);
           } catch (err) {
             console.error('[EventDetailPage] Failed to fetch detailed results:', err);
           } finally {
