@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.3](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.12.2...v0.12.3) (2026-04-29)
+
+
+### Bug Fixes
+
+* **server:** prune stale records on XML re-ingest ([#189](https://github.com/OpenCanoeTiming/c123-live-mini/issues/189)) ([2a2d08d](https://github.com/OpenCanoeTiming/c123-live-mini/commit/2a2d08d754bff34095a0bbf72509ca3e4733e39e)), closes [#156](https://github.com/OpenCanoeTiming/c123-live-mini/issues/156)
+
 ## [0.12.2](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.12.1...v0.12.2) (2026-04-29)
 
 
