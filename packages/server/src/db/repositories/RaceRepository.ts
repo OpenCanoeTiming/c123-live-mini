@@ -144,6 +144,21 @@ export class RaceRepository extends BaseRepository {
     return Number(result.numDeletedRows);
   }
 
+  async deleteByEventIdNotIn(
+    eventId: number,
+    keepRaceIds: string[]
+  ): Promise<number> {
+    if (keepRaceIds.length === 0) {
+      return this.deleteByEventId(eventId);
+    }
+    const result = await this.db
+      .deleteFrom('races')
+      .where('event_id', '=', eventId)
+      .where('race_id', 'not in', keepRaceIds)
+      .executeTakeFirst();
+    return Number(result.numDeletedRows);
+  }
+
   /**
    * Update race status
    */

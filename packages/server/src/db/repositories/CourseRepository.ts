@@ -116,6 +116,21 @@ export class CourseRepository extends BaseRepository {
     return Number(result.numDeletedRows);
   }
 
+  async deleteByEventIdNotIn(
+    eventId: number,
+    keepCourseNrs: number[]
+  ): Promise<number> {
+    if (keepCourseNrs.length === 0) {
+      return this.deleteByEventId(eventId);
+    }
+    const result = await this.db
+      .deleteFrom('courses')
+      .where('event_id', '=', eventId)
+      .where('course_nr', 'not in', keepCourseNrs)
+      .executeTakeFirst();
+    return Number(result.numDeletedRows);
+  }
+
   /**
    * Count courses by event
    */

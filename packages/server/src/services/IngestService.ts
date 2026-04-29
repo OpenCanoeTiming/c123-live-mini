@@ -159,10 +159,21 @@ export class IngestService {
       imported.results = parsed.results.length;
       lap(`importResults (${parsed.results.length})`);
 
-      // 7. Set has_xml_data flag (enables JSON/TCP ingestion)
+      // 7. C123 XML is a full event snapshot, so absence means deletion.
+      // Without this pass, dropping a competitor leaves stale rows on clients.
+      await this.pruneStale(event.id, parsed, raceIdMap, participantIdMap, {
+        classRepo: txClassRepo,
+        participantRepo: txParticipantRepo,
+        raceRepo: txRaceRepo,
+        resultRepo: txResultRepo,
+        courseRepo: txCourseRepo,
+      });
+      lap('pruneStale');
+
+      // 8. Set has_xml_data flag (enables JSON/TCP ingestion)
       await txEventRepo.setHasXmlData(event.id);
 
-      // 8. Log successful ingestion
+      // 9. Log successful ingestion
       const totalItems =
         imported.classes +
         imported.participants +
@@ -352,6 +363,62 @@ export class IngestService {
         qualified: result.qualified,
       });
     }
+  }
+
+  // Order matters: per-race result pruning runs before race deletion so it
+  // only touches races still in the XML; race/participant deletion then
+  // cascades any remaining stale results.
+  private async pruneStale(
+    eventId: number,
+    parsed: ParsedC123Data,
+    raceIdMap: Map<string, number>,
+    participantIdMap: Map<string, number>,
+    repos: {
+      classRepo: ClassRepository;
+      participantRepo: ParticipantRepository;
+      raceRepo: RaceRepository;
+      resultRepo: ResultRepository;
+      courseRepo: CourseRepository;
+    }
+  ): Promise<void> {
+    const xmlResultsByRace = new Map<string, Set<string>>();
+    for (const r of parsed.results) {
+      const set = xmlResultsByRace.get(r.raceId) ?? new Set<string>();
+      set.add(r.participantId);
+      xmlResultsByRace.set(r.raceId, set);
+    }
+
+    for (const race of parsed.races) {
+      const raceDbId = raceIdMap.get(race.raceId);
+      if (raceDbId === undefined) continue;
+      const keepParticipants = xmlResultsByRace.get(race.raceId) ?? new Set<string>();
+      const keepDbIds: number[] = [];
+      for (const pid of keepParticipants) {
+        const pDbId = participantIdMap.get(pid);
+        if (pDbId !== undefined) keepDbIds.push(pDbId);
+      }
+      await repos.resultRepo.deleteByRaceIdNotInParticipants(raceDbId, keepDbIds);
+    }
+
+    await repos.raceRepo.deleteByEventIdNotIn(
+      eventId,
+      parsed.races.map((r) => r.raceId)
+    );
+
+    await repos.participantRepo.deleteByEventIdNotIn(
+      eventId,
+      parsed.participants.map((p) => p.participantId)
+    );
+
+    await repos.classRepo.deleteByEventIdNotIn(
+      eventId,
+      parsed.classes.map((c) => c.classId)
+    );
+
+    await repos.courseRepo.deleteByEventIdNotIn(
+      eventId,
+      parsed.courses.map((c) => c.courseNr)
+    );
   }
 
   /**
