@@ -255,49 +255,76 @@ export function EventDetailPage({ eventId, raceId: urlRaceId }: EventDetailPageP
     };
   }, [connectionState, shouldConnect, eventId, selectedRaceId, dispatch]);
 
-  // Fetch detailed data when view mode changes to 'detailed'
+  // Self-healing detailed fetch.
+  // Fires when any row that should currently show detail is missing from the cache:
+  //   - viewMode='detailed' → every result row.
+  //   - viewMode='simple' → rows in expandedRows.
+  // Two triggers:
+  //   1. Initial entry into detailed mode / first time a viewMode='detailed' page sees rows.
+  //   2. Cache wipe via WS_FULL or WS_REFRESH while detail is open (#182). The reducer clears
+  //      detailedCache to flush stale rows after a snapshot; without this effect the open detail
+  //      panel rendered "Detail není k dispozici" forever.
+  // detailedLoading guards against duplicating handleToggleExpand's inline fetch on initial click.
   useEffect(() => {
-    if (viewMode === 'detailed' && selectedRaceId && results) {
-      const needsDetail = results.results.some((result) => {
-        if (result.bib === null) return false;
-        const key = `${selectedRaceId}-${result.bib}`;
-        return !liveState.detailedCache[key];
-      });
+    if (!selectedRaceId || !results) return;
 
-      if (needsDetail) {
-        getEventResults(eventId, selectedRaceId, {
-          detailed: true,
-          catId: selectedCatId ?? undefined,
-        })
-          .then((resultsData) => {
-            resultsData.results.forEach((result) => {
-              if (result.bib !== null) {
-                dispatch({
-                  type: 'CACHE_DETAILED',
-                  payload: {
-                    raceId: selectedRaceId,
-                    bib: result.bib,
-                    detail: {
-                      time: result.time ?? null,
-                      pen: result.pen ?? null,
-                      total: result.total ?? null,
-                      gates: result.gates ?? null,
-                      prevTime: result.prevTime ?? null,
-                      prevPen: result.prevPen ?? null,
-                      prevTotal: result.prevTotal ?? null,
-                      prevGates: result.prevGates ?? null,
-                    },
-                  },
-                });
-              }
+    const prefix = `${selectedRaceId}-`;
+    const missingKeys: string[] =
+      viewMode === 'detailed'
+        ? results.results
+            .filter((r) => r.bib !== null)
+            .map((r) => `${prefix}${r.bib}`)
+            .filter((k) => !liveState.detailedCache[k] && !detailedLoading.has(k))
+        : Array.from(expandedRows).filter(
+            (k) => k.startsWith(prefix) && !liveState.detailedCache[k] && !detailedLoading.has(k)
+          );
+
+    if (missingKeys.length === 0) return;
+
+    setDetailedLoading((prev) => {
+      const next = new Set(prev);
+      for (const k of missingKeys) next.add(k);
+      return next;
+    });
+
+    getEventResults(eventId, selectedRaceId, {
+      detailed: true,
+      catId: selectedCatId ?? undefined,
+    })
+      .then((resultsData) => {
+        resultsData.results.forEach((result) => {
+          if (result.bib !== null) {
+            dispatch({
+              type: 'CACHE_DETAILED',
+              payload: {
+                raceId: selectedRaceId,
+                bib: result.bib,
+                detail: {
+                  time: result.time ?? null,
+                  pen: result.pen ?? null,
+                  total: result.total ?? null,
+                  gates: result.gates ?? null,
+                  prevTime: result.prevTime ?? null,
+                  prevPen: result.prevPen ?? null,
+                  prevTotal: result.prevTotal ?? null,
+                  prevGates: result.prevGates ?? null,
+                },
+              },
             });
-          })
-          .catch((err) => {
-            console.error('[EventDetailPage] Failed to fetch detailed data for view mode:', err);
-          });
-      }
-    }
-  }, [viewMode, selectedRaceId, results, liveState.detailedCache, eventId, selectedCatId, dispatch]);
+          }
+        });
+      })
+      .catch((err) => {
+        console.error('[EventDetailPage] Failed to fetch detailed data:', err);
+      })
+      .finally(() => {
+        setDetailedLoading((prev) => {
+          const next = new Set(prev);
+          for (const k of missingKeys) next.delete(k);
+          return next;
+        });
+      });
+  }, [viewMode, expandedRows, selectedRaceId, results, liveState.detailedCache, detailedLoading, eventId, selectedCatId, dispatch]);
 
   // Track which eventId has been loaded to avoid full re-fetch on internal navigate
   const loadedEventIdRef = useRef<string | null>(null);
