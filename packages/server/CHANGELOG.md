@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.10.1](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.10.0...v0.10.1) (2026-04-29)
+## [0.12.1](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.12.0...v0.12.1) (2026-04-29)
 
 
 ### Bug Fixes
