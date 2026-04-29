@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.2](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.12.1...v0.12.2) (2026-04-29)
+
+
+### Bug Fixes
+
+* **client:** refetch run detail after WS_FULL/WS_REFRESH ([#182](https://github.com/OpenCanoeTiming/c123-live-mini/issues/182)) ([cfd6a0d](https://github.com/OpenCanoeTiming/c123-live-mini/commit/cfd6a0d634c6d8068157e9e69b2fd8b5a46902f2))
+
 ## [0.12.1](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.12.0...v0.12.1) (2026-04-29)
 
 
