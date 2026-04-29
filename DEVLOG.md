@@ -2,6 +2,21 @@
 
 Append-only record of dead ends, surprising problems, and their solutions.
 
+## 2026-04-29 — Railway buildEnvironment V3 dropped devDeps mid-day (#182)
+
+**Problem:** Mid-day push to staging on `fix-182` started failing with `sh: 1: tsc: not found` during `npm run build`. The previous deploy on the same branch (~30 min earlier, no infra changes from us) had built fine.
+
+**Diagnosis:** The failed deploy's `serviceManifest.build.buildEnvironment` was `"V3"` while the successful one had it as `null` (V2). Railway silently rolled the staging service onto the new V3 build environment in between. V3 honours `NODE_ENV=production` strictly when running `npm ci`, so devDependencies (including TypeScript itself) are skipped. `npm ci` reported "added 140 packages" instead of the usual ~700, no `tsc` in `node_modules/.bin`, build script died.
+
+The pre-existing `NPM_CONFIG_INCLUDE=optional` Railway variable (residue from the rolldown-bundler debugging session in the 2026-04-10 entry — RUNBOOK noted it should have been removed but it lingered) does **not** include dev: setting it to `"optional"` only adds optional deps to whatever the default is. With `NODE_ENV=production` the default is prod-only, so dev was still skipped.
+
+**Solution:** Set `NPM_CONFIG_INCLUDE=dev,optional` on both staging and production. devDependencies (TypeScript, Vite, etc.) now install during the build phase even with `NODE_ENV=production`. Trade-off: the runtime image now also carries dev modules (~hundreds of MB extra disk in `node_modules`) — acceptable, would need a Nixpacks `[phases.install] paths` and a prune step to optimise. Filed mental note: revisit when image size becomes a real problem.
+
+**Lessons:**
+1. **Railway can change build environment defaults under you.** A previously-green deploy is no guarantee the next one succeeds when only a SHA changed. Watch the `buildEnvironment` field in `mcp__Railway__list-deployments`.
+2. **`NPM_CONFIG_INCLUDE` is additive, not exclusive.** `=optional` does not "only install optional", it adds optional to the default set. With NODE_ENV=production the default set is prod-only, so dev still has to be added explicitly.
+3. **Empty commit to retrigger a deploy works** (`git commit --allow-empty -m "chore: retrigger deploy"` + force-push to staging). Don't push such commits to feature branches that target main — they pollute the PR. Local `git reset --hard HEAD~1` after the force-push keeps the feature branch clean while staging still has the retrigger commit (it's force-pushable anyway).
+
 ## 2026-04-21 — Live push errors and bumpy oncourse (#150, #157)
 
 **Problem:** Two persistent race-day symptoms.
