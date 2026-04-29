@@ -275,10 +275,11 @@ Both staging and production share the same set; values differ only for `MASTER_P
 | `DATABASE_PATH=/data/live-mini.db` | SQLite on mounted volume | Manual |
 | `MASTER_PASSWORDS=<strong-password>` | Admin API auth, required in prod. **Different value per environment.** | Manual (generated with `openssl rand -base64 24`) |
 | `NODE_AUTH_TOKEN=<GH PAT>` | Build-phase GitHub Packages auth for `@czechcanoe/rvp-design-system`. Same value across environments. | Manual |
+| `NPM_CONFIG_INCLUDE=dev,optional` | Forces `npm ci` to install devDependencies (TypeScript, Vite, etc.) during the Nixpacks build phase even with `NODE_ENV=production`. Required since Railway's V3 build environment (rolled out 2026-04-29) strictly honours NODE_ENV during install. | Manual |
 | `LOG_LEVEL=info` | Fastify logger level | Manual |
 | `RAILWAY_*` | Service metadata (private domain, volume mount, etc.) | Railway-injected, read-only |
 
-Note: `NIXPACKS_NODE_VERSION` and `NPM_CONFIG_INCLUDE` were tried during the Railway debugging session and **removed** in the final working state — the vite override fix made them unnecessary. See DEVLOG 2026-04-10.
+Note: `NIXPACKS_NODE_VERSION` was tried during the Railway debugging session and **removed** — the vite override fix made it unnecessary. `NPM_CONFIG_INCLUDE=dev,optional` was added back on 2026-04-29 after Railway rolled the build environment onto V3, which strictly honours `NODE_ENV=production` during `npm ci` and skips devDependencies (including TypeScript). See DEVLOG 2026-04-10 (rolldown bundler) and 2026-04-29 (V3 buildEnvironment / devDeps).
 
 ### Build-time client branding (`VITE_*`)
 
