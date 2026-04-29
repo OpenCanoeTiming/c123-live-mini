@@ -156,6 +156,21 @@ export class ParticipantRepository extends BaseRepository {
     return Number(result.numDeletedRows);
   }
 
+  async deleteByEventIdNotIn(
+    eventId: number,
+    keepParticipantIds: string[]
+  ): Promise<number> {
+    if (keepParticipantIds.length === 0) {
+      return this.deleteByEventId(eventId);
+    }
+    const result = await this.db
+      .deleteFrom('participants')
+      .where('event_id', '=', eventId)
+      .where('participant_id', 'not in', keepParticipantIds)
+      .executeTakeFirst();
+    return Number(result.numDeletedRows);
+  }
+
   /**
    * Count participants by event
    */

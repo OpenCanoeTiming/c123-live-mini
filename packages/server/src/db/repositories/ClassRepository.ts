@@ -150,6 +150,21 @@ export class ClassRepository extends BaseRepository {
     return Number(result.numDeletedRows);
   }
 
+  async deleteByEventIdNotIn(
+    eventId: number,
+    keepClassIds: string[]
+  ): Promise<number> {
+    if (keepClassIds.length === 0) {
+      return this.deleteByEventId(eventId);
+    }
+    const result = await this.db
+      .deleteFrom('classes')
+      .where('event_id', '=', eventId)
+      .where('class_id', 'not in', keepClassIds)
+      .executeTakeFirst();
+    return Number(result.numDeletedRows);
+  }
+
   // Category methods
 
   /**

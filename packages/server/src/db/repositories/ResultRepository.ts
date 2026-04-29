@@ -160,6 +160,21 @@ export class ResultRepository extends BaseRepository {
     return Number(result.numDeletedRows);
   }
 
+  async deleteByRaceIdNotInParticipants(
+    raceId: number,
+    keepParticipantDbIds: number[]
+  ): Promise<number> {
+    if (keepParticipantDbIds.length === 0) {
+      return this.deleteByRaceId(raceId);
+    }
+    const result = await this.db
+      .deleteFrom('results')
+      .where('race_id', '=', raceId)
+      .where('participant_id', 'not in', keepParticipantDbIds)
+      .executeTakeFirst();
+    return Number(result.numDeletedRows);
+  }
+
   /**
    * Delete all results for an event
    */
