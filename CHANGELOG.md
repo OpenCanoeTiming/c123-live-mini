@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.12.4](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.12.3...v0.12.4) (2026-05-13)
+
+
+### Bug Fixes
+
+* hoist jsdom to root devDependencies for vitest workspace resolution ([ce0eb90](https://github.com/OpenCanoeTiming/c123-live-mini/commit/ce0eb9007e1e588fd8e6a40ffeeb3e027e3405d3))
+
 ## [0.12.3](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.12.2...v0.12.3) (2026-04-29)
 
 
