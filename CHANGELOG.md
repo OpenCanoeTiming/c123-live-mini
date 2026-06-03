@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.13.0](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.12.4...v0.13.0) (2026-06-03)
+
+
+### Features
+
+* **client:** upgrade to React 19 and rvp-design-system 1.2.0 ([#217](https://github.com/OpenCanoeTiming/c123-live-mini/issues/217)) ([757f680](https://github.com/OpenCanoeTiming/c123-live-mini/commit/757f6806df8d591464b73dd952a44093b9c70e4b))
+
 ## [0.12.4](https://github.com/OpenCanoeTiming/c123-live-mini/compare/v0.12.3...v0.12.4) (2026-05-13)
 
 
