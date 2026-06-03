@@ -41,7 +41,9 @@
     "  (c) the project migrates to pnpm, which doesn't have this bug"
   ],
   "overrides": {
-    "vite": "~7.1.9"
+    "vite": "~7.1.9",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "engines": {
     "node": "^20.19.0"
