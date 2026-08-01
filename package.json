@@ -16,7 +16,23 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui"
   },
+  "//devDependencies": [
+    "Rationale: @types/react and @types/react-dom are declared HERE, at the workspace",
+    "root, even though only packages/client renders React.",
+    "wouter is hoisted to the root node_modules, and its .d.ts imports from \"react\".",
+    "Node type resolution walks up from node_modules/wouter/, so it only ever consults",
+    "the ROOT @types/react — it never sees packages/client/node_modules/@types/react.",
+    "With no root copy, wouter Route generics silently degrade to any and the client",
+    "build fails with TS7006 on the <Route>{(params) => ...}</Route> blocks in App.tsx.",
+    "Until this was pinned the build passed only by accident: @testing-library/react has",
+    "an optional peer on @types/react, which happened to hoist @types/react@18 to the root.",
+    "Any lockfile regeneration that pruned it (e.g. the vitest 4.1.9 bump, PR #220) broke",
+    "the build. Declaring it explicitly makes root placement guaranteed, not incidental.",
+    "Keep the major in sync with packages/client (React 19)."
+  ],
   "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "@vitest/ui": "^4.1.7",
     "concurrently": "^9.1.2",
     "jsdom": "^29.1.1",
