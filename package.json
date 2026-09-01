@@ -36,7 +36,7 @@
     "@vitest/ui": "^4.1.10",
     "concurrently": "^9.1.2",
     "jsdom": "^29.1.1",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   },
   "//overrides": [
     "Rationale: vitest@4 depends on vite@8. In a hoisted npm workspaces tree,",
