@@ -131,3 +131,18 @@ npm `overrides` at the root forces every `vite` in the dependency tree — inclu
 **Lesson:** Don't assume "primary" = "better". Check how existing table code maps the same data — `BrRunsCell` was the reference implementation.
 
 **Follow-up:** The server `BrCombinedService.ts` actually used TWO conventions in the same response object — time fields chronological, gate fields by quality. Root cause was in server, not client. Fixed by unifying server to single chronological convention (detail.* = BR2, prev* = BR1), removed client workaround.
+
+## 2026-09-15 — Staging build failed: better-sqlite3 native build needs Python
+
+**Problem:** First staging deploy since 2026-05-13 (commit 5d0c760) failed. Not the app code — the first deploy to exercise current `main` after months of dependency merges.
+
+**Diagnosis (from Railway `buildLogs`):** `npm ci` reached `better-sqlite3` postinstall → `prebuild-install` found no prebuilt binary (`No prebuilt binaries found ... libc=` — empty libc detection on the Nixpacks image) → fell back to `node-gyp rebuild` → `Could not find any Python installation to use` → exit 1. NOT `NODE_AUTH_TOKEN` (valid — the private @czechcanoe package downloaded fine) and NOT the dev-dep bumps in #242.
+
+**Solution:** Add Python 3 + a C/C++ toolchain to the Nixpacks build so the native module compiles from source. Committed as `nixpacks.toml` (`[phases.setup] aptPkgs = ["python3", "build-essential"]`). Verified green on staging (build + healthcheck OK).
+
+**Node ceiling probe (answers "can we lift the vite/jsdom pins?"):** `NIXPACKS_NODE_VERSION` 20 → 20.18.1 (<20.19), 22 → 22.11.0 (<22.12), 24 → build fails (not in the Nix channel). So vite 8 (needs ≥22.12) and jsdom 30 (needs ≥22.13) stay blocked by the platform, not by us — the `overrides.vite ~7.1.9` pin stays. Only better-sqlite3 13 (needs ≥22) would work on Node 22, not worth switching the runtime for.
+
+**Lessons:**
+1. **A green local/CI build ≠ a green Railway build.** GitHub Actions CI passed the same commit; Railway's Nixpacks image (different Node, different libc detection, no Python) failed. Always check `buildLogs` on the actual Railway deployment.
+2. **`engines.node` doesn't move Nixpacks' Node** (confirmed again) — and Nixpacks can't currently give us 20.19+/22.12+/24 at all.
+3. **Native addons (better-sqlite3, and future sharp/bcrypt/canvas…) need python3 + build-essential in the build image** whenever a prebuilt binary isn't available for the platform's Node.
