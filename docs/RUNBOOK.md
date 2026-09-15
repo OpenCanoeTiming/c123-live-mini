@@ -63,25 +63,40 @@ curl -sS -X POST -H "Content-Type: application/json" \
 
 ## Railway access & secrets
 
-### Where the Railway project token lives
+### Where the Railway token lives
 
-The Railway project token is **scoped per-project** (staging only) with full read/write access. Treat it like a password — do **not** commit it.
+> ⚠️ **Verified 2026-09-15 — the token is a WORKSPACE API token, not a project token.** Earlier
+> versions of this doc were wrong on several points; the facts below are confirmed against the live API.
 
-Persistence on your dev machine (RPi5):
+The token is a **workspace API token** (workspace `jakubbican's Projects`), full read/write to that
+workspace's projects. Treat it like a password — do **not** commit it. How to use it:
 
-| Location | What for | Managed by |
-|---|---|---|
-| `~/.bashrc` — `export RAILWAY_TOKEN=...` | Auto-exported in every interactive shell, so `railway` CLI and any ad-hoc `curl` to Railway GraphQL API just work. | Manually edited (see below) |
-| `~/.config/c123-live-mini/railway.env` | Standalone backup file with metadata — project ID, service ID, environment IDs — in one place. Can be sourced with `source ~/.config/c123-live-mini/railway.env`. | Manually maintained |
-| A password manager entry (recommended) | Long-term recovery source of truth. | You, manually |
+| Aspect | Value |
+|---|---|
+| Env var | `RAILWAY_API_TOKEN` (NOT `RAILWAY_TOKEN` — that's for project-scoped tokens, which this isn't) |
+| HTTP header | `Authorization: Bearer <token>` |
+| GraphQL endpoint | `https://backboard.railway.com/graphql/v2` — **`.com`, not `.app`** |
+| Probe that WORKS | `{ projects { edges { node { id name } } } }` |
+| Probe that FAILS (by design) | `{ me { email } }` → `Not Authorized`. A workspace token has no user — **this is not an invalid token.** Don't diagnose "expired" from a failing `me`. |
+
+Persistence:
+
+| Location | What for |
+|---|---|
+| `~/.config/c123-live-mini/railway.env` | Token **and** project/env/service IDs, `source`-able. This is the source of truth in the container. |
+| `~/.bashrc` — `export RAILWAY_API_TOKEN=...` | Optional, for interactive shells. |
+| A password manager entry (recommended) | Long-term recovery — Railway masks the token after creation, so if it's lost everywhere it's unrecoverable and must be regenerated. |
+
+Current IDs (skvs-live-mini): project `97408870-7b9e-4aa5-b3b1-5b546e4d1f34`, staging env
+`b1c8ea80-c260-4819-bc9e-54de1a27fd62`, production env `67189b9a-82ce-435f-931b-525053f50e36`,
+service `aadf519a-48b5-4da9-9259-21b9178a2619`.
 
 ### Regenerating the token (if lost or compromised)
 
-1. https://railway.app/ → project `skvs-live-mini` → **Project Settings** (gear icon)
-2. **Tokens** tab → **Create Token** → scope: **Project**, environment: **staging** (or Shared) → copy
-3. Revoke any old token from the same page
-4. Update `~/.bashrc` and `~/.config/c123-live-mini/railway.env` with the new value
-5. Open a new shell (or `source ~/.bashrc`)
+1. https://railway.com/ → avatar → **Account Settings** → **Tokens**
+2. **New Token** → pick workspace `jakubbican's Projects` → **Create** → copy the value immediately (shown once)
+3. Delete any stale token from the same page
+4. Update `~/.config/c123-live-mini/railway.env` (and `~/.bashrc` if used) with the new value
 
 ### Where the GitHub Packages token lives
 
@@ -111,14 +126,25 @@ All three paths below work from this box (token already exported in `~/.bashrc`)
 
 ### Railway CLI & MCP setup
 
-Both share one auth state — run **`railway login --browserless`** once per machine. After that:
+> ⚠️ **Container reality (verified 2026-09-15).** In the Claude Code containers the CLI binary is
+> **not on PATH by default** and the `railway login` session lives in the `~/.railway` volume, which
+> **survives restart but NOT a container rebuild** — after a rebuild you must re-auth. The Railway
+> **MCP server may be absent** from a given session's tool set (it was in ours), so don't assume it.
+> The **research container has no firewall**; the dev container's `init-firewall.sh` allowlists
+> `backboard.railway.com` (again: `.com`, not `.app`).
 
-- `railway status` — confirm linked project/env
-- `railway link` — interactively pick project + env (typically `staging`)
-- `railway environment <name>` — switch the linked env (e.g. to debug production); MCP tools accept `environment` as an arg so you rarely need this
-- `railway whoami` — check auth
+Most reliable path in-container (no interactive login needed — uses the workspace API token):
 
-Both tools read `~/.config/railway/` for the session. The `RAILWAY_TOKEN` env var in `~/.bashrc` is a **project-scoped token** used by raw GraphQL calls; it is **independent** of `railway login`. Either path works — MCP uses the login session, raw curl uses the token.
+- **Raw GraphQL curl** with `Authorization: Bearer $RAILWAY_API_TOKEN` against
+  `https://backboard.railway.com/graphql/v2`. Deployments: `deployments(input:{projectId,environmentId})`;
+  build logs: `buildLogs(deploymentId, limit)`; deploy logs: `deploymentLogs(deploymentId, limit)`.
+- **CLI** (install once: `curl -fsSL https://railway.com/install.sh | sh` → binary at `~/.railway/bin/railway`;
+  `export PATH="$HOME/.railway/bin:$PATH"`). With `RAILWAY_API_TOKEN` exported it can list/act on the
+  workspace. `railway whoami` will say unauthorized (workspace token, no user) — that's expected.
+- **`railway login --browserless`** — only if you need the interactive login session (persists in the
+  `~/.railway` volume). Not required when the API token is set.
+
+`source ~/.config/c123-live-mini/railway.env` loads the token + all IDs in one step.
 
 ### Common MCP tool calls (from Claude Code)
 

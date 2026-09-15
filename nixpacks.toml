@@ -1,0 +1,12 @@
+# Nixpacks build configuration for Railway.
+#
+# `better-sqlite3` (a production dependency of packages/server) ships prebuilt
+# binaries, but none match the Node.js version Railway's Nixpacks channel
+# provides (20.18.1 as of 2026-09). npm then falls back to `node-gyp rebuild`,
+# which needs Python 3 and a C/C++ toolchain — neither is in the base image, so
+# `npm ci` fails with "Could not find any Python installation to use".
+#
+# Installing python3 + build-essential lets the native module compile from
+# source. Verified green on staging 2026-09-15. See docs/RUNBOOK.md and DEVLOG.md.
+[phases.setup]
+aptPkgs = ["python3", "build-essential"]
