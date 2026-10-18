@@ -240,7 +240,7 @@ curl -sS -X POST https://backboard.railway.com/graphql/v2 \
   -d '{"query":"mutation { serviceInstanceDeployV2(serviceId: \"aadf519a-48b5-4da9-9259-21b9178a2619\", environmentId: \"b1c8ea80-c260-4819-bc9e-54de1a27fd62\") }"}'
 ```
 
-Or the lazy way: push an empty commit to `main` (`git commit --allow-empty -m "chore: trigger redeploy" && git push`) — Railway picks it up automatically.
+Or the lazy way: push an empty commit to the branch the environment watches (`staging` for staging, see "Environments"); Railway deploys it once CI is green. A push to `main` deploys nothing.
 
 ### Inspecting / updating env vars
 
@@ -282,7 +282,7 @@ Useful for scripting — these are not secret:
 
 | Env | Env ID | Branch | Volume mount | Public domain |
 |---|---|---|---|---|
-| `staging` | `b1c8ea80-c260-4819-bc9e-54de1a27fd62` | `main` | `/data` | `c123-live-mini-staging.up.railway.app` |
+| `staging` | `b1c8ea80-c260-4819-bc9e-54de1a27fd62` | `staging` | `/data` | `c123-live-mini-staging.up.railway.app` |
 | `production` | `67189b9a-82ce-435f-931b-525053f50e36` | `production` | `/data` | `c123-live-mini.up.railway.app` |
 
 Both environments have **separate `MASTER_PASSWORDS`** and **separate `/data` volumes** (verified — staging volume `c123-live-mini-volume`, production volume `c123-live-mini-volume-prod`, no shared volume instances).
