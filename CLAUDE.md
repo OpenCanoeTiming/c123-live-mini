@@ -6,6 +6,22 @@ C123 Live Mini - minimalistic live results for canoe slalom races timed with Can
 
 **GitHub:** OpenCanoeTiming/c123-live-mini | **License:** MIT
 
+**Status:** Rebuild 2026/27, last in order (M5 Live); the running service is `legacy-2026` (v0.13.0)
+
+---
+
+## Rebuild 2026/27 — read first
+
+- **Design (normative):** c123-server `main`, `docs/arch/` — start at `README.md` (reading order, implementation sequence); then `CONTRACTS.md`, `DECISIONS/ADR-*`, `TEST-ARCHITECTURE.md`. Point to it, never restate it. Defaults taken without the maintainer go to `DECISIONS/LOG.md`.
+- **Legacy line:** venues run tag `legacy-2026`; branch `legacy/2026` takes `fix:` commits only. `main` is the rebuild, in place: replaced code is deleted, never kept beside the new.
+- **Releases:** rebuild releases are 0.x and reach no venue; `Release-As: 1.0.0` only when M6 Release 1.0 closes.
+- **Order:** server → scoreboard → penalty-check → live-mini is the implementation order only. Everything, the new live included, is ready for the Jarní slalom (M6), its first real use: no shadow run, the legacy line is the fallback.
+- **Work items:** one issue each in project "Rebuild 2026/27" (https://github.com/orgs/OpenCanoeTiming/projects/3), milestones M0 Spike, freeze, merge · M1 Server core · M2 Tooling · M3 Scoreboard · M4 Penalty-check · M5 Live · M6 Release 1.0 (Jarní slalom). Implementation is on hold until the maintainer releases M1.
+- **Test-first:** failing tests from the vectors or obligations land before the code that passes them. Tiers and the `Clock` rule: `TEST-ARCHITECTURE.md` §3, §5.
+- **Client repos:** definition of done = `CLIENT-OBLIGATIONS.md` Common + "live-mini-server" + "live-mini-client". A wrong obligation is fixed in c123-server `docs/arch` (same PR as the cited section, or label `obligations-unchanged`), never by deviating here.
+- **Upstream provenance** stays in the private c123-protocol-docs repo; public repos state behaviour only, never how it was established.
+- **Git:** conventional commits; Release Please owns versions and CHANGELOG; squash merges; `git add <file>`, never commit `.claude/` or `.superpowers/`. Czech with the maintainer, English in code, commits and docs.
+
 ---
 
 ## Architecture
@@ -19,16 +35,18 @@ C123 Live Mini - minimalistic live results for canoe slalom races timed with Can
 └──────────────┘                 └──────────────┘                └──────────────────┘              └─────────────┘
 ```
 
+Today: ingest HTTP/JSON, client over REST + WebSocket. Target (M5): CONTRACTS §8 — resource-based ingest push (§8.3), public REST + SSE stream (§8.4); live-mini-server applies only the invariants §8.3 lists and recomputes nothing (ADR-005, ADR-012).
+
 ### Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| Monorepo | npm workspaces (`packages/server`, `packages/client`) |
+| Monorepo | npm workspaces (`packages/server`, `packages/client`, `packages/shared`) |
 | Backend | Node.js 20 LTS, TypeScript 5.x strict, Fastify, Kysely, better-sqlite3 |
 | Database | SQLite file-based (`packages/server/data/live-mini.db`), Repository Pattern |
-| Frontend | React 18, Vite, wouter |
+| Frontend | React 19, Vite, wouter |
 | Design System | @czechcanoe/rvp-design-system (public-facing) |
-| Deployment | Railway (staging live, production deferred) — see `docs/RUNBOOK.md` |
+| Deployment | Railway, `staging` and `production` environments — see `docs/RUNBOOK.md` |
 
 ---
 
@@ -36,7 +54,8 @@ C123 Live Mini - minimalistic live results for canoe slalom races timed with Can
 
 | Purpose | Path |
 |---------|------|
-| **Architecture & data flows** | `docs/ARCHITECTURE.md` |
+| **Definition of done (M5)** | `../c123-server/docs/arch/CLIENT-OBLIGATIONS.md` → Common + "live-mini-server" + "live-mini-client" |
+| **Architecture & data flows (legacy; target is CONTRACTS §8)** | `docs/ARCHITECTURE.md` |
 | **Deployment runbook** (staging URL, Railway access, smoke tests, troubleshooting) | `docs/RUNBOOK.md` |
 | **Post-mortems / lessons** | `DEVLOG.md` |
 | **C123 protocol (XML, TCP)** | `../c123-protocol-docs/` |
@@ -49,7 +68,7 @@ C123 Live Mini - minimalistic live results for canoe slalom races timed with Can
 ## Important Rules
 
 1. **Design system only** — Frontend must strictly use `@czechcanoe/rvp-design-system`. No inline styles or local overrides.
-2. **Headless API** — Server has no Admin UI. Administration via c123-server.
+2. **Headless API** — no admin UI; event setup comes through c123-server. Organiser corrections (CONTRACTS §8.5) are an authenticated API on live-mini itself, accepted whether or not the bridge is online.
 3. **Mobile-first** — Frontend optimized for spectators on phones at the venue.
 
 ---
@@ -57,14 +76,11 @@ C123 Live Mini - minimalistic live results for canoe slalom races timed with Can
 ## Development
 
 ```bash
-# Server (from project root)
-npx tsx packages/server/src/index.ts
-
-# Client (separate terminal)
-cd packages/client && npx vite
-
-# Client proxies /api → localhost:3000, /ws → localhost:3000
+npm run dev      # shared (watch) + server + client
+npm test         # vitest, all workspaces
 ```
+
+The client proxies `/api` (incl. WebSocket at `/api/v1/events/:eventId/ws`) → `localhost:3000`.
 
 ### Railway access
 
@@ -105,7 +121,7 @@ Before any code, post an analysis comment to the issue:
 
 - **Every issue must result in a PR** with `Closes #N`
 - Run `/second-opinion` or independent sub-agent review on the PR diff before requesting human review
-- Include test plan in PR description
+- Include the verification: commands run, exit codes, CI run link; for a migration item, the CLIENT-OBLIGATIONS lines it closes
 - PR description summarizes what changed and why
 
 ### Branching
@@ -127,6 +143,8 @@ Before any code, post an analysis comment to the issue:
 
 To test something on the live staging URL before opening a PR: push the feature branch to `staging` (`git push -f origin HEAD:staging`). Don't push WIP to `main`.
 
+When the Railway service is switched to `main` as the rebuild's dev host (its own issue), update this table and `docs/RUNBOOK.md` in the same PR.
+
 ---
 
 ## DEVLOG.md
@@ -147,7 +165,7 @@ Append-only record of dead ends, surprising problems, and their solutions. Stric
 
 ## Language
 
-- **Communication:** Czech or English
+- **Communication:** Czech
 - **Code, commits:** English
 - **Documentation:** English
 
@@ -166,7 +184,7 @@ This project uses **Release Please** (commit-based) for automatic versioning of 
    - A commit `chore(main): release X.Y.Z` on `main` that bumps all four `package.json` files plus the matching `package-lock.json` entries
    - A single git tag `vX.Y.Z` (no per-package tag because `include-component-in-tag: false`)
    - A GitHub Release with generated CHANGELOG
-5. Railway auto-deploys `main` → staging. Promoting `main` → `production` is a separate manual fast-forward.
+5. A merge to `main` deploys nothing: Railway `staging` deploys the `staging` branch, `production` the `production` branch (see `docs/RUNBOOK.md`). Promoting `main` → `production` is a separate manual fast-forward.
 6. `SHARED_VERSION` (shown in the client footer) reads dynamically from `packages/shared/package.json`, so it stays in sync automatically.
 
 ### Commit types and bump rules
@@ -176,7 +194,8 @@ This project uses **Release Please** (commit-based) for automatic versioning of 
 | `feat:` / `feat(client):` / `feat(server):` | **minor** (see 0.x note) | ✓ Features |
 | `fix:` / `perf:` | **patch** | ✓ Bug Fixes / Performance |
 | `feat!:` or `BREAKING CHANGE:` | **minor** (see 0.x note) | ✓ Features |
-| `revert:` / `docs:` | none | ✓ Reverts / Documentation |
+| `revert:` | none | ✓ Reverts |
+| `docs:` | none | hidden |
 | `chore:` / `ci:` / `test:` / `style:` / `refactor:` / `build:` | **none** | hidden |
 | `chore(deps):` / `chore(deps-dev):` (dependabot) | **none** | hidden |
 
@@ -190,11 +209,11 @@ This project uses **Release Please** (commit-based) for automatic versioning of 
 4. **Don't merge the release PR together with feature PRs** — it must be the last to merge in a release cycle.
 5. **PR title should keep the commit prefix** (squash merges — ensure the final merged commit stays conventional).
 6. **Never commit skill state** — `.superpowers/` and `.claude/` are already in `.gitignore`. Still prefer `git add <file>` over `git add -A`.
-7. **Use `packages/shared` for cross-package types** — changes there typically cause `feat:` or `fix:` depending on whether the contract changed. Runtime code in client/server consuming shared follows the same rule.
+7. **Contract types come from `@opencanoetiming/c123-contract`** (pinned) once it exists; `packages/shared` holds only live-mini's own non-contract types and never restates the contract (CLIENT-OBLIGATIONS, Common).
 
 ### Graduating to 1.0.0
 
-To force a release to a specific version (e.g., graduating from 0.x to 1.0.0), add this footer to a commit in the next release cycle:
+1.0.0 is minted only on the commit that closes milestone M6 Release 1.0 (maintainer decision), with this footer:
 
 ```
 Release-As: 1.0.0
